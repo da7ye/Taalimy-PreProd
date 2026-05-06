@@ -7,14 +7,13 @@ import {
 import { Field, Input, Select, SubmitBtn } from "../components/FormComponents";
 import { useToast } from "../components/Toast";
 import ConfirmDialog from "../components/ConfirmDialog";
+import { useLanguage } from "../LanguageContext";
 
 const C_COLOR = "var(--blue)";
 const C_BG    = "var(--blue-dim)";
 
 const TYPE_OPTIONS = ["DEVOIR_1", "DEVOIR_2", "DEVOIR_3", "EXAMEN"];
-const TYPE_LABELS  = { DEVOIR_1: "Devoir 1", DEVOIR_2: "Devoir 2", DEVOIR_3: "Devoir 3", EXAMEN: "Examen" };
 
-/* ─── Shared layout helpers ─── */
 function BackBtn({ label, onClick }) {
   return (
     <button onClick={onClick} style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", fontSize: 13, fontFamily: "'Instrument Sans', sans-serif", padding: 0, marginBottom: 28, transition: "color .13s" }}
@@ -52,7 +51,7 @@ function TwoCol({ left, right }) {
   );
 }
 
-function SidePanel({ title, items, accentColor, accentBg, icon }) {
+function SidePanel({ title, items, accentColor, accentBg, icon, sectionLabel }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
       <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "var(--r-xl)", padding: "28px 24px", boxShadow: "var(--shadow-sm)", textAlign: "center" }}>
@@ -60,7 +59,7 @@ function SidePanel({ title, items, accentColor, accentBg, icon }) {
         <div style={{ fontSize: 13, color: "var(--text-muted)", lineHeight: 1.5 }}>{title}</div>
       </div>
       <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "var(--r-xl)", padding: "20px 24px", boxShadow: "var(--shadow-sm)" }}>
-        <div className="section-label" style={{ marginBottom: 12 }}>Notes</div>
+        <div className="section-label" style={{ marginBottom: 12 }}>{sectionLabel}</div>
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           {items.map((item, i) => (
             <div key={i} style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
@@ -86,7 +85,6 @@ function StatBox({ icon, label, value, color, bg, wide }) {
   );
 }
 
-/* ─── Grade badge ─── */
 function GradeBadge({ value }) {
   if (value == null) return <span style={{ color: "var(--text-faint)" }}>—</span>;
   const num = parseFloat(value);
@@ -99,7 +97,6 @@ function GradeBadge({ value }) {
   );
 }
 
-/* ─── Tab button ─── */
 function Tab({ label, active, onClick }) {
   return (
     <button onClick={onClick} style={{
@@ -108,14 +105,12 @@ function Tab({ label, active, onClick }) {
       color: active ? "#fff" : "var(--text-muted)",
       fontFamily: "'Instrument Sans', sans-serif", fontSize: 13.5, fontWeight: active ? 600 : 400,
       transition: "background .14s, color .14s",
-    }}>
-      {label}
-    </button>
+    }}>{label}</button>
   );
 }
 
-/* ─── Note card ─── */
-function NoteCard({ r, onClick, onEdit, onDelete }) {
+function NoteCard({ r, onClick, onEdit, onDelete, t }) {
+  const typeLabel = t(`notes.types.${r.typeDevoir}`) || r.typeDevoir;
   return (
     <div className="person-card" style={{ "--card-top": C_COLOR }} onClick={() => onClick(r)}>
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 14 }}>
@@ -125,39 +120,29 @@ function NoteCard({ r, onClick, onEdit, onDelete }) {
         </div>
         <GradeBadge value={r.valeur} />
       </div>
-
       <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 12 }}>
-        {r.matiereName && (
-          <span style={{ padding: "2px 9px", borderRadius: 999, background: C_BG, color: C_COLOR, fontSize: 11.5, fontWeight: 600, border: `1px solid ${C_COLOR}22` }}>
-            {r.matiereName}
-          </span>
-        )}
-        {r.typeDevoir && (
-          <span style={{ padding: "2px 9px", borderRadius: 999, background: "var(--purple-dim)", color: "var(--purple)", fontSize: 11.5, fontWeight: 600, border: "1px solid var(--purple-dim)" }}>
-            {TYPE_LABELS[r.typeDevoir] ?? r.typeDevoir}
-          </span>
-        )}
+        {r.matiereName && <span style={{ padding: "2px 9px", borderRadius: 999, background: C_BG, color: C_COLOR, fontSize: 11.5, fontWeight: 600, border: `1px solid ${C_COLOR}22` }}>{r.matiereName}</span>}
+        {r.typeDevoir && <span style={{ padding: "2px 9px", borderRadius: 999, background: "var(--purple-dim)", color: "var(--purple)", fontSize: 11.5, fontWeight: 600, border: "1px solid var(--purple-dim)" }}>{typeLabel}</span>}
       </div>
-
       <div style={{ paddingTop: 12, borderTop: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
         <div style={{ fontSize: 12.5, color: "var(--text-muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
           {r.className && <span>🏫 {r.className}</span>}
           {r.trimestreNom && <span style={{ marginLeft: 8 }}>📅 {r.trimestreNom}</span>}
         </div>
         <div style={{ display: "flex", gap: 6, flexShrink: 0 }} onClick={e => e.stopPropagation()}>
-          <button onClick={() => onEdit(r)} className="btn-ghost" style={{ padding: "5px 10px", fontSize: 12 }}>Edit</button>
-          <button onClick={() => onDelete(r)} className="btn-danger" style={{ padding: "5px 10px", fontSize: 12 }}>Delete</button>
+          <button onClick={() => onEdit(r)} className="btn-ghost" style={{ padding: "5px 10px", fontSize: 12 }}>{t("common.edit")}</button>
+          <button onClick={() => onDelete(r)} className="btn-danger" style={{ padding: "5px 10px", fontSize: 12 }}>{t("common.delete")}</button>
         </div>
       </div>
     </div>
   );
 }
 
-/* ─── Bulletin table ─── */
-function BulletinView({ bulletin, onDownload, downloading }) {
+function BulletinView({ bulletin, onDownload, downloading, t }) {
   const { studentName, registrationNumber, className, trimestreNom, matieres = [], moyenneGenerale, appreciation } = bulletin;
   const avg = parseFloat(moyenneGenerale);
   const avgColor = avg >= 14 ? "var(--green)" : avg >= 10 ? "var(--blue)" : avg >= 7 ? "var(--amber)" : "var(--rose)";
+  const hdrs = t("notes.tableHeaders");
 
   return (
     <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "var(--r-xl)", boxShadow: "var(--shadow-sm)", overflow: "hidden" }}>
@@ -165,44 +150,31 @@ function BulletinView({ bulletin, onDownload, downloading }) {
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
           <div>
             <h3 style={{ margin: 0, fontSize: 18, fontFamily: "'Instrument Serif', serif", color: "var(--text)" }}>{studentName}</h3>
-            <div style={{ fontSize: 13, color: "var(--text-muted)", marginTop: 4 }}>
-              {registrationNumber} · {className} · {trimestreNom}
-            </div>
+            <div style={{ fontSize: 13, color: "var(--text-muted)", marginTop: 4 }}>{registrationNumber} · {className} · {trimestreNom}</div>
           </div>
           <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 10 }}>
             <div style={{ textAlign: "center" }}>
-              <div style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".08em", color: "var(--text-faint)", marginBottom: 4 }}>Moyenne Générale</div>
+              <div style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".08em", color: "var(--text-faint)", marginBottom: 4 }}>{t("notes.bulletinAvg")}</div>
               <div style={{ fontSize: 28, fontWeight: 700, color: avgColor, fontFamily: "'Instrument Serif', serif" }}>
                 {isNaN(avg) ? "—" : avg.toFixed(2)}<span style={{ fontSize: 14, fontWeight: 500, color: "var(--text-muted)" }}>/20</span>
               </div>
               {appreciation && <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2, fontStyle: "italic" }}>{appreciation}</div>}
             </div>
-            <button
-              onClick={onDownload}
-              disabled={downloading}
-              className="btn-primary"
-              style={{ fontSize: 13, padding: "9px 18px", display: "flex", alignItems: "center", gap: 7 }}
-            >
+            <button onClick={onDownload} disabled={downloading} className="btn-primary" style={{ fontSize: 13, padding: "9px 18px", display: "flex", alignItems: "center", gap: 7 }}>
               {downloading
-                ? <><span className="spinner" style={{ width: 13, height: 13 }} /> Downloading…</>
-                : <>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
-                    </svg>
-                    Download PDF
-                  </>
+                ? <><span className="spinner" style={{ width: 13, height: 13 }} /> {t("notes.downloading")}</>
+                : <><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> {t("notes.downloadPdf")}</>
               }
             </button>
           </div>
         </div>
       </div>
-
       <div style={{ overflowX: "auto" }}>
         <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
           <thead>
             <tr style={{ background: "var(--surface)" }}>
-              {["Matière", "Coeff", "D1", "D2", "D3", "Examen", "Moy. Devoirs", "Moy. Matière", "Moy. Pond."].map(h => (
-                <th key={h} style={{ padding: "10px 14px", textAlign: h === "Matière" ? "left" : "center", fontSize: 10.5, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".07em", color: "var(--text-faint)", borderBottom: "1px solid var(--border)", whiteSpace: "nowrap" }}>{h}</th>
+              {[hdrs.subject, hdrs.coeff, hdrs.d1, hdrs.d2, hdrs.d3, hdrs.exam, hdrs.avgDevoirs, hdrs.avgSubject, hdrs.avgPonderated].map(h => (
+                <th key={h} style={{ padding: "10px 14px", textAlign: h === hdrs.subject ? "left" : "center", fontSize: 10.5, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".07em", color: "var(--text-faint)", borderBottom: "1px solid var(--border)", whiteSpace: "nowrap" }}>{h}</th>
               ))}
             </tr>
           </thead>
@@ -221,47 +193,40 @@ function BulletinView({ bulletin, onDownload, downloading }) {
           </tbody>
         </table>
       </div>
-
       {matieres.length === 0 && (
         <div className="empty-state" style={{ padding: "40px" }}>
-          <span style={{ fontSize: 32 }}>📋</span>
-          <p>No subjects in this bulletin.</p>
+          <span style={{ fontSize: 32 }}>📋</span><p>{t("notes.noSubjects")}</p>
         </div>
       )}
     </div>
   );
 }
 
-/* ════════════════════════════════════════ */
 export default function NotesPage() {
+  const { t } = useLanguage();
   const toast = useToast();
 
   const [view, setView] = useState("list");
   const [tab, setTab]   = useState("notes");
 
-  // Dropdown data — all use /names endpoints (flat {id, name} arrays)
   const [students,   setStudents]   = useState([]);
   const [classes,    setClasses]    = useState([]);
   const [matieres,   setMatieres]   = useState([]);
-  const [trimestres, setTrimestres] = useState([]);
   const [metaLoading, setMetaLoading] = useState(true);
 
-  // Notes list
-  const [studentNotes,       setStudentNotes]       = useState(null);
+  const [studentNotes,        setStudentNotes]        = useState(null);
   const [studentNotesLoading, setStudentNotesLoading] = useState(false);
-  const [filterStudentId,    setFilterStudentId]    = useState("");
-  const [filterTrimestreId,  setFilterTrimestreId]  = useState("");
-  const [filterType,         setFilterType]         = useState("ALL");
-  const [q,                  setQ]                  = useState("");
+  const [filterStudentId,     setFilterStudentId]     = useState("");
+  const [filterTrimestreId,   setFilterTrimestreId]   = useState("");
+  const [filterType,          setFilterType]          = useState("ALL");
+  const [q,                   setQ]                   = useState("");
 
-  // Bulletin
   const [bulletinStudentId,   setBulletinStudentId]   = useState("");
   const [bulletinTrimestreId, setBulletinTrimestreId] = useState("");
   const [bulletin,            setBulletin]            = useState(null);
   const [bulletinLoading,     setBulletinLoading]     = useState(false);
   const [downloadingPdf,      setDownloadingPdf]      = useState(false);
 
-  // Stats
   const [statsClasseId,    setStatsClasseId]    = useState("");
   const [statsMatiereId,   setStatsMatiereId]   = useState("");
   const [statsTrimestreId, setStatsTrimestreId] = useState("");
@@ -269,11 +234,10 @@ export default function NotesPage() {
   const [stats,            setStats]            = useState(null);
   const [statsLoading,     setStatsLoading]     = useState(false);
 
-  // CRUD
-  const [selected,      setSelected]      = useState(null);
-  const [deleteTarget,  setDeleteTarget]  = useState(null);
-  const [saving,        setSaving]        = useState(false);
-  const [deleting,      setDeleting]      = useState(false);
+  const [selected,     setSelected]     = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [saving,       setSaving]       = useState(false);
+  const [deleting,     setDeleting]     = useState(false);
 
   const emptyForm = { valeur: "", appreciation: "", dateNote: "", typeDevoir: "", studentId: "", matiereId: "", classeId: "", trimestreId: "" };
   const [form,     setForm]     = useState(emptyForm);
@@ -281,46 +245,30 @@ export default function NotesPage() {
   const set     = k => e => setForm(f => ({ ...f, [k]: e.target.value }));
   const setEdit = k => e => setEditForm(f => ({ ...f, [k]: e.target.value }));
 
-  /* ── Load dropdown metadata ── */
   useEffect(() => {
     setMetaLoading(true);
-    Promise.allSettled([
-      getStudents(),
-      getClasseNames(),
-      getMatiereNames(),
-    ]).then(([s, c, m]) => {
-      if (s.status === "fulfilled") setStudents(Array.isArray(s.value) ? s.value : s.value?.content ?? []);
-      else toast("Could not load students: " + s.reason?.message, "error");
-
-      if (c.status === "fulfilled") setClasses(Array.isArray(c.value) ? c.value : c.value?.content ?? []);
-      else toast("Could not load classes: " + c.reason?.message, "error");
-
-      if (m.status === "fulfilled") setMatieres(Array.isArray(m.value) ? m.value : []);
-      else toast("Could not load subjects: " + m.reason?.message, "error");
-    }).finally(() => setMetaLoading(false));
+    Promise.allSettled([getStudents(), getClasseNames(), getMatiereNames()])
+      .then(([s, c, m]) => {
+        if (s.status === "fulfilled") setStudents(Array.isArray(s.value) ? s.value : s.value?.content ?? []);
+        if (c.status === "fulfilled") setClasses(Array.isArray(c.value) ? c.value : c.value?.content ?? []);
+        if (m.status === "fulfilled") setMatieres(Array.isArray(m.value) ? m.value : []);
+      }).finally(() => setMetaLoading(false));
   }, []);
 
-  /* ── Helpers to get display name ── */
-  const studentLabel  = s => `${s.firstname ?? ""} ${s.lastname ?? ""}`.trim() || `ID ${s.id}`;
+  const studentLabel = s => `${s.firstname ?? ""} ${s.lastname ?? ""}`.trim() || `ID ${s.id}`;
 
-  /* ── Fetch notes for selected student ── */
   const fetchStudentNotes = async () => {
-    if (!filterStudentId) { toast("Please select a student.", "error"); return; }
+    if (!filterStudentId) { toast(t("notes.fillAllFields"), "error"); return; }
     setStudentNotesLoading(true);
     try {
       const result = filterTrimestreId
         ? await getNotesByStudentAndTrimestre(filterStudentId, filterTrimestreId)
         : await getNotesByStudent(filterStudentId);
       setStudentNotes(Array.isArray(result) ? result : []);
-    } catch (e) {
-      toast(e.message, "error");
-      setStudentNotes([]);
-    } finally {
-      setStudentNotesLoading(false);
-    }
+    } catch (e) { toast(e.message, "error"); setStudentNotes([]); }
+    finally { setStudentNotesLoading(false); }
   };
 
-  // Reset notes when filters change
   useEffect(() => { setStudentNotes(null); }, [filterStudentId, filterTrimestreId]);
 
   const filtered = useMemo(() => {
@@ -328,90 +276,43 @@ export default function NotesPage() {
     if (filterType !== "ALL") arr = arr.filter(r => r.typeDevoir === filterType);
     if (q.trim()) {
       const lq = q.toLowerCase();
-      arr = arr.filter(r =>
-        r.studentName?.toLowerCase().includes(lq) ||
-        r.matiereName?.toLowerCase().includes(lq) ||
-        r.className?.toLowerCase().includes(lq)
-      );
+      arr = arr.filter(r => r.studentName?.toLowerCase().includes(lq) || r.matiereName?.toLowerCase().includes(lq) || r.className?.toLowerCase().includes(lq));
     }
     return arr;
   }, [studentNotes, filterType, q]);
 
   const goList = () => { setView("list"); setSelected(null); };
 
-  /* ── Create ── */
   const handleCreate = async e => {
     e.preventDefault(); setSaving(true);
     try {
-      await createNote({
-        valeur:      parseFloat(form.valeur),
-        appreciation: form.appreciation || undefined,
-        dateNote:    form.dateNote || undefined,
-        typeDevoir:  form.typeDevoir,
-        studentId:   parseInt(form.studentId),
-        matiereId:   parseInt(form.matiereId),
-        classeId:    parseInt(form.classeId),
-        trimestreId: parseInt(form.trimestreId),
-      });
-      setForm(emptyForm);
-      toast("Note added!");
-      goList();
-      // Refresh if same student is currently shown
+      await createNote({ valeur: parseFloat(form.valeur), appreciation: form.appreciation || undefined, dateNote: form.dateNote || undefined, typeDevoir: form.typeDevoir, studentId: parseInt(form.studentId), matiereId: parseInt(form.matiereId), classeId: parseInt(form.classeId), trimestreId: parseInt(form.trimestreId) });
+      setForm(emptyForm); toast(t("notes.added")); goList();
       if (filterStudentId === form.studentId) fetchStudentNotes();
     } catch (err) { toast(err.message, "error"); } finally { setSaving(false); }
   };
 
-  /* ── Edit ── */
-  const openEdit = r => {
-    setEditForm({
-      valeur:      r.valeur ?? "",
-      appreciation: r.appreciation ?? "",
-      dateNote:    r.dateNote ?? "",
-      typeDevoir:  r.typeDevoir ?? "",
-    });
-    setSelected(r);
-    setView("edit");
-  };
+  const openEdit = r => { setEditForm({ valeur: r.valeur ?? "", appreciation: r.appreciation ?? "", dateNote: r.dateNote ?? "", typeDevoir: r.typeDevoir ?? "" }); setSelected(r); setView("edit"); };
 
   const handleEdit = async e => {
     e.preventDefault(); setSaving(true);
     try {
-      await updateNote(selected.id, {
-        valeur:      parseFloat(editForm.valeur),
-        appreciation: editForm.appreciation || undefined,
-        dateNote:    editForm.dateNote || undefined,
-        typeDevoir:  editForm.typeDevoir,
-        // Keep original ids — API requires them
-        studentId:   selected.studentId,
-        matiereId:   selected.matiereId,
-        classeId:    selected.classeId,
-        trimestreId: selected.trimestreId,
-      });
-      toast("Note updated!");
-      goList();
-      fetchStudentNotes();
+      await updateNote(selected.id, { valeur: parseFloat(editForm.valeur), appreciation: editForm.appreciation || undefined, dateNote: editForm.dateNote || undefined, typeDevoir: editForm.typeDevoir, studentId: selected.studentId, matiereId: selected.matiereId, classeId: selected.classeId, trimestreId: selected.trimestreId });
+      toast(t("notes.updated")); goList(); fetchStudentNotes();
     } catch (err) { toast(err.message, "error"); } finally { setSaving(false); }
   };
 
-  /* ── Delete ── */
   const handleDelete = async () => {
     setDeleting(true);
-    try {
-      await deleteNote(deleteTarget.id);
-      setDeleteTarget(null);
-      toast("Note deleted.");
-      if (view !== "list") goList();
-      fetchStudentNotes();
-    } catch (err) { toast(err.message, "error"); } finally { setDeleting(false); }
+    try { await deleteNote(deleteTarget.id); setDeleteTarget(null); toast(t("notes.deleted")); if (view !== "list") goList(); fetchStudentNotes(); }
+    catch (err) { toast(err.message, "error"); } finally { setDeleting(false); }
   };
 
-  /* ── Bulletin ── */
   const fetchBulletin = async () => {
-    if (!bulletinStudentId || !bulletinTrimestreId) { toast("Select a student and trimestre.", "error"); return; }
+    if (!bulletinStudentId || !bulletinTrimestreId) { toast(t("notes.selectStudentTrimestre"), "error"); return; }
     setBulletinLoading(true); setBulletin(null);
     try { setBulletin(await getBulletin(bulletinStudentId, bulletinTrimestreId)); }
-    catch (e) { toast(e.message, "error"); }
-    finally { setBulletinLoading(false); }
+    catch (e) { toast(e.message, "error"); } finally { setBulletinLoading(false); }
   };
 
   const handleDownloadPdf = async () => {
@@ -421,92 +322,79 @@ export default function NotesPage() {
       const blob = await getBulletinPdf(bulletinStudentId, bulletinTrimestreId);
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
-      a.href = url;
-      a.download = `bulletin_${bulletinStudentId}_trimestre_${bulletinTrimestreId}.pdf`;
-      a.click();
+      a.href = url; a.download = `bulletin_${bulletinStudentId}_trimestre_${bulletinTrimestreId}.pdf`; a.click();
       setTimeout(() => URL.revokeObjectURL(url), 60_000);
-    } catch (e) { toast(e.message, "error"); }
-    finally { setDownloadingPdf(false); }
+    } catch (e) { toast(e.message, "error"); } finally { setDownloadingPdf(false); }
   };
 
-  /* ── Stats ── */
   const fetchStats = async () => {
-    if (!statsClasseId || !statsMatiereId || !statsTrimestreId) { toast("Fill in all fields.", "error"); return; }
+    if (!statsClasseId || !statsMatiereId || !statsTrimestreId) { toast(t("notes.fillAllFields"), "error"); return; }
     setStatsLoading(true); setStats(null);
     try { setStats(await getClasseStats(statsClasseId, statsMatiereId, statsTrimestreId, statsType)); }
-    catch (e) { toast(e.message, "error"); }
-    finally { setStatsLoading(false); }
+    catch (e) { toast(e.message, "error"); } finally { setStatsLoading(false); }
   };
 
-  /* ════════════ VIEWS ════════════ */
+  const typeOptions = TYPE_OPTIONS.map(tp => (
+    <option key={tp} value={tp}>{t(`notes.types.${tp}`)}</option>
+  ));
 
   /* ── CREATE ── */
   if (view === "create") return (
     <div className="page-enter" style={{ padding: "36px 44px" }}>
-      <BackBtn label="Back to Grades" onClick={goList} />
-      <PageTitle crumb="Academics · Grades" title="Add Note" sub="Record a student grade for a subject." />
+      <BackBtn label={t("notes.detailBack")} onClick={goList} />
+      <PageTitle crumb={t("notes.crumb")} title={t("notes.addTitle")} sub={t("notes.addSub")} />
       <TwoCol
-        left={
-          <FormPanel onSubmit={handleCreate}>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-              <Field label="Student">
-                <Select value={form.studentId} onChange={set("studentId")} required>
-                  <option value="">— Select student —</option>
-                  {students.map(s => <option key={s.id} value={s.id}>{studentLabel(s)}</option>)}
-                </Select>
-              </Field>
-              <Field label="Class">
-                <Select value={form.classeId} onChange={set("classeId")} required>
-                  <option value="">— Select class —</option>
-                  {classes.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                </Select>
-              </Field>
-            </div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-              <Field label="Subject (Matière)">
-                <Select value={form.matiereId} onChange={set("matiereId")} required>
-                  <option value="">— Select subject —</option>
-                  {matieres.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
-                </Select>
-              </Field>
-              <Field label="Trimestre ID" hint="Enter the trimestre number (e.g. 1, 2, 3)">
-                <Input type="number" min={1} placeholder="e.g. 1" value={form.trimestreId} onChange={set("trimestreId")} required />
-              </Field>
-            </div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-              <Field label="Type de Devoir">
-                <Select value={form.typeDevoir} onChange={set("typeDevoir")} required>
-                  <option value="">— Select type —</option>
-                  {TYPE_OPTIONS.map(t => <option key={t} value={t}>{TYPE_LABELS[t]}</option>)}
-                </Select>
-              </Field>
-              <Field label="Grade (0–20)" hint="Numeric value between 0 and 20">
-                <Input type="number" step="0.01" min={0} max={20} placeholder="e.g. 14.5" value={form.valeur} onChange={set("valeur")} required />
-              </Field>
-            </div>
-            <Field label="Appreciation" hint="Optional comment">
-              <Input placeholder="e.g. Bon travail" value={form.appreciation} onChange={set("appreciation")} />
+        left={<FormPanel onSubmit={handleCreate}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+            <Field label={t("notes.student")}>
+              <Select value={form.studentId} onChange={set("studentId")} required>
+                <option value="">{t("notes.selectStudent")}</option>
+                {students.map(s => <option key={s.id} value={s.id}>{studentLabel(s)}</option>)}
+              </Select>
             </Field>
-            <Field label="Date">
-              <Input type="date" value={form.dateNote} onChange={set("dateNote")} />
+            <Field label={t("notes.class")}>
+              <Select value={form.classeId} onChange={set("classeId")} required>
+                <option value="">{t("notes.selectClass")}</option>
+                {classes.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </Select>
             </Field>
-            <div style={{ display: "flex", gap: 12, paddingTop: 4 }}>
-              <button type="button" onClick={goList} className="btn-ghost" style={{ flex: 1, padding: "12px" }}>Cancel</button>
-              <div style={{ flex: 2 }}><SubmitBtn loading={saving} label="Save Note" /></div>
-            </div>
-          </FormPanel>
-        }
-        right={
-          <SidePanel icon="📝" accentColor={C_COLOR} accentBg={C_BG}
-            title="Grades are recorded per student, subject, trimestre and evaluation type."
-            items={[
-              { icon: "🔢", text: "Grade must be between 0 and 20." },
-              { icon: "📅", text: "Trimestre determines which period the grade belongs to." },
-              { icon: "📐", text: "Subject coefficient affects the overall average." },
-              { icon: "📋", text: "View the full bulletin after entering all grades." },
-            ]}
-          />
-        }
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+            <Field label={t("notes.subject")}>
+              <Select value={form.matiereId} onChange={set("matiereId")} required>
+                <option value="">{t("notes.selectSubject")}</option>
+                {matieres.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
+              </Select>
+            </Field>
+            <Field label={t("notes.trimestreId")} hint={t("notes.trimestreHint")}>
+              <Input type="number" min={1} placeholder={t("notes.trimestrePlaceholder")} value={form.trimestreId} onChange={set("trimestreId")} required />
+            </Field>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+            <Field label={t("notes.type")}>
+              <Select value={form.typeDevoir} onChange={set("typeDevoir")} required>
+                <option value="">{t("notes.selectType")}</option>
+                {typeOptions}
+              </Select>
+            </Field>
+            <Field label={t("notes.grade")} hint={t("notes.gradeHint")}>
+              <Input type="number" step="0.01" min={0} max={20} placeholder={t("notes.gradePlaceholder")} value={form.valeur} onChange={set("valeur")} required />
+            </Field>
+          </div>
+          <Field label={t("notes.appreciation")} hint={t("notes.appreciationHint")}>
+            <Input placeholder={t("notes.appreciationPlaceholder")} value={form.appreciation} onChange={set("appreciation")} />
+          </Field>
+          <Field label={t("notes.date")}>
+            <Input type="date" value={form.dateNote} onChange={set("dateNote")} />
+          </Field>
+          <div style={{ display: "flex", gap: 12, paddingTop: 4 }}>
+            <button type="button" onClick={goList} className="btn-ghost" style={{ flex: 1, padding: "12px" }}>{t("common.cancel")}</button>
+            <div style={{ flex: 2 }}><SubmitBtn loading={saving} label={t("notes.saveNoteBtn")} /></div>
+          </div>
+        </FormPanel>}
+        right={<SidePanel icon="📝" accentColor={C_COLOR} accentBg={C_BG} sectionLabel={t("common.notes")}
+          title={t("notes.sideNote")}
+          items={[{ icon: "🔢", text: t("notes.sideNote1") }, { icon: "📅", text: t("notes.sideNote2") }, { icon: "📐", text: t("notes.sideNote3") }, { icon: "📋", text: t("notes.sideNote4") }]} />}
       />
     </div>
   );
@@ -514,43 +402,35 @@ export default function NotesPage() {
   /* ── EDIT ── */
   if (view === "edit" && selected) return (
     <div className="page-enter" style={{ padding: "36px 44px" }}>
-      <BackBtn label="Back to Grades" onClick={goList} />
-      <PageTitle crumb="Academics · Grades" title="Edit Note" sub={`Editing grade for ${selected.studentName ?? "student"}`} />
+      <BackBtn label={t("notes.detailBack")} onClick={goList} />
+      <PageTitle crumb={t("notes.crumb")} title={t("notes.editTitle")} sub={t("notes.editSub", { name: selected.studentName ?? "student" })} />
       <TwoCol
-        left={
-          <FormPanel onSubmit={handleEdit}>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-              <Field label="Type de Devoir">
-                <Select value={editForm.typeDevoir} onChange={setEdit("typeDevoir")} required>
-                  <option value="">— Select type —</option>
-                  {TYPE_OPTIONS.map(t => <option key={t} value={t}>{TYPE_LABELS[t]}</option>)}
-                </Select>
-              </Field>
-              <Field label="Grade (0–20)">
-                <Input type="number" step="0.01" min={0} max={20} value={editForm.valeur} onChange={setEdit("valeur")} required />
-              </Field>
-            </div>
-            <Field label="Appreciation">
-              <Input placeholder="Optional comment" value={editForm.appreciation} onChange={setEdit("appreciation")} />
+        left={<FormPanel onSubmit={handleEdit}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+            <Field label={t("notes.type")}>
+              <Select value={editForm.typeDevoir} onChange={setEdit("typeDevoir")} required>
+                <option value="">{t("notes.selectType")}</option>
+                {typeOptions}
+              </Select>
             </Field>
-            <Field label="Date">
-              <Input type="date" value={editForm.dateNote} onChange={setEdit("dateNote")} />
+            <Field label={t("notes.grade")}>
+              <Input type="number" step="0.01" min={0} max={20} value={editForm.valeur} onChange={setEdit("valeur")} required />
             </Field>
-            <div style={{ display: "flex", gap: 12, paddingTop: 4 }}>
-              <button type="button" onClick={goList} className="btn-ghost" style={{ flex: 1, padding: "12px" }}>Cancel</button>
-              <div style={{ flex: 2 }}><SubmitBtn loading={saving} label="Save Changes" /></div>
-            </div>
-          </FormPanel>
-        }
-        right={
-          <SidePanel icon="✏️" accentColor={C_COLOR} accentBg={C_BG}
-            title={`Editing ${TYPE_LABELS[selected.typeDevoir] ?? selected.typeDevoir} for ${selected.studentName}`}
-            items={[
-              { icon: "💡", text: "Only grade value, appreciation, and date can be changed." },
-              { icon: "🔢", text: "Grade must remain between 0 and 20." },
-            ]}
-          />
-        }
+          </div>
+          <Field label={t("notes.appreciation")}>
+            <Input placeholder={t("notes.appreciationPlaceholder")} value={editForm.appreciation} onChange={setEdit("appreciation")} />
+          </Field>
+          <Field label={t("notes.date")}>
+            <Input type="date" value={editForm.dateNote} onChange={setEdit("dateNote")} />
+          </Field>
+          <div style={{ display: "flex", gap: 12, paddingTop: 4 }}>
+            <button type="button" onClick={goList} className="btn-ghost" style={{ flex: 1, padding: "12px" }}>{t("common.cancel")}</button>
+            <div style={{ flex: 2 }}><SubmitBtn loading={saving} label={t("notes.saveBtn")} /></div>
+          </div>
+        </FormPanel>}
+        right={<SidePanel icon="✏️" accentColor={C_COLOR} accentBg={C_BG} sectionLabel={t("common.notes")}
+          title={`${t(`notes.types.${selected.typeDevoir}`) ?? selected.typeDevoir} — ${selected.studentName}`}
+          items={[{ icon: "💡", text: t("notes.editNote1") }, { icon: "🔢", text: t("notes.editNote2") }]} />}
       />
     </div>
   );
@@ -560,7 +440,7 @@ export default function NotesPage() {
     const v = selected;
     return (
       <div className="page-enter" style={{ padding: "36px 44px" }}>
-        <BackBtn label="Back to Grades" onClick={goList} />
+        <BackBtn label={t("notes.detailBack")} onClick={goList} />
         <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "var(--r-xl)", boxShadow: "var(--shadow-sm)", overflow: "hidden", marginBottom: 24 }}>
           <div style={{ height: 90, background: `linear-gradient(135deg, ${C_COLOR}22 0%, ${C_COLOR}08 100%)`, position: "relative" }}>
             <div style={{ position: "absolute", inset: 0, backgroundImage: `radial-gradient(circle at 80% 50%, ${C_COLOR}18 0%, transparent 60%)` }} />
@@ -572,29 +452,29 @@ export default function NotesPage() {
                 <div style={{ paddingBottom: 4 }}>
                   <h2 style={{ margin: 0, fontSize: 22, fontFamily: "'Instrument Serif', serif", color: "var(--text)", letterSpacing: "-.025em" }}>{v.studentName ?? "—"}</h2>
                   <div style={{ display: "flex", gap: 8, marginTop: 7, flexWrap: "wrap" }}>
-                    {v.typeDevoir && <span style={{ padding: "3px 11px", borderRadius: 999, background: "var(--purple-dim)", color: "var(--purple)", fontSize: 12, fontWeight: 600, border: "1px solid var(--purple-dim)" }}>{TYPE_LABELS[v.typeDevoir] ?? v.typeDevoir}</span>}
+                    {v.typeDevoir && <span style={{ padding: "3px 11px", borderRadius: 999, background: "var(--purple-dim)", color: "var(--purple)", fontSize: 12, fontWeight: 600, border: "1px solid var(--purple-dim)" }}>{t(`notes.types.${v.typeDevoir}`) ?? v.typeDevoir}</span>}
                     <GradeBadge value={v.valeur} />
                   </div>
                 </div>
               </div>
               <div style={{ display: "flex", gap: 10 }}>
-                <button onClick={() => openEdit(v)} className="btn-ghost" style={{ padding: "10px 20px" }}>✏️ Edit</button>
-                <button onClick={() => setDeleteTarget(v)} className="btn-danger" style={{ padding: "10px 20px" }}>🗑 Delete</button>
+                <button onClick={() => openEdit(v)} className="btn-ghost" style={{ padding: "10px 20px" }}>✏️ {t("common.edit")}</button>
+                <button onClick={() => setDeleteTarget(v)} className="btn-danger" style={{ padding: "10px 20px" }}>🗑 {t("common.delete")}</button>
               </div>
             </div>
           </div>
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 14 }}>
-          <StatBox icon="🎓" label="Student"        value={v.studentName} />
-          <StatBox icon="📐" label="Subject"        value={v.matiereName} />
-          <StatBox icon="🏫" label="Class"          value={v.className} />
-          <StatBox icon="📅" label="Trimestre"      value={v.trimestreNom} />
-          <StatBox icon="📋" label="Type"           value={TYPE_LABELS[v.typeDevoir] ?? v.typeDevoir} />
-          <StatBox icon="📝" label="Appreciation"   value={v.appreciation} />
-          {v.dateNote && <StatBox icon="🗓" label="Date" value={v.dateNote} />}
-          <StatBox icon="🪪" label="Reg. Number"    value={v.registrationNumber} />
+          <StatBox icon="🎓" label={t("notes.fields.student")}      value={v.studentName} />
+          <StatBox icon="📐" label={t("notes.fields.subject")}      value={v.matiereName} />
+          <StatBox icon="🏫" label={t("notes.fields.class")}        value={v.className} />
+          <StatBox icon="📅" label={t("notes.fields.trimestre")}    value={v.trimestreNom} />
+          <StatBox icon="📋" label={t("notes.fields.type")}         value={t(`notes.types.${v.typeDevoir}`) ?? v.typeDevoir} />
+          <StatBox icon="📝" label={t("notes.fields.appreciation")} value={v.appreciation} />
+          {v.dateNote && <StatBox icon="🗓" label={t("notes.fields.date")} value={v.dateNote} />}
+          <StatBox icon="🪪" label={t("notes.fields.regNumber")}    value={v.registrationNumber} />
         </div>
-        {deleteTarget && <ConfirmDialog title="Delete Note?" message={`Remove this grade for ${deleteTarget.studentName}?`} onConfirm={handleDelete} onCancel={() => setDeleteTarget(null)} loading={deleting} />}
+        {deleteTarget && <ConfirmDialog title={t("notes.deleteTitle")} message={t("notes.deleteDetailMsg", { name: deleteTarget.studentName })} onConfirm={handleDelete} onCancel={() => setDeleteTarget(null)} loading={deleting} />}
       </div>
     );
   }
@@ -603,84 +483,60 @@ export default function NotesPage() {
   return (
     <div className="page-enter" style={{ padding: "36px 44px" }}>
       <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: 28 }}>
-        <PageTitle crumb="Academics · Evaluation" title="Grades & Notes" sub="Manage student grades, view bulletins and class statistics." />
-        <button onClick={() => setView("create")} className="btn-primary" style={{ marginBottom: 32 }}>+ Add Note</button>
+        <PageTitle crumb={t("notes.crumb")} title={t("notes.title")} sub={t("notes.subtitle")} />
+        <button onClick={() => setView("create")} className="btn-primary" style={{ marginBottom: 32 }}>{t("notes.addBtn")}</button>
       </div>
 
-      {/* Tabs */}
       <div style={{ display: "flex", gap: 8, marginBottom: 28 }}>
-        <Tab label="📝 Notes"       active={tab === "notes"}    onClick={() => setTab("notes")} />
-        <Tab label="📊 Bulletin"    active={tab === "bulletin"} onClick={() => setTab("bulletin")} />
-        <Tab label="📈 Class Stats" active={tab === "stats"}    onClick={() => setTab("stats")} />
+        <Tab label={t("notes.tabNotes")}    active={tab === "notes"}    onClick={() => setTab("notes")} />
+        <Tab label={t("notes.tabBulletin")} active={tab === "bulletin"} onClick={() => setTab("bulletin")} />
+        <Tab label={t("notes.tabStats")}    active={tab === "stats"}    onClick={() => setTab("stats")} />
       </div>
 
-      {metaLoading && (
-        <div className="empty-state"><div className="spinner" style={{ width: 22, height: 22 }} /><p>Loading…</p></div>
-      )}
+      {metaLoading && <div className="empty-state"><div className="spinner" style={{ width: 22, height: 22 }} /><p>{t("common.loading")}</p></div>}
 
       {/* ══ NOTES TAB ══ */}
       {!metaLoading && tab === "notes" && (
         <>
-          {/* Student + Trimestre picker */}
           <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "var(--r-lg)", padding: "20px 24px", marginBottom: 20, display: "flex", gap: 16, flexWrap: "wrap", alignItems: "flex-end" }}>
             <div style={{ flex: "1 1 200px" }}>
-              <label className="field-label">Student</label>
+              <label className="field-label">{t("notes.student")}</label>
               <select className="t-select" value={filterStudentId} onChange={e => setFilterStudentId(e.target.value)}>
-                <option value="">— Select a student —</option>
+                <option value="">{t("notes.selectStudent")}</option>
                 {students.map(s => <option key={s.id} value={s.id}>{studentLabel(s)}</option>)}
               </select>
             </div>
             <div style={{ flex: "1 1 180px" }}>
-              <label className="field-label">Trimestre ID (optional)</label>
-              <input className="t-input" type="number" min={1} placeholder="e.g. 1" value={filterTrimestreId} onChange={e => setFilterTrimestreId(e.target.value)} />
+              <label className="field-label">{t("notes.trimestreOptional")}</label>
+              <input className="t-input" type="number" min={1} placeholder={t("notes.trimestrePlaceholder")} value={filterTrimestreId} onChange={e => setFilterTrimestreId(e.target.value)} />
             </div>
-            <button
-              onClick={fetchStudentNotes}
-              disabled={!filterStudentId || studentNotesLoading}
-              className="btn-primary"
-              style={{ padding: "10px 22px", alignSelf: "flex-end" }}
-            >
-              {studentNotesLoading
-                ? <><span className="spinner" style={{ width: 13, height: 13 }} /> Loading…</>
-                : "Load Notes"}
+            <button onClick={fetchStudentNotes} disabled={!filterStudentId || studentNotesLoading} className="btn-primary" style={{ padding: "10px 22px", alignSelf: "flex-end" }}>
+              {studentNotesLoading ? <><span className="spinner" style={{ width: 13, height: 13 }} /> {t("common.loading")}</> : t("notes.loadNotes")}
             </button>
           </div>
 
-          {/* Search + type filter row */}
           {studentNotes !== null && (
             <div style={{ display: "flex", gap: 12, marginBottom: 20, flexWrap: "wrap" }}>
               <div className="search-wrap" style={{ flex: "0 0 260px" }}>
                 <svg className="search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-faint)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                <input className="search-input" placeholder="Search subject, class…" value={q} onChange={e => setQ(e.target.value)} />
+                <input className="search-input" placeholder={t("notes.searchPlaceholder")} value={q} onChange={e => setQ(e.target.value)} />
               </div>
               <select value={filterType} onChange={e => setFilterType(e.target.value)} className="t-select" style={{ width: "auto", minWidth: 150, fontSize: 13 }}>
-                <option value="ALL">All types</option>
-                {TYPE_OPTIONS.map(t => <option key={t} value={t}>{TYPE_LABELS[t]}</option>)}
+                <option value="ALL">{t("notes.allTypes")}</option>
+                {typeOptions}
               </select>
             </div>
           )}
 
           {studentNotes === null ? (
-            <div className="empty-state">
-              <span style={{ fontSize: 40 }}>📝</span>
-              <p>Select a student above and click "Load Notes" to view their grades.</p>
-            </div>
+            <div className="empty-state"><span style={{ fontSize: 40 }}>📝</span><p>{t("notes.empty")}</p></div>
           ) : studentNotesLoading ? (
-            <div className="empty-state"><div className="spinner" style={{ width: 22, height: 22 }} /><p>Loading notes…</p></div>
+            <div className="empty-state"><div className="spinner" style={{ width: 22, height: 22 }} /><p>{t("common.loading")}</p></div>
           ) : filtered.length === 0 ? (
-            <div className="empty-state">
-              <span style={{ fontSize: 36 }}>📭</span>
-              <p>{q ? `No results for "${q}"` : "No notes found for this student."}</p>
-            </div>
+            <div className="empty-state"><span style={{ fontSize: 36 }}>📭</span><p>{q ? t("notes.noResults", { q }) : t("notes.noNotes")}</p></div>
           ) : (
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 16 }}>
-              {filtered.map((r, i) => (
-                <NoteCard key={r.id ?? i} r={r}
-                  onClick={r => { setSelected(r); setView("detail"); }}
-                  onEdit={openEdit}
-                  onDelete={t => setDeleteTarget(t)}
-                />
-              ))}
+              {filtered.map((r, i) => <NoteCard key={r.id ?? i} r={r} t={t} onClick={r => { setSelected(r); setView("detail"); }} onEdit={openEdit} onDelete={target => setDeleteTarget(target)} />)}
             </div>
           )}
         </>
@@ -691,28 +547,23 @@ export default function NotesPage() {
         <>
           <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "var(--r-lg)", padding: "20px 24px", marginBottom: 24, display: "flex", gap: 16, flexWrap: "wrap", alignItems: "flex-end" }}>
             <div style={{ flex: "1 1 200px" }}>
-              <label className="field-label">Student</label>
+              <label className="field-label">{t("notes.student")}</label>
               <select className="t-select" value={bulletinStudentId} onChange={e => setBulletinStudentId(e.target.value)}>
-                <option value="">— Select student —</option>
+                <option value="">{t("notes.selectStudent")}</option>
                 {students.map(s => <option key={s.id} value={s.id}>{studentLabel(s)}</option>)}
               </select>
             </div>
             <div style={{ flex: "1 1 180px" }}>
-              <label className="field-label">Trimestre ID</label>
-              <input className="t-input" type="number" min={1} placeholder="e.g. 1" value={bulletinTrimestreId} onChange={e => setBulletinTrimestreId(e.target.value)} />
+              <label className="field-label">{t("notes.trimestreId")}</label>
+              <input className="t-input" type="number" min={1} placeholder={t("notes.trimestrePlaceholder")} value={bulletinTrimestreId} onChange={e => setBulletinTrimestreId(e.target.value)} />
             </div>
-            <button
-              onClick={fetchBulletin}
-              disabled={!bulletinStudentId || !bulletinTrimestreId || bulletinLoading}
-              className="btn-primary"
-              style={{ padding: "10px 22px", alignSelf: "flex-end" }}
-            >
-              {bulletinLoading ? <><span className="spinner" style={{ width: 13, height: 13 }} /> Loading…</> : "View Bulletin"}
+            <button onClick={fetchBulletin} disabled={!bulletinStudentId || !bulletinTrimestreId || bulletinLoading} className="btn-primary" style={{ padding: "10px 22px", alignSelf: "flex-end" }}>
+              {bulletinLoading ? <><span className="spinner" style={{ width: 13, height: 13 }} /> {t("common.loading")}</> : t("notes.viewBulletin")}
             </button>
           </div>
           {bulletin
-            ? <BulletinView bulletin={bulletin} onDownload={handleDownloadPdf} downloading={downloadingPdf} />
-            : <div className="empty-state"><span style={{ fontSize: 40 }}>📊</span><p>Select a student and trimestre to view the report card.</p></div>
+            ? <BulletinView bulletin={bulletin} onDownload={handleDownloadPdf} downloading={downloadingPdf} t={t} />
+            : <div className="empty-state"><span style={{ fontSize: 40 }}>📊</span><p>{t("notes.bulletinEmpty")}</p></div>
           }
         </>
       )}
@@ -722,62 +573,57 @@ export default function NotesPage() {
         <>
           <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "var(--r-lg)", padding: "20px 24px", marginBottom: 24, display: "flex", gap: 16, flexWrap: "wrap", alignItems: "flex-end" }}>
             <div style={{ flex: "1 1 160px" }}>
-              <label className="field-label">Class</label>
+              <label className="field-label">{t("notes.class")}</label>
               <select className="t-select" value={statsClasseId} onChange={e => setStatsClasseId(e.target.value)}>
-                <option value="">— Select class —</option>
+                <option value="">{t("notes.selectClass")}</option>
                 {classes.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
             </div>
             <div style={{ flex: "1 1 160px" }}>
-              <label className="field-label">Subject</label>
+              <label className="field-label">{t("notes.subject")}</label>
               <select className="t-select" value={statsMatiereId} onChange={e => setStatsMatiereId(e.target.value)}>
-                <option value="">— Select subject —</option>
+                <option value="">{t("notes.selectSubject")}</option>
                 {matieres.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
               </select>
             </div>
             <div style={{ flex: "1 1 160px" }}>
-              <label className="field-label">Trimestre ID</label>
-              <input className="t-input" type="number" min={1} placeholder="e.g. 1" value={statsTrimestreId} onChange={e => setStatsTrimestreId(e.target.value)} />
+              <label className="field-label">{t("notes.trimestreId")}</label>
+              <input className="t-input" type="number" min={1} placeholder={t("notes.trimestrePlaceholder")} value={statsTrimestreId} onChange={e => setStatsTrimestreId(e.target.value)} />
             </div>
             <div style={{ flex: "1 1 140px" }}>
-              <label className="field-label">Type</label>
+              <label className="field-label">{t("notes.type")}</label>
               <select className="t-select" value={statsType} onChange={e => setStatsType(e.target.value)}>
-                {TYPE_OPTIONS.map(t => <option key={t} value={t}>{TYPE_LABELS[t]}</option>)}
+                {typeOptions}
               </select>
             </div>
-            <button
-              onClick={fetchStats}
-              disabled={!statsClasseId || !statsMatiereId || !statsTrimestreId || statsLoading}
-              className="btn-primary"
-              style={{ padding: "10px 22px", alignSelf: "flex-end" }}
-            >
-              {statsLoading ? <><span className="spinner" style={{ width: 13, height: 13 }} /> Loading…</> : "Get Stats"}
+            <button onClick={fetchStats} disabled={!statsClasseId || !statsMatiereId || !statsTrimestreId || statsLoading} className="btn-primary" style={{ padding: "10px 22px", alignSelf: "flex-end" }}>
+              {statsLoading ? <><span className="spinner" style={{ width: 13, height: 13 }} /> {t("common.loading")}</> : t("notes.getStats")}
             </button>
           </div>
 
           {stats ? (
             <div>
               <div style={{ marginBottom: 16, fontSize: 14, color: "var(--text-muted)" }}>
-                {stats.className} · {stats.matiereName} · {stats.trimestreNom} · <strong style={{ color: "var(--text)" }}>{TYPE_LABELS[stats.typeDevoir] ?? stats.typeDevoir}</strong>
+                {stats.className} · {stats.matiereName} · {stats.trimestreNom} · <strong style={{ color: "var(--text)" }}>{t(`notes.types.${stats.typeDevoir}`) ?? stats.typeDevoir}</strong>
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 14 }}>
-                <StatBox icon="📊" label="Class Average"   value={stats.moyenneClasse != null ? `${parseFloat(stats.moyenneClasse).toFixed(2)}/20` : null} color="var(--blue)"   bg="var(--blue-dim)" />
-                <StatBox icon="⬆️" label="Highest Grade"  value={stats.noteMax != null ? `${parseFloat(stats.noteMax).toFixed(2)}/20` : null}             color="var(--green)"  bg="var(--green-dim)" />
-                <StatBox icon="⬇️" label="Lowest Grade"   value={stats.noteMin != null ? `${parseFloat(stats.noteMin).toFixed(2)}/20` : null}             color="var(--rose)"   bg="var(--rose-dim)" />
-                <StatBox icon="👥" label="Total Students"  value={stats.totalEleves}                                                                        color="var(--violet)" bg="var(--violet-dim)" />
-                <StatBox icon="✅" label="Grades Entered"  value={stats.elevesSaisis != null ? `${stats.elevesSaisis} / ${stats.totalEleves}` : null}       color="var(--teal)"   bg="var(--teal-dim)" />
+                <StatBox icon="📊" label={t("notes.classAvg")}      value={stats.moyenneClasse != null ? `${parseFloat(stats.moyenneClasse).toFixed(2)}/20` : null} color="var(--blue)"   bg="var(--blue-dim)" />
+                <StatBox icon="⬆️" label={t("notes.highest")}       value={stats.noteMax != null ? `${parseFloat(stats.noteMax).toFixed(2)}/20` : null}             color="var(--green)"  bg="var(--green-dim)" />
+                <StatBox icon="⬇️" label={t("notes.lowest")}        value={stats.noteMin != null ? `${parseFloat(stats.noteMin).toFixed(2)}/20` : null}             color="var(--rose)"   bg="var(--rose-dim)" />
+                <StatBox icon="👥" label={t("notes.totalStudents")} value={stats.totalEleves}                                                                        color="var(--violet)" bg="var(--violet-dim)" />
+                <StatBox icon="✅" label={t("notes.entered")}       value={stats.elevesSaisis != null ? `${stats.elevesSaisis} / ${stats.totalEleves}` : null}       color="var(--teal)"   bg="var(--teal-dim)" />
               </div>
             </div>
           ) : (
-            <div className="empty-state"><span style={{ fontSize: 40 }}>📈</span><p>Select a class, subject, trimestre and type to view statistics.</p></div>
+            <div className="empty-state"><span style={{ fontSize: 40 }}>📈</span><p>{t("notes.statsEmpty")}</p></div>
           )}
         </>
       )}
 
       {deleteTarget && (
         <ConfirmDialog
-          title="Delete Note?"
-          message={`Remove this grade for ${deleteTarget.studentName}? This cannot be undone.`}
+          title={t("notes.deleteTitle")}
+          message={t("notes.deleteDetailMsg", { name: deleteTarget.studentName })}
           onConfirm={handleDelete}
           onCancel={() => setDeleteTarget(null)}
           loading={deleting}

@@ -4,6 +4,7 @@ import { Field, Input, SubmitBtn } from "../components/FormComponents";
 import { usePersonForm } from "../hooks/usePersonForm";
 import { useToast } from "../components/Toast";
 import ConfirmDialog from "../components/ConfirmDialog";
+import { useLanguage } from "../LanguageContext";
 
 const C_COLOR = "var(--amber)";
 const C_BG    = "var(--amber-dim)";
@@ -37,7 +38,7 @@ function FormPanel({ children, onSubmit }) {
   );
 }
 
-function SidePanel({ title, items, accentColor, accentBg, initial }) {
+function SidePanel({ title, items, accentColor, accentBg, initial, sectionLabel }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
       <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "var(--r-xl)", padding: "28px 24px", boxShadow: "var(--shadow-sm)", textAlign: "center" }}>
@@ -45,7 +46,7 @@ function SidePanel({ title, items, accentColor, accentBg, initial }) {
         <div style={{ fontSize: 13, color: "var(--text-muted)", lineHeight: 1.5 }}>{title}</div>
       </div>
       <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "var(--r-xl)", padding: "20px 24px", boxShadow: "var(--shadow-sm)" }}>
-        <div className="section-label" style={{ marginBottom: 12 }}>Notes</div>
+        <div className="section-label" style={{ marginBottom: 12 }}>{sectionLabel}</div>
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           {items.map((item, i) => (
             <div key={i} style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
@@ -79,7 +80,7 @@ function StatBox({ icon, label, value }) {
   );
 }
 
-function ParentCard({ r, onClick, onEdit, onDeactivate }) {
+function ParentCard({ r, onClick, onEdit, onDeactivate, t }) {
   return (
     <div className="person-card" style={{ "--card-top": C_COLOR }} onClick={() => onClick(r)}>
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 16 }}>
@@ -87,8 +88,8 @@ function ParentCard({ r, onClick, onEdit, onDeactivate }) {
           {(r.firstname?.[0] ?? "?").toUpperCase()}
         </div>
         <div style={{ display: "flex", gap: 6 }} onClick={e => e.stopPropagation()}>
-          <button onClick={() => onEdit(r)} className="btn-ghost" style={{ padding: "5px 12px", fontSize: 12 }}>Edit</button>
-          <button onClick={() => onDeactivate(r)} className="btn-danger" style={{ padding: "5px 12px", fontSize: 12 }}>Deactivate</button>
+          <button onClick={() => onEdit(r)} className="btn-ghost" style={{ padding: "5px 12px", fontSize: 12 }}>{t("common.edit")}</button>
+          <button onClick={() => onDeactivate(r)} className="btn-danger" style={{ padding: "5px 12px", fontSize: 12 }}>{t("parents.deactivateBtn")}</button>
         </div>
       </div>
       <div style={{ marginBottom: 12 }}>
@@ -105,6 +106,7 @@ function ParentCard({ r, onClick, onEdit, onDeactivate }) {
 }
 
 export default function ParentsPage() {
+  const { t } = useLanguage();
   const toast = useToast();
   const [view, setView]         = useState("list");
   const [data, setData]         = useState([]);
@@ -133,7 +135,7 @@ export default function ParentsPage() {
 
   const handleCreate = async e => {
     e.preventDefault(); setSaving(true);
-    try { await createParent({ registrationRequest: form, address }); setForm({ firstname: "", lastname: "", email: "", phone: "", nni: "" }); setAddress(""); toast("Parent registered!"); load(); goList(); }
+    try { await createParent({ registrationRequest: form, address }); setForm({ firstname: "", lastname: "", email: "", phone: "", nni: "" }); setAddress(""); toast(t("parents.registered")); load(); goList(); }
     catch (err) { toast(err.message, "error"); } finally { setSaving(false); }
   };
 
@@ -141,13 +143,13 @@ export default function ParentsPage() {
 
   const handleEdit = async e => {
     e.preventDefault(); setSaving(true);
-    try { await updateParent(selected.id, editForm); toast("Parent updated!"); load(); goList(); }
+    try { await updateParent(selected.id, editForm); toast(t("parents.updated")); load(); goList(); }
     catch (err) { toast(err.message, "error"); } finally { setSaving(false); }
   };
 
   const handleDelete = async () => {
     setDeleting(true);
-    try { await deactivateParent(deleteTarget.userId ?? deleteTarget.id); setDeleteTarget(null); toast("Parent deactivated."); load(); if (view !== "list") goList(); }
+    try { await deactivateParent(deleteTarget.userId ?? deleteTarget.id); setDeleteTarget(null); toast(t("parents.deactivated")); load(); if (view !== "list") goList(); }
     catch (err) { toast(err.message, "error"); } finally { setDeleting(false); }
   };
 
@@ -155,46 +157,46 @@ export default function ParentsPage() {
   if (view === "list") return (
     <div className="page-enter" style={{ padding: "36px 44px" }}>
       <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: 28 }}>
-        <PageTitle crumb="People" title="Parents" sub={loading ? "Loading…" : `${filtered.length} registered parent${filtered.length !== 1 ? "s" : ""}`} />
-        <button onClick={() => setView("create")} className="btn-primary" style={{ marginBottom: 32 }}>+ Add Parent</button>
+        <PageTitle crumb={t("parents.crumb")} title={t("parents.title")} sub={loading ? t("common.loading") : `${filtered.length} ${t("parents.title").toLowerCase()}`} />
+        <button onClick={() => setView("create")} className="btn-primary" style={{ marginBottom: 32 }}>{t("parents.addBtn")}</button>
       </div>
       <div className="search-wrap" style={{ maxWidth: 300, marginBottom: 24 }}>
         <svg className="search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-faint)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-        <input className="search-input" placeholder="Search name, email, phone…" value={q} onChange={e => setQ(e.target.value)} />
+        <input className="search-input" placeholder={t("parents.searchPlaceholder")} value={q} onChange={e => setQ(e.target.value)} />
       </div>
-      {loading ? <div className="empty-state"><div className="spinner" style={{ width: 22, height: 22 }} /><p>Loading…</p></div>
-      : filtered.length === 0 ? <div className="empty-state"><span style={{ fontSize: 36 }}>👨‍👩‍👧</span><p>{q ? `No results for "${q}"` : "No parents yet."}</p></div>
+      {loading ? <div className="empty-state"><div className="spinner" style={{ width: 22, height: 22 }} /><p>{t("common.loading")}</p></div>
+      : filtered.length === 0 ? <div className="empty-state"><span style={{ fontSize: 36 }}>👨‍👩‍👧</span><p>{q ? `${t("common.noResults")} "${q}"` : t("parents.empty")}</p></div>
       : <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(270px, 1fr))", gap: 16 }}>
-          {filtered.map((r, i) => <ParentCard key={r.id ?? i} r={r} onClick={r => { setSelected(r); setView("detail"); }} onEdit={openEdit} onDeactivate={t => setDeleteTarget(t)} />)}
+          {filtered.map((r, i) => <ParentCard key={r.id ?? i} r={r} t={t} onClick={r => { setSelected(r); setView("detail"); }} onEdit={openEdit} onDeactivate={target => setDeleteTarget(target)} />)}
         </div>}
-      {deleteTarget && <ConfirmDialog title={`Deactivate ${deleteTarget.firstname} ${deleteTarget.lastname}?`} message="They will lose system access. An admin can restore it." onConfirm={handleDelete} onCancel={() => setDeleteTarget(null)} loading={deleting} />}
+      {deleteTarget && <ConfirmDialog title={t("parents.deactivateTitle", { name: `${deleteTarget.firstname} ${deleteTarget.lastname}` })} message={t("parents.deactivateMsg")} onConfirm={handleDelete} onCancel={() => setDeleteTarget(null)} loading={deleting} />}
     </div>
   );
 
   /* CREATE */
   if (view === "create") return (
     <div className="page-enter" style={{ padding: "36px 44px" }}>
-      <BackBtn label="Back to Parents" onClick={goList} />
-      <PageTitle crumb="People · Parents" title="Register New Parent" sub="Add a parent account to the system." />
+      <BackBtn label={t("parents.detailBack")} onClick={goList} />
+      <PageTitle crumb={`${t("parents.crumb")} · ${t("parents.title")}`} title={t("parents.registerTitle")} sub={t("parents.registerSub")} />
       <TwoCol
         left={<FormPanel onSubmit={handleCreate}>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-            <Field label="First Name"><Input placeholder="Ahmed" value={form.firstname} onChange={set("firstname")} required /></Field>
-            <Field label="Last Name"><Input placeholder="Ould Mohamed" value={form.lastname} onChange={set("lastname")} required /></Field>
+            <Field label={t("fields.firstName")}><Input placeholder={t("fields.firstNamePlaceholder")} value={form.firstname} onChange={set("firstname")} required /></Field>
+            <Field label={t("fields.lastName")}><Input placeholder={t("fields.lastNamePlaceholder")} value={form.lastname} onChange={set("lastname")} required /></Field>
           </div>
-          <Field label="Email Address"><Input type="email" placeholder="parent@email.mr" value={form.email} onChange={set("email")} required /></Field>
+          <Field label={t("fields.email")}><Input type="email" placeholder={t("fields.emailPlaceholder")} value={form.email} onChange={set("email")} required /></Field>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-            <Field label="Phone"><Input placeholder="22xxxxxx" value={form.phone} onChange={set("phone")} required minLength={8} /></Field>
-            <Field label="NNI"><Input placeholder="National ID" value={form.nni} onChange={set("nni")} required minLength={8} /></Field>
+            <Field label={t("fields.phone")}><Input placeholder={t("fields.phonePlaceholder")} value={form.phone} onChange={set("phone")} required minLength={8} /></Field>
+            <Field label={t("fields.nni")}><Input placeholder={t("fields.nniPlaceholder")} value={form.nni} onChange={set("nni")} required minLength={8} /></Field>
           </div>
-          <Field label="Home Address"><Input placeholder="e.g. Tevragh Zeina, Nouakchott" value={address} onChange={e => setAddress(e.target.value)} /></Field>
+          <Field label={t("parents.address")}><Input placeholder={t("parents.addressPlaceholder")} value={address} onChange={e => setAddress(e.target.value)} /></Field>
           <div style={{ display: "flex", gap: 12, paddingTop: 4 }}>
-            <button type="button" onClick={goList} className="btn-ghost" style={{ flex: 1, padding: "12px" }}>Cancel</button>
-            <div style={{ flex: 2 }}><SubmitBtn loading={saving} label="Register Parent" /></div>
+            <button type="button" onClick={goList} className="btn-ghost" style={{ flex: 1, padding: "12px" }}>{t("common.cancel")}</button>
+            <div style={{ flex: 2 }}><SubmitBtn loading={saving} label={t("parents.registerBtn")} /></div>
           </div>
         </FormPanel>}
-        right={<SidePanel title="A parent account allows them to monitor their child's attendance and grades." initial={(form.firstname?.[0] ?? "?").toUpperCase()} accentColor={C_COLOR} accentBg={C_BG}
-          items={[{ icon: "🏠", text: "Address helps identify and contact the parent." }, { icon: "📞", text: "Phone number is used for communication." }, { icon: "✅", text: "Account must be approved before login." }]} />}
+        right={<SidePanel title={t("parents.sideNote")} initial={(form.firstname?.[0] ?? "?").toUpperCase()} accentColor={C_COLOR} accentBg={C_BG} sectionLabel={t("common.notes")}
+          items={[{ icon: "🏠", text: t("parents.sideNote1") }, { icon: "📞", text: t("parents.sideNote2") }, { icon: "✅", text: t("parents.sideNote3") }]} />}
       />
     </div>
   );
@@ -202,27 +204,27 @@ export default function ParentsPage() {
   /* EDIT */
   if (view === "edit" && selected) return (
     <div className="page-enter" style={{ padding: "36px 44px" }}>
-      <BackBtn label="Back to Parents" onClick={goList} />
-      <PageTitle crumb="People · Parents" title="Edit Parent" sub={`Editing ${selected.firstname} ${selected.lastname}`} />
+      <BackBtn label={t("parents.detailBack")} onClick={goList} />
+      <PageTitle crumb={`${t("parents.crumb")} · ${t("parents.title")}`} title={t("parents.editTitle")} sub={t("parents.editSub", { name: `${selected.firstname} ${selected.lastname}` })} />
       <TwoCol
         left={<FormPanel onSubmit={handleEdit}>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-            <Field label="First Name"><Input value={editForm.firstname} onChange={setEdit("firstname")} required /></Field>
-            <Field label="Last Name"><Input value={editForm.lastname} onChange={setEdit("lastname")} required /></Field>
+            <Field label={t("fields.firstName")}><Input value={editForm.firstname} onChange={setEdit("firstname")} required /></Field>
+            <Field label={t("fields.lastName")}><Input value={editForm.lastname} onChange={setEdit("lastname")} required /></Field>
           </div>
-          <Field label="Email Address"><Input type="email" value={editForm.email} onChange={setEdit("email")} required /></Field>
+          <Field label={t("fields.email")}><Input type="email" value={editForm.email} onChange={setEdit("email")} required /></Field>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-            <Field label="Phone"><Input value={editForm.phone} onChange={setEdit("phone")} /></Field>
-            <Field label="NNI"><Input value={editForm.nni} onChange={setEdit("nni")} /></Field>
+            <Field label={t("fields.phone")}><Input value={editForm.phone} onChange={setEdit("phone")} /></Field>
+            <Field label={t("fields.nni")}><Input value={editForm.nni} onChange={setEdit("nni")} /></Field>
           </div>
-          <Field label="Home Address"><Input value={editForm.address} onChange={setEdit("address")} /></Field>
+          <Field label={t("parents.address")}><Input value={editForm.address} onChange={setEdit("address")} /></Field>
           <div style={{ display: "flex", gap: 12, paddingTop: 4 }}>
-            <button type="button" onClick={goList} className="btn-ghost" style={{ flex: 1, padding: "12px" }}>Cancel</button>
-            <div style={{ flex: 2 }}><SubmitBtn loading={saving} label="Save Changes" /></div>
+            <button type="button" onClick={goList} className="btn-ghost" style={{ flex: 1, padding: "12px" }}>{t("common.cancel")}</button>
+            <div style={{ flex: 2 }}><SubmitBtn loading={saving} label={t("parents.saveBtn")} /></div>
           </div>
         </FormPanel>}
-        right={<SidePanel title={`Editing ${selected.firstname} ${selected.lastname}`} initial={(selected.firstname?.[0] ?? "?").toUpperCase()} accentColor={C_COLOR} accentBg={C_BG}
-          items={[{ icon: "💡", text: "Changes are applied immediately after saving." }, { icon: "📧", text: "Email changes do not affect login credentials." }]} />}
+        right={<SidePanel title={t("parents.editSub", { name: `${selected.firstname} ${selected.lastname}` })} initial={(selected.firstname?.[0] ?? "?").toUpperCase()} accentColor={C_COLOR} accentBg={C_BG} sectionLabel={t("common.notes")}
+          items={[{ icon: "💡", text: t("parents.editNote1") }, { icon: "📧", text: t("parents.editNote2") }]} />}
       />
     </div>
   );
@@ -232,7 +234,7 @@ export default function ParentsPage() {
     const v = selected;
     return (
       <div className="page-enter" style={{ padding: "36px 44px" }}>
-        <BackBtn label="Back to Parents" onClick={goList} />
+        <BackBtn label={t("parents.detailBack")} onClick={goList} />
         <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "var(--r-xl)", boxShadow: "var(--shadow-sm)", overflow: "hidden", marginBottom: 24 }}>
           <div style={{ height: 90, background: `linear-gradient(135deg, ${C_COLOR}22 0%, ${C_COLOR}08 100%)`, position: "relative" }}>
             <div style={{ position: "absolute", inset: 0, backgroundImage: `radial-gradient(circle at 80% 50%, ${C_COLOR}18 0%, transparent 60%)` }} />
@@ -248,27 +250,27 @@ export default function ParentsPage() {
                   <div style={{ display: "flex", gap: 8, marginTop: 7 }}>
                     <span style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "3px 10px", borderRadius: 999, fontSize: 12, fontWeight: 600, background: v.isApprove ? "var(--green-dim)" : "var(--amber-dim)", color: v.isApprove ? "var(--green)" : "var(--amber)", border: `1px solid ${v.isApprove ? "rgba(42,117,64,.25)" : "rgba(168,100,30,.25)"}` }}>
                       <span style={{ width: 6, height: 6, borderRadius: "50%", background: v.isApprove ? "var(--green)" : "var(--amber)" }} />
-                      {v.isApprove ? "Approved" : "Pending"}
+                      {v.isApprove ? t("common.approved") : t("common.pending")}
                     </span>
                   </div>
                 </div>
               </div>
               <div style={{ display: "flex", gap: 10 }}>
-                <button onClick={() => openEdit(v)} className="btn-ghost" style={{ padding: "10px 20px" }}>✏️ Edit</button>
-                <button onClick={() => setDeleteTarget(v)} className="btn-danger" style={{ padding: "10px 20px" }}>⛔ Deactivate</button>
+                <button onClick={() => openEdit(v)} className="btn-ghost" style={{ padding: "10px 20px" }}>✏️ {t("common.edit")}</button>
+                <button onClick={() => setDeleteTarget(v)} className="btn-danger" style={{ padding: "10px 20px" }}>{t("parents.deactivateBtn")}</button>
               </div>
             </div>
           </div>
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 14 }}>
-          <StatBox icon="✉️" label="Email" value={v.email} />
-          <StatBox icon="📞" label="Phone" value={v.phone} />
-          <StatBox icon="🪪" label="NNI" value={v.nni} />
-          <StatBox icon="🏠" label="Address" value={v.address} />
-          <StatBox icon="🎂" label="Date of Birth" value={v.dateOfBrith} />
-          <StatBox icon="🆔" label="User ID" value={v.userId} />
+          <StatBox icon="✉️" label={t("parents.fields.email")}   value={v.email} />
+          <StatBox icon="📞" label={t("parents.fields.phone")}   value={v.phone} />
+          <StatBox icon="🪪" label={t("parents.fields.nni")}     value={v.nni} />
+          <StatBox icon="🏠" label={t("parents.fields.address")} value={v.address} />
+          <StatBox icon="🎂" label={t("parents.fields.dob")}     value={v.dateOfBrith} />
+          <StatBox icon="🆔" label={t("parents.fields.userId")}  value={v.userId} />
         </div>
-        {deleteTarget && <ConfirmDialog title={`Deactivate ${deleteTarget.firstname} ${deleteTarget.lastname}?`} message="They will lose system access." onConfirm={handleDelete} onCancel={() => setDeleteTarget(null)} loading={deleting} />}
+        {deleteTarget && <ConfirmDialog title={t("parents.deactivateTitle", { name: `${deleteTarget.firstname} ${deleteTarget.lastname}` })} message={t("parents.deactivateDetailMsg")} onConfirm={handleDelete} onCancel={() => setDeleteTarget(null)} loading={deleting} />}
       </div>
     );
   }

@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import Sidebar from "./components/Sidebar";
 import { ToastProvider } from "./components/Toast";
+import { LanguageProvider } from "./LanguageContext";
 import TeachersPage from "./pages/TeachersPage";
 import StudentsPage from "./pages/StudentsPage";
 import ParentsPage from "./pages/ParentsPage";
@@ -39,20 +40,22 @@ export default function App() {
 
   return (
     <ThemeContext.Provider value={theme}>
-      <ToastProvider>
-        <div
-          className={theme === "dark" ? "dark" : ""}
-          style={{
-            display: "flex", height: "100vh", overflow: "hidden",
-            background: "var(--bg-base)", color: "var(--text)",
-          }}
-        >
-          <Sidebar active={page} setPage={setPage} theme={theme} setTheme={setTheme} />
-          <main style={{ flex: 1, overflowY: "auto" }}>
-            {pages[page]}
-          </main>
-        </div>
-      </ToastProvider>
+      <LanguageProvider>
+        <ToastProvider>
+          <div
+            className={theme === "dark" ? "dark" : ""}
+            style={{
+              display: "flex", height: "100vh", overflow: "hidden",
+              background: "var(--bg-base)", color: "var(--text)",
+            }}
+          >
+            <Sidebar active={page} setPage={setPage} theme={theme} setTheme={setTheme} />
+            <main style={{ flex: 1, overflowY: "auto" }}>
+              {pages[page]}
+            </main>
+          </div>
+        </ToastProvider>
+      </LanguageProvider>
     </ThemeContext.Provider>
   );
 }

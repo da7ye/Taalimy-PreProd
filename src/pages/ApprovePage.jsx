@@ -1,8 +1,10 @@
 import { useState, useEffect, useMemo } from "react";
 import { getNotApprovedUsers, approveUser } from "../api";
 import { useToast } from "../components/Toast";
+import { useLanguage } from "../LanguageContext";
 
 export default function ApprovePage() {
+  const { t } = useLanguage();
   const toast = useToast();
   const [users, setUsers]         = useState([]);
   const [loading, setLoading]     = useState(true);
@@ -28,7 +30,7 @@ export default function ApprovePage() {
     setApproving(user.phone);
     try {
       await approveUser(user.phone);
-      toast(`${user.firstname} ${user.lastname} approved!`);
+      toast(t("approve.approved", { name: `${user.firstname} ${user.lastname}` }));
       load();
     } catch (err) { toast(err.message, "error"); }
     finally { setApproving(null); }
@@ -39,12 +41,12 @@ export default function ApprovePage() {
       {/* Header */}
       <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: 28 }}>
         <div>
-          <div className="section-label" style={{ marginBottom: 6 }}>Admin · User Management</div>
+          <div className="section-label" style={{ marginBottom: 6 }}>{t("approve.crumb")}</div>
           <h1 style={{ margin: 0, fontSize: 24, fontFamily: "'Instrument Serif', serif", color: "var(--text)", letterSpacing: "-.03em" }}>
-            Approve Users
+            {t("approve.title")}
           </h1>
           <p style={{ margin: "5px 0 0", fontSize: 13.5, color: "var(--text-muted)" }}>
-            Review and activate pending user accounts.
+            {t("approve.subtitle")}
           </p>
         </div>
         {!loading && (
@@ -55,7 +57,7 @@ export default function ApprovePage() {
             fontSize: 13, fontWeight: 600, color: "var(--green)",
           }}>
             <div style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--green)" }} />
-            {filtered.length} pending
+            {filtered.length} {t("approve.pending")}
           </div>
         )}
       </div>
@@ -66,17 +68,18 @@ export default function ApprovePage() {
           <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
         </svg>
         <input
-          className="search-input" placeholder="Search by name or phone…"
+          className="search-input"
+          placeholder={t("approve.searchPlaceholder")}
           value={q} onChange={e => setQ(e.target.value)}
         />
       </div>
 
       {loading ? (
-        <div className="empty-state"><div className="spinner" style={{ width: 22, height: 22 }} /><p>Loading pending users…</p></div>
+        <div className="empty-state"><div className="spinner" style={{ width: 22, height: 22 }} /><p>{t("approve.loadingMsg")}</p></div>
       ) : filtered.length === 0 ? (
         <div className="empty-state">
           <span style={{ fontSize: 40 }}>{q ? "🔎" : "✅"}</span>
-          <p>{q ? `No results for "${q}"` : "All users approved — you're caught up!"}</p>
+          <p>{q ? t("approve.noResults", { q }) : t("approve.allApproved")}</p>
         </div>
       ) : (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 14 }}>
@@ -103,7 +106,7 @@ export default function ApprovePage() {
                   padding: "3px 10px", borderRadius: 999, flexShrink: 0,
                   background: "var(--amber-dim)", border: "1px solid rgba(168,100,30,.2)",
                   color: "var(--amber)", fontSize: 10.5, fontWeight: 700, letterSpacing: ".04em",
-                }}>Pending</span>
+                }}>{t("approve.pendingBadge")}</span>
               </div>
 
               <div style={{ borderTop: "1px solid var(--border)", paddingTop: 16 }}>
@@ -114,8 +117,8 @@ export default function ApprovePage() {
                   style={{ width: "100%", fontSize: 13.5 }}
                 >
                   {approving === user.phone ? (
-                    <><span className="spinner" style={{ width: 13, height: 13 }} /> Approving…</>
-                  ) : "✓ Approve Account"}
+                    <><span className="spinner" style={{ width: 13, height: 13 }} /> {t("approve.approving")}</>
+                  ) : t("approve.approveBtn")}
                 </button>
               </div>
             </div>
@@ -133,7 +136,7 @@ export default function ApprovePage() {
           <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
         </svg>
         <p style={{ margin: 0, fontSize: 13, color: "var(--blue)", lineHeight: 1.6 }}>
-          Verify the user's identity before approving. Approved users will immediately gain access to the system.
+          {t("approve.infoBanner")}
         </p>
       </div>
     </div>

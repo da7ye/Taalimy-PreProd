@@ -3,6 +3,7 @@ import { getAssignments, createAssignment, deleteAssignment, getTeacherNames, ge
 import { Field, Select, SubmitBtn } from "../components/FormComponents";
 import { useToast } from "../components/Toast";
 import ConfirmDialog from "../components/ConfirmDialog";
+import { useLanguage } from "../LanguageContext";
 
 const C_COLOR = "var(--amber)";
 const C_BG    = "var(--amber-dim)";
@@ -36,7 +37,7 @@ function FormPanel({ children, onSubmit }) {
   );
 }
 
-function SidePanel({ title, items, accentColor, accentBg, icon }) {
+function SidePanel({ title, items, accentColor, accentBg, icon, sectionLabel }) {
   return (
     <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
       <div style={{ background:"var(--bg-card)", border:"1px solid var(--border)", borderRadius:"var(--r-xl)", padding:"28px 24px", boxShadow:"var(--shadow-sm)", textAlign:"center" }}>
@@ -44,7 +45,7 @@ function SidePanel({ title, items, accentColor, accentBg, icon }) {
         <div style={{ fontSize:13, color:"var(--text-muted)", lineHeight:1.5 }}>{title}</div>
       </div>
       <div style={{ background:"var(--bg-card)", border:"1px solid var(--border)", borderRadius:"var(--r-xl)", padding:"20px 24px", boxShadow:"var(--shadow-sm)" }}>
-        <div className="section-label" style={{ marginBottom:12 }}>How it works</div>
+        <div className="section-label" style={{ marginBottom:12 }}>{sectionLabel}</div>
         <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
           {items.map((item,i) => (
             <div key={i} style={{ display:"flex", gap:10, alignItems:"flex-start" }}>
@@ -78,7 +79,7 @@ function StatBox({ icon, label, value, color, bg }) {
   );
 }
 
-function AssignmentCard({ r, onClick, onDelete }) {
+function AssignmentCard({ r, onClick, onDelete, t }) {
   return (
     <div className="person-card" style={{ "--card-top":C_COLOR }} onClick={() => onClick(r)}>
       <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", marginBottom:14 }}>
@@ -97,13 +98,14 @@ function AssignmentCard({ r, onClick, onDelete }) {
           </div>
           <span style={{ fontSize:13, color:"var(--text-muted)", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", maxWidth:130 }}>{r.teacherName ?? "—"}</span>
         </div>
-        <button onClick={e => { e.stopPropagation(); onDelete(r); }} className="btn-danger" style={{ fontSize:12, padding:"5px 12px", flexShrink:0 }}>Delete</button>
+        <button onClick={e => { e.stopPropagation(); onDelete(r); }} className="btn-danger" style={{ fontSize:12, padding:"5px 12px", flexShrink:0 }}>{t("common.delete")}</button>
       </div>
     </div>
   );
 }
 
 export default function AssignmentsPage() {
+  const { t } = useLanguage();
   const toast = useToast();
   const [view, setView]         = useState("list");
   const [data, setData]         = useState([]);
@@ -123,7 +125,7 @@ export default function AssignmentsPage() {
   const load = () => {
     setLoading(true);
     Promise.all([getAssignments(), getTeacherNames(), getMatiereNames(), getClasseNames()])
-      .then(([a, t, m, c]) => { setData(Array.isArray(a)?a:[]); setTeachers(t??[]); setMatieres(m??[]); setClasses(c??[]); })
+      .then(([a, te, m, c]) => { setData(Array.isArray(a)?a:[]); setTeachers(te??[]); setMatieres(m??[]); setClasses(c??[]); })
       .catch(e => toast(e.message, "error")).finally(() => setLoading(false));
   };
   useEffect(load, []);
@@ -140,13 +142,13 @@ export default function AssignmentsPage() {
 
   const handleCreate = async e => {
     e.preventDefault(); setSaving(true);
-    try { await createAssignment(form.teacherId, form.matiereId, form.classeId); setForm({ teacherId:"", matiereId:"", classeId:"" }); toast("Assignment created!"); load(); goList(); }
+    try { await createAssignment(form.teacherId, form.matiereId, form.classeId); setForm({ teacherId:"", matiereId:"", classeId:"" }); toast(t("assignments.created")); load(); goList(); }
     catch (err) { toast(err.message, "error"); } finally { setSaving(false); }
   };
 
   const handleDelete = async () => {
     setDeleting(true);
-    try { await deleteAssignment(deleteTarget.id); setDeleteTarget(null); toast("Assignment deleted."); load(); if (view !== "list") goList(); }
+    try { await deleteAssignment(deleteTarget.id); setDeleteTarget(null); toast(t("assignments.deleted")); load(); if (view !== "list") goList(); }
     catch (err) { toast(err.message, "error"); } finally { setDeleting(false); }
   };
 
@@ -154,74 +156,65 @@ export default function AssignmentsPage() {
   if (view === "list") return (
     <div className="page-enter" style={{ padding:"36px 44px" }}>
       <div style={{ display:"flex", alignItems:"flex-end", justifyContent:"space-between", marginBottom:28 }}>
-        <PageTitle crumb="Academics · Teaching" title="Assignments" sub={loading ? "Loading…" : `${filtered.length} teacher–subject–class assignment${filtered.length!==1?"s":""}`} />
-        <button onClick={() => setView("create")} className="btn-primary" style={{ marginBottom:32 }}>+ New Assignment</button>
+        <PageTitle crumb={t("assignments.crumb")} title={t("assignments.title")} sub={loading ? t("common.loading") : t("assignments.count", { n: filtered.length })} />
+        <button onClick={() => setView("create")} className="btn-primary" style={{ marginBottom:32 }}>{t("assignments.addBtn")}</button>
       </div>
 
-      {/* Filters */}
       <div style={{ display:"flex", gap:12, marginBottom:24, flexWrap:"wrap" }}>
         <div className="search-wrap" style={{ flex:"0 0 280px" }}>
           <svg className="search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-faint)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-          <input className="search-input" placeholder="Search teacher, subject, class…" value={q} onChange={e => setQ(e.target.value)} />
+          <input className="search-input" placeholder={t("assignments.searchPlaceholder")} value={q} onChange={e => setQ(e.target.value)} />
         </div>
         {classNames.length > 0 && (
-          <select value={filterClass} onChange={e => setFilterClass(e.target.value)}
-            className="t-select" style={{ width:"auto", minWidth:150, fontSize:13 }}>
-            <option value="ALL">All Classes</option>
+          <select value={filterClass} onChange={e => setFilterClass(e.target.value)} className="t-select" style={{ width:"auto", minWidth:150, fontSize:13 }}>
+            <option value="ALL">{t("assignments.allClasses")}</option>
             {classNames.map(c => <option key={c} value={c}>{c}</option>)}
           </select>
         )}
       </div>
 
-      {loading ? <div className="empty-state"><div className="spinner" style={{ width:22, height:22 }} /><p>Loading…</p></div>
-      : filtered.length === 0 ? <div className="empty-state"><span style={{ fontSize:36 }}>📋</span><p>{q ? `No results for "${q}"` : "No assignments yet."}</p></div>
+      {loading ? <div className="empty-state"><div className="spinner" style={{ width:22, height:22 }} /><p>{t("common.loading")}</p></div>
+      : filtered.length === 0 ? <div className="empty-state"><span style={{ fontSize:36 }}>📋</span><p>{q ? `${t("common.noResults")} "${q}"` : t("assignments.empty")}</p></div>
       : <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(260px, 1fr))", gap:16 }}>
-          {filtered.map((r,i) => <AssignmentCard key={r.id??i} r={r} onClick={r => { setSelected(r); setView("detail"); }} onDelete={t => setDeleteTarget(t)} />)}
+          {filtered.map((r,i) => <AssignmentCard key={r.id??i} r={r} t={t} onClick={r => { setSelected(r); setView("detail"); }} onDelete={target => setDeleteTarget(target)} />)}
         </div>}
 
-      {deleteTarget && <ConfirmDialog title="Delete Assignment?" message={`Remove ${deleteTarget.teacherName} → ${deleteTarget.matiereName} → ${deleteTarget.classeName}?`} onConfirm={handleDelete} onCancel={() => setDeleteTarget(null)} loading={deleting} />}
+      {deleteTarget && <ConfirmDialog title={t("assignments.deleteTitle")} message={t("assignments.deleteMsg", { teacher: deleteTarget.teacherName, subject: deleteTarget.matiereName, class: deleteTarget.classeName })} onConfirm={handleDelete} onCancel={() => setDeleteTarget(null)} loading={deleting} />}
     </div>
   );
 
   /* CREATE */
   if (view === "create") return (
     <div className="page-enter" style={{ padding:"36px 44px" }}>
-      <BackBtn label="Back to Assignments" onClick={goList} />
-      <PageTitle crumb="Academics · Teaching" title="New Assignment" sub="Link a teacher to a subject and a class." />
+      <BackBtn label={t("assignments.detailBack")} onClick={goList} />
+      <PageTitle crumb={t("assignments.crumb")} title={t("assignments.createTitle")} sub={t("assignments.createSub")} />
       <TwoCol
         left={<FormPanel onSubmit={handleCreate}>
-          <Field label="Teacher" hint="The teacher who will teach this subject">
+          <Field label={t("assignments.teacher")} hint={t("assignments.teacherHint")}>
             <Select value={form.teacherId} onChange={set("teacherId")} required>
-              <option value="">— Select teacher —</option>
-              {teachers.map(t => <option key={t.id} value={t.id}>{t.phone}{t.speciality ? ` · ${t.speciality}` : ""}</option>)}
+              <option value="">{t("assignments.selectTeacher")}</option>
+              {teachers.map(te => <option key={te.id} value={te.id}>{te.phone}{te.speciality ? ` · ${te.speciality}` : ""}</option>)}
             </Select>
           </Field>
-          <Field label="Subject" hint="The subject being taught">
+          <Field label={t("assignments.subject")} hint={t("assignments.subjectHint")}>
             <Select value={form.matiereId} onChange={set("matiereId")} required>
-              <option value="">— Select subject —</option>
+              <option value="">{t("assignments.selectSubject")}</option>
               {matieres.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
             </Select>
           </Field>
-          <Field label="Class" hint="The class that will receive this subject">
+          <Field label={t("assignments.class")} hint={t("assignments.classHint")}>
             <Select value={form.classeId} onChange={set("classeId")} required>
-              <option value="">— Select class —</option>
+              <option value="">{t("assignments.selectClass")}</option>
               {classes.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
             </Select>
           </Field>
           <div style={{ display:"flex", gap:12, paddingTop:4 }}>
-            <button type="button" onClick={goList} className="btn-ghost" style={{ flex:1, padding:"12px" }}>Cancel</button>
-            <div style={{ flex:2 }}><SubmitBtn loading={saving} label="Create Assignment" /></div>
+            <button type="button" onClick={goList} className="btn-ghost" style={{ flex:1, padding:"12px" }}>{t("common.cancel")}</button>
+            <div style={{ flex:2 }}><SubmitBtn loading={saving} label={t("assignments.createBtn")} /></div>
           </div>
         </FormPanel>}
-        right={<SidePanel
-          icon="📋"
-          title="An assignment links a teacher, a subject, and a class together so sessions can be scheduled in the timetable."
-          accentColor={C_COLOR} accentBg={C_BG}
-          items={[
-            { icon:"🎓", text:"One teacher can be assigned to multiple subjects and classes." },
-            { icon:"📐", text:"A subject can be taught by different teachers in different classes." },
-            { icon:"🗓️", text:"After creating an assignment, add it to the timetable as a session." },
-          ]} />}
+        right={<SidePanel icon="📋" title={t("assignments.sideNote")} accentColor={C_COLOR} accentBg={C_BG} sectionLabel={t("assignments.howItWorks")}
+          items={[{ icon:"🎓", text:t("assignments.sideNote1") }, { icon:"📐", text:t("assignments.sideNote2") }, { icon:"🗓️", text:t("assignments.sideNote3") }]} />}
       />
     </div>
   );
@@ -231,9 +224,7 @@ export default function AssignmentsPage() {
     const v = selected;
     return (
       <div className="page-enter" style={{ padding:"36px 44px" }}>
-        <BackBtn label="Back to Assignments" onClick={goList} />
-
-        {/* Hero header */}
+        <BackBtn label={t("assignments.detailBack")} onClick={goList} />
         <div style={{ background:"var(--bg-card)", border:"1px solid var(--border)", borderRadius:"var(--r-xl)", boxShadow:"var(--shadow-sm)", overflow:"hidden", marginBottom:24 }}>
           <div style={{ height:90, background:`linear-gradient(135deg, ${C_COLOR}22 0%, ${C_COLOR}08 100%)`, position:"relative" }}>
             <div style={{ position:"absolute", inset:0, backgroundImage:`radial-gradient(circle at 80% 50%, ${C_COLOR}18 0%, transparent 60%)` }} />
@@ -241,10 +232,7 @@ export default function AssignmentsPage() {
           <div style={{ padding:"0 36px 28px", marginTop:-36 }}>
             <div style={{ display:"flex", alignItems:"flex-end", justifyContent:"space-between", flexWrap:"wrap", gap:16 }}>
               <div style={{ display:"flex", alignItems:"flex-end", gap:20 }}>
-                {/* Icon avatar */}
-                <div style={{ width:80, height:80, borderRadius:22, background:C_BG, color:C_COLOR, border:"3px solid var(--bg-card)", boxShadow:`0 0 0 2px ${C_COLOR}40`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:32, flexShrink:0 }}>
-                  📋
-                </div>
+                <div style={{ width:80, height:80, borderRadius:22, background:C_BG, color:C_COLOR, border:"3px solid var(--bg-card)", boxShadow:`0 0 0 2px ${C_COLOR}40`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:32, flexShrink:0 }}>📋</div>
                 <div style={{ paddingBottom:4 }}>
                   <h2 style={{ margin:0, fontSize:22, fontFamily:"'Instrument Serif',serif", color:"var(--text)", letterSpacing:"-.025em" }}>{v.matiereName ?? "—"}</h2>
                   <div style={{ display:"flex", gap:8, marginTop:7, flexWrap:"wrap" }}>
@@ -253,22 +241,18 @@ export default function AssignmentsPage() {
                   </div>
                 </div>
               </div>
-              <button onClick={() => setDeleteTarget(v)} className="btn-danger" style={{ padding:"10px 20px" }}>🗑 Delete</button>
+              <button onClick={() => setDeleteTarget(v)} className="btn-danger" style={{ padding:"10px 20px" }}>🗑 {t("common.delete")}</button>
             </div>
           </div>
         </div>
-
-        {/* Stat grid */}
         <div style={{ display:"grid", gridTemplateColumns:"repeat(3, 1fr)", gap:14 }}>
-          <StatBox icon="📐" label="Subject" value={v.matiereName} color={C_COLOR} bg={C_BG} />
-          <StatBox icon="🏫" label="Class" value={v.classeName} color="var(--purple)" bg="var(--purple-dim)" />
-          <StatBox icon="🎓" label="Teacher" value={v.teacherName} color="var(--violet)" bg="var(--violet-dim)" />
+          <StatBox icon="📐" label={t("assignments.fields.subject")} value={v.matiereName} color={C_COLOR}           bg={C_BG} />
+          <StatBox icon="🏫" label={t("assignments.fields.class")}   value={v.classeName}  color="var(--purple)"     bg="var(--purple-dim)" />
+          <StatBox icon="🎓" label={t("assignments.fields.teacher")} value={v.teacherName} color="var(--violet)"     bg="var(--violet-dim)" />
         </div>
-
-        {deleteTarget && <ConfirmDialog title="Delete Assignment?" message={`Remove ${deleteTarget.teacherName} → ${deleteTarget.matiereName} → ${deleteTarget.classeName}?`} onConfirm={handleDelete} onCancel={() => setDeleteTarget(null)} loading={deleting} />}
+        {deleteTarget && <ConfirmDialog title={t("assignments.deleteTitle")} message={t("assignments.deleteMsg", { teacher: deleteTarget.teacherName, subject: deleteTarget.matiereName, class: deleteTarget.classeName })} onConfirm={handleDelete} onCancel={() => setDeleteTarget(null)} loading={deleting} />}
       </div>
     );
   }
-
   return null;
 }

@@ -3,6 +3,7 @@ import { getClasses, createClasse, updateClasse, deleteClasse, getLevelNames } f
 import { Field, Input, Select, SubmitBtn } from "../components/FormComponents";
 import { useToast } from "../components/Toast";
 import ConfirmDialog from "../components/ConfirmDialog";
+import { useLanguage } from "../LanguageContext";
 
 const C_COLOR = "var(--purple)";
 const C_BG    = "var(--purple-dim)";
@@ -36,7 +37,7 @@ function FormPanel({ children, onSubmit }) {
   );
 }
 
-function SidePanel({ title, items, accentColor, accentBg, initial }) {
+function SidePanel({ title, items, accentColor, accentBg, initial, sectionLabel }) {
   return (
     <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
       <div style={{ background:"var(--bg-card)", border:"1px solid var(--border)", borderRadius:"var(--r-xl)", padding:"28px 24px", boxShadow:"var(--shadow-sm)", textAlign:"center" }}>
@@ -44,7 +45,7 @@ function SidePanel({ title, items, accentColor, accentBg, initial }) {
         <div style={{ fontSize:13, color:"var(--text-muted)", lineHeight:1.5 }}>{title}</div>
       </div>
       <div style={{ background:"var(--bg-card)", border:"1px solid var(--border)", borderRadius:"var(--r-xl)", padding:"20px 24px", boxShadow:"var(--shadow-sm)" }}>
-        <div className="section-label" style={{ marginBottom:12 }}>Notes</div>
+        <div className="section-label" style={{ marginBottom:12 }}>{sectionLabel}</div>
         <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
           {items.map((item,i) => (
             <div key={i} style={{ display:"flex", gap:10, alignItems:"flex-start" }}>
@@ -78,7 +79,7 @@ function StatBox({ icon, label, value }) {
   );
 }
 
-function ClassCard({ r, levelMap, onClick, onEdit, onDelete }) {
+function ClassCard({ r, levelMap, onClick, onEdit, onDelete, t }) {
   const levelName = r.level?.name ?? levelMap[r.levelId];
   return (
     <div className="person-card" style={{ "--card-top":C_COLOR }} onClick={() => onClick(r)}>
@@ -91,14 +92,15 @@ function ClassCard({ r, levelMap, onClick, onEdit, onDelete }) {
       <div style={{ fontWeight:600, fontSize:15, color:"var(--text)", marginBottom:6 }}>{r.name}</div>
       {r.description && <div style={{ fontSize:13, color:"var(--text-muted)", lineHeight:1.5, marginBottom:14 }}>{r.description}</div>}
       <div style={{ paddingTop:12, borderTop:"1px solid var(--border)", display:"flex", gap:8 }} onClick={e => e.stopPropagation()}>
-        <button onClick={() => onEdit(r)} className="btn-ghost" style={{ flex:1, padding:"7px", fontSize:12 }}>Edit</button>
-        <button onClick={() => onDelete(r)} className="btn-danger" style={{ flex:1, padding:"7px", fontSize:12 }}>Delete</button>
+        <button onClick={() => onEdit(r)} className="btn-ghost" style={{ flex:1, padding:"7px", fontSize:12 }}>{t("common.edit")}</button>
+        <button onClick={() => onDelete(r)} className="btn-danger" style={{ flex:1, padding:"7px", fontSize:12 }}>{t("common.delete")}</button>
       </div>
     </div>
   );
 }
 
 export default function ClassesPage() {
+  const { t } = useLanguage();
   const toast = useToast();
   const [view, setView]         = useState("list");
   const [data, setData]         = useState([]);
@@ -135,7 +137,7 @@ export default function ClassesPage() {
 
   const handleCreate = async e => {
     e.preventDefault(); setSaving(true);
-    try { await createClasse({ ...form, levelId: parseInt(form.levelId)||undefined }); setForm({ name:"", description:"", levelId:"" }); toast("Class created!"); load(); goList(); }
+    try { await createClasse({ ...form, levelId: parseInt(form.levelId)||undefined }); setForm({ name:"", description:"", levelId:"" }); toast(t("classes.created")); load(); goList(); }
     catch (err) { toast(err.message, "error"); } finally { setSaving(false); }
   };
 
@@ -143,13 +145,13 @@ export default function ClassesPage() {
 
   const handleEdit = async e => {
     e.preventDefault(); setSaving(true);
-    try { await updateClasse(selected.id, { ...editForm, levelId: parseInt(editForm.levelId)||undefined }); toast("Class updated!"); load(); goList(); }
+    try { await updateClasse(selected.id, { ...editForm, levelId: parseInt(editForm.levelId)||undefined }); toast(t("classes.updated")); load(); goList(); }
     catch (err) { toast(err.message, "error"); } finally { setSaving(false); }
   };
 
   const handleDelete = async () => {
     setDeleting(true);
-    try { await deleteClasse(deleteTarget.id); setDeleteTarget(null); toast("Class deleted."); load(); if (view !== "list") goList(); }
+    try { await deleteClasse(deleteTarget.id); setDeleteTarget(null); toast(t("classes.deleted")); load(); if (view !== "list") goList(); }
     catch (err) { toast(err.message, "error"); } finally { setDeleting(false); }
   };
 
@@ -157,44 +159,44 @@ export default function ClassesPage() {
   if (view === "list") return (
     <div className="page-enter" style={{ padding:"36px 44px" }}>
       <div style={{ display:"flex", alignItems:"flex-end", justifyContent:"space-between", marginBottom:28 }}>
-        <PageTitle crumb="Academics" title="Classes" sub={loading ? "Loading…" : `${filtered.length} class${filtered.length!==1?"es":""}`} />
-        <button onClick={() => setView("create")} className="btn-primary" style={{ marginBottom:32 }}>+ Add Class</button>
+        <PageTitle crumb={t("classes.crumb")} title={t("classes.title")} sub={loading ? t("common.loading") : t("classes.count", { n: filtered.length })} />
+        <button onClick={() => setView("create")} className="btn-primary" style={{ marginBottom:32 }}>{t("classes.addBtn")}</button>
       </div>
       <div className="search-wrap" style={{ maxWidth:300, marginBottom:24 }}>
         <svg className="search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-faint)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-        <input className="search-input" placeholder="Search classes…" value={q} onChange={e => setQ(e.target.value)} />
+        <input className="search-input" placeholder={t("classes.searchPlaceholder")} value={q} onChange={e => setQ(e.target.value)} />
       </div>
-      {loading ? <div className="empty-state"><div className="spinner" style={{ width:22, height:22 }} /><p>Loading…</p></div>
-      : filtered.length === 0 ? <div className="empty-state"><span style={{ fontSize:36 }}>🏫</span><p>{q ? `No results for "${q}"` : "No classes yet."}</p></div>
+      {loading ? <div className="empty-state"><div className="spinner" style={{ width:22, height:22 }} /><p>{t("common.loading")}</p></div>
+      : filtered.length === 0 ? <div className="empty-state"><span style={{ fontSize:36 }}>🏫</span><p>{q ? `${t("common.noResults")} "${q}"` : t("classes.empty")}</p></div>
       : <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(240px, 1fr))", gap:16 }}>
-          {filtered.map((r,i) => <ClassCard key={r.id??i} r={r} levelMap={levelMap} onClick={r => { setSelected(r); setView("detail"); }} onEdit={openEdit} onDelete={t => setDeleteTarget(t)} />)}
+          {filtered.map((r,i) => <ClassCard key={r.id??i} r={r} levelMap={levelMap} t={t} onClick={r => { setSelected(r); setView("detail"); }} onEdit={openEdit} onDelete={target => setDeleteTarget(target)} />)}
         </div>}
-      {deleteTarget && <ConfirmDialog title={`Delete class "${deleteTarget.name}"?`} message="This class will be permanently removed. Students and timetable entries may be affected." onConfirm={handleDelete} onCancel={() => setDeleteTarget(null)} loading={deleting} />}
+      {deleteTarget && <ConfirmDialog title={t("classes.deleteTitle", { name: deleteTarget.name })} message={t("classes.deleteMsg")} onConfirm={handleDelete} onCancel={() => setDeleteTarget(null)} loading={deleting} />}
     </div>
   );
 
   /* CREATE */
   if (view === "create") return (
     <div className="page-enter" style={{ padding:"36px 44px" }}>
-      <BackBtn label="Back to Classes" onClick={goList} />
-      <PageTitle crumb="Academics · Classes" title="Create New Class" sub="Add a class and assign it to a school level." />
+      <BackBtn label={t("classes.detailBack")} onClick={goList} />
+      <PageTitle crumb={`${t("classes.crumb")} · ${t("classes.title")}`} title={t("classes.createTitle")} sub={t("classes.createSub")} />
       <TwoCol
         left={<FormPanel onSubmit={handleCreate}>
-          <Field label="Class Name"><Input placeholder="e.g. 5A, Terminale C" value={form.name} onChange={set("name")} required /></Field>
-          <Field label="Description"><Input placeholder="Optional description" value={form.description} onChange={set("description")} /></Field>
-          <Field label="Level" hint="The school level this class belongs to">
+          <Field label={t("classes.className")}><Input placeholder={t("classes.classNamePlaceholder")} value={form.name} onChange={set("name")} required /></Field>
+          <Field label={t("classes.description")}><Input placeholder={t("classes.descriptionPlaceholder")} value={form.description} onChange={set("description")} /></Field>
+          <Field label={t("classes.level")} hint={t("classes.levelHint")}>
             <Select value={form.levelId} onChange={set("levelId")} required>
-              <option value="">— Select level —</option>
+              <option value="">{t("classes.levelSelect")}</option>
               {levels.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
             </Select>
           </Field>
           <div style={{ display:"flex", gap:12, paddingTop:4 }}>
-            <button type="button" onClick={goList} className="btn-ghost" style={{ flex:1, padding:"12px" }}>Cancel</button>
-            <div style={{ flex:2 }}><SubmitBtn loading={saving} label="Create Class" /></div>
+            <button type="button" onClick={goList} className="btn-ghost" style={{ flex:1, padding:"12px" }}>{t("common.cancel")}</button>
+            <div style={{ flex:2 }}><SubmitBtn loading={saving} label={t("classes.createBtn")} /></div>
           </div>
         </FormPanel>}
-        right={<SidePanel title="Classes contain students and are linked to a level, timetable, and assignments." initial={(form.name?.[0]??"?").toUpperCase()} accentColor={C_COLOR} accentBg={C_BG}
-          items={[{ icon:"🏷️", text:"A level must exist before creating a class." }, { icon:"📚", text:"Students are enrolled into classes." }, { icon:"🗓️", text:"Timetable sessions are scheduled per class." }]} />}
+        right={<SidePanel title={t("classes.sideNote")} initial={(form.name?.[0]??"?").toUpperCase()} accentColor={C_COLOR} accentBg={C_BG} sectionLabel={t("common.notes")}
+          items={[{ icon:"🏷️", text:t("classes.sideNote1") }, { icon:"📚", text:t("classes.sideNote2") }, { icon:"🗓️", text:t("classes.sideNote3") }]} />}
       />
     </div>
   );
@@ -202,25 +204,25 @@ export default function ClassesPage() {
   /* EDIT */
   if (view === "edit" && selected) return (
     <div className="page-enter" style={{ padding:"36px 44px" }}>
-      <BackBtn label="Back to Classes" onClick={goList} />
-      <PageTitle crumb="Academics · Classes" title="Edit Class" sub={`Editing ${selected.name}`} />
+      <BackBtn label={t("classes.detailBack")} onClick={goList} />
+      <PageTitle crumb={`${t("classes.crumb")} · ${t("classes.title")}`} title={t("classes.editTitle")} sub={t("classes.editSub", { name: selected.name })} />
       <TwoCol
         left={<FormPanel onSubmit={handleEdit}>
-          <Field label="Class Name"><Input value={editForm.name} onChange={setEdit("name")} required /></Field>
-          <Field label="Description"><Input value={editForm.description} onChange={setEdit("description")} /></Field>
-          <Field label="Level">
+          <Field label={t("classes.className")}><Input value={editForm.name} onChange={setEdit("name")} required /></Field>
+          <Field label={t("classes.description")}><Input value={editForm.description} onChange={setEdit("description")} /></Field>
+          <Field label={t("classes.level")}>
             <Select value={editForm.levelId} onChange={setEdit("levelId")}>
-              <option value="">— Select level —</option>
+              <option value="">{t("classes.levelSelect")}</option>
               {levels.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
             </Select>
           </Field>
           <div style={{ display:"flex", gap:12, paddingTop:4 }}>
-            <button type="button" onClick={goList} className="btn-ghost" style={{ flex:1, padding:"12px" }}>Cancel</button>
-            <div style={{ flex:2 }}><SubmitBtn loading={saving} label="Save Changes" /></div>
+            <button type="button" onClick={goList} className="btn-ghost" style={{ flex:1, padding:"12px" }}>{t("common.cancel")}</button>
+            <div style={{ flex:2 }}><SubmitBtn loading={saving} label={t("classes.saveBtn")} /></div>
           </div>
         </FormPanel>}
-        right={<SidePanel title={`Editing ${selected.name}`} initial={(selected.name?.[0]??"?").toUpperCase()} accentColor={C_COLOR} accentBg={C_BG}
-          items={[{ icon:"💡", text:"Changes apply immediately to all enrolled students." }, { icon:"🏷️", text:"Changing the level updates the class grouping." }]} />}
+        right={<SidePanel title={t("classes.editSub", { name: selected.name })} initial={(selected.name?.[0]??"?").toUpperCase()} accentColor={C_COLOR} accentBg={C_BG} sectionLabel={t("common.notes")}
+          items={[{ icon:"💡", text:t("classes.editNote1") }, { icon:"🏷️", text:t("classes.editNote2") }]} />}
       />
     </div>
   );
@@ -231,7 +233,7 @@ export default function ClassesPage() {
     const levelName = v.level?.name ?? levelMap[v.levelId];
     return (
       <div className="page-enter" style={{ padding:"36px 44px" }}>
-        <BackBtn label="Back to Classes" onClick={goList} />
+        <BackBtn label={t("classes.detailBack")} onClick={goList} />
         <div style={{ background:"var(--bg-card)", border:"1px solid var(--border)", borderRadius:"var(--r-xl)", boxShadow:"var(--shadow-sm)", overflow:"hidden", marginBottom:24 }}>
           <div style={{ height:90, background:`linear-gradient(135deg, ${C_COLOR}22 0%, ${C_COLOR}08 100%)`, position:"relative" }}>
             <div style={{ position:"absolute", inset:0, backgroundImage:`radial-gradient(circle at 80% 50%, ${C_COLOR}18 0%, transparent 60%)` }} />
@@ -252,22 +254,21 @@ export default function ClassesPage() {
                 </div>
               </div>
               <div style={{ display:"flex", gap:10 }}>
-                <button onClick={() => openEdit(v)} className="btn-ghost" style={{ padding:"10px 20px" }}>✏️ Edit</button>
-                <button onClick={() => setDeleteTarget(v)} className="btn-danger" style={{ padding:"10px 20px" }}>🗑 Delete</button>
+                <button onClick={() => openEdit(v)} className="btn-ghost" style={{ padding:"10px 20px" }}>✏️ {t("common.edit")}</button>
+                <button onClick={() => setDeleteTarget(v)} className="btn-danger" style={{ padding:"10px 20px" }}>🗑 {t("common.delete")}</button>
               </div>
             </div>
           </div>
         </div>
         <div style={{ display:"grid", gridTemplateColumns:"repeat(3, 1fr)", gap:14 }}>
-          <StatBox icon="🏫" label="Class Name" value={v.name} />
-          <StatBox icon="🏷️" label="Level" value={levelName} />
-          <StatBox icon="🆔" label="ID" value={v.id} />
-          {v.description && <StatBox icon="📝" label="Description" value={v.description} />}
+          <StatBox icon="🏫" label={t("classes.fields.name")}        value={v.name} />
+          <StatBox icon="🏷️" label={t("classes.fields.level")}       value={levelName} />
+          <StatBox icon="🆔" label={t("classes.fields.id")}          value={v.id} />
+          {v.description && <StatBox icon="📝" label={t("classes.fields.description")} value={v.description} />}
         </div>
-        {deleteTarget && <ConfirmDialog title={`Delete class "${deleteTarget.name}"?`} message="This class will be permanently removed." onConfirm={handleDelete} onCancel={() => setDeleteTarget(null)} loading={deleting} />}
+        {deleteTarget && <ConfirmDialog title={t("classes.deleteTitle", { name: deleteTarget.name })} message={t("classes.deleteDetailMsg")} onConfirm={handleDelete} onCancel={() => setDeleteTarget(null)} loading={deleting} />}
       </div>
     );
   }
-
   return null;
 }

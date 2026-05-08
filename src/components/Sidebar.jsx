@@ -177,7 +177,7 @@ function LangDropdown({ lang, setLang }) {
   );
 }
 
-export default function Sidebar({ active, setPage, theme, setTheme }) {
+export default function Sidebar({ active, setPage, theme, setTheme, onLogout }) {
   const { t, lang, setLang } = useLanguage();
   const isDark = theme === "dark";
 
@@ -329,7 +329,7 @@ export default function Sidebar({ active, setPage, theme, setTheme }) {
           </div>
         </button>
 
-        {/* User */}
+        {/* User + Logout */}
         <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "4px 8px" }}>
           <div style={{
             width: 32, height: 32, borderRadius: 9,
@@ -338,11 +338,41 @@ export default function Sidebar({ active, setPage, theme, setTheme }) {
             display: "flex", alignItems: "center", justifyContent: "center",
             fontFamily: "'Instrument Serif', serif",
             fontSize: 14, color: "var(--accent)",
+            flexShrink: 0,
           }}>S</div>
-          <div>
+          <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-dim)" }}>Staff Admin</div>
             <div style={{ fontSize: 10.5, color: "var(--text-faint)" }}>{t("user.role")}</div>
           </div>
+          {onLogout && (
+            <button
+              onClick={onLogout}
+              title="Sign out"
+              style={{
+                width: 28, height: 28, borderRadius: 8, flexShrink: 0,
+                background: "var(--surface)", border: "1px solid var(--border)",
+                color: "var(--text-faint)", cursor: "pointer",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                transition: "background .14s, color .14s, border-color .14s",
+              }}
+              onMouseEnter={e => {
+                e.currentTarget.style.background = "var(--rose-dim)";
+                e.currentTarget.style.color = "var(--rose)";
+                e.currentTarget.style.borderColor = "rgba(184,53,53,.25)";
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.background = "var(--surface)";
+                e.currentTarget.style.color = "var(--text-faint)";
+                e.currentTarget.style.borderColor = "var(--border)";
+              }}
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/>
+                <polyline points="16 17 21 12 16 7"/>
+                <line x1="21" y1="12" x2="9" y2="12"/>
+              </svg>
+            </button>
+          )}
         </div>
       </div>
     </aside>

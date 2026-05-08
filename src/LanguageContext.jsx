@@ -1,15 +1,12 @@
-import React, { createContext, useContext, useState } from "react";
+import React, { createContext, useContext } from "react";
 import { translations, interpolate } from "./i18n";
 
 export const LanguageContext = createContext(null);
 
-export function LanguageProvider({ children }) {
-  const [lang, setLang] = useState("en"); // "en" | "fr" | "ar"
+// lang and setLang now come from App.jsx (which syncs with the backend)
+// LanguageProvider no longer owns its own lang state
+export function LanguageProvider({ children, lang, setLang }) {
 
-  /**
-   * t("teachers.title")            → looks up translations[lang].teachers.title
-   * t("teachers.editSub", {name})  → interpolates {{name}}
-   */
   function t(path, vars) {
     const parts = path.split(".");
     let val = translations[lang];
@@ -33,7 +30,10 @@ export function LanguageProvider({ children }) {
 
   return (
     <LanguageContext.Provider value={{ lang, setLang, t, isRTL }}>
-      <div dir={isRTL ? "rtl" : "ltr"} style={{ fontFamily: isRTL ? "'Noto Naskh Arabic', 'Cairo', sans-serif" : undefined }}>
+      <div
+        dir={isRTL ? "rtl" : "ltr"}
+        style={{ fontFamily: isRTL ? "'Noto Naskh Arabic', 'Cairo', sans-serif" : undefined }}
+      >
         {children}
       </div>
     </LanguageContext.Provider>

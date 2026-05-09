@@ -1,4 +1,5 @@
-const BASE_URL = "http://144.91.85.23/api/v1";
+import { BASE_URL } from "../api";
+
 const USER_ID  = 73; // hardcoded until auth is wired up
 
 async function request(path, options = {}) {

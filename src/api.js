@@ -1,5 +1,5 @@
-// const BASE_URL = "http://144.91.85.23/api/v1";
-const BASE_URL = "/api/v1";
+// export const BASE_URL = "http://144.91.85.23/api/v1";
+export const BASE_URL = "/api/v1";
 
 async function request(path, options = {}) {
   const res = await fetch(`${BASE_URL}${path}`, {

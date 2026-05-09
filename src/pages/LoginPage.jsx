@@ -1,6 +1,5 @@
 import { useState } from "react";
-
-const BASE_URL = "http://144.91.85.23/api/v1";
+import { BASE_URL } from "../api";
 
 function EyeIcon({ open }) {
   return open ? (

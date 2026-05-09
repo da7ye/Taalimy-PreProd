@@ -19,8 +19,8 @@ import NotesPage from "./pages/NotesPage";
 
 export const ThemeContext = React.createContext("light");
 
-// const BASE_URL = "http://144.91.85.23/api/v1";
-const BASE_URL = "/api/v1";
+import { BASE_URL } from "./api";
+
 const USER_ID  = 73;
 
 async function apiFetch(path, token) {

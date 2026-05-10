@@ -117,3 +117,37 @@ export const addStudentToParent = (pid, sid)       => request(`/parents/${pid}/a
 export const getChildTimetable  = (pid, sid)       => request(`/parents/${pid}/children/${sid}/timetable`);
 export const getChildNotes      = (pid, sid, trId) => request(`/parents/${pid}/children/${sid}/notes?trimestreId=${trId}`);
 export const getChildBulletin   = (pid, sid, trId) => request(`/parents/${pid}/children/${sid}/bulletin?trimestreId=${trId}`);
+
+
+export const uploadUserPhoto = async (userId, file) => {
+  const formData = new FormData();
+  formData.append("file", file);
+  const res = await fetch(`${BASE_URL}/users/${userId}/upload-photo`, {
+    method: "POST",
+    body: formData,
+  });
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(err || `HTTP ${res.status}`);
+  }
+  const text = await res.text();
+  return text ? JSON.parse(text) : null;
+};
+
+export const updateUserPhoto = async (userId, file) => {
+  const formData = new FormData();
+  formData.append("file", file);
+  const res = await fetch(`${BASE_URL}/users/${userId}/photo`, {
+    method: "PUT",
+    body: formData,
+  });
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(err || `HTTP ${res.status}`);
+  }
+  const text = await res.text();
+  return text ? JSON.parse(text) : null;
+};
+
+export const deleteUserPhoto = (userId) =>
+  request(`/users/${userId}/photo`, { method: "DELETE" });

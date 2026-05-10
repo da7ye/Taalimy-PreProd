@@ -1,5 +1,6 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import { getStudents, createStudent, updateStudent, deleteStudent, getClasseNames } from "../api";
+import { uploadUserPhoto, updateUserPhoto, deleteUserPhoto } from "../api";
 import { Field, Input, Select, SubmitBtn } from "../components/FormComponents";
 import { usePersonForm } from "../hooks/usePersonForm";
 import { useToast } from "../components/Toast";
@@ -10,7 +11,113 @@ const C_COLOR = "var(--teal)";
 const C_BG    = "var(--teal-dim)";
 const PAGE_SIZE_OPTIONS = [12, 24, 48];
 
-/* ─── small reusable pieces ─── */
+// ─── Photo helpers ────────────────────────────────────────────────────────────
+
+function PhotoAvatar({ photo, initial = "?", size = 48, radius = 14, color = C_COLOR, bg = C_BG, style = {} }) {
+  const fs = Math.round(size / 2.4);
+  const [failed, setFailed] = useState(false);
+
+  const base = {
+    width: size, height: size, borderRadius: radius,
+    flexShrink: 0, overflow: "hidden",
+    display: "flex", alignItems: "center", justifyContent: "center",
+    ...style,
+  };
+
+  if (photo && !failed) {
+    return (
+      <div style={base}>
+        <img
+          src={photo}
+          alt={initial}
+          style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+          onError={() => setFailed(true)}
+        />
+      </div>
+    );
+  }
+  return (
+    <div style={{ ...base, background: bg, color, border: `1.5px solid ${color}28` }}>
+      <span style={{ fontFamily: "'Instrument Serif',serif", fontSize: fs, color }}>
+        {(initial || "?").toUpperCase()}
+      </span>
+    </div>
+  );
+}
+
+function PhotoUploadField({ photo, initial, color = C_COLOR, bg = C_BG, onFileSelected, onDelete, loading = false }) {
+  const inputRef = useRef(null);
+  const [preview, setPreview] = useState(photo || null);
+
+  // Keep preview in sync if parent photo changes (e.g. after delete)
+  useEffect(() => { setPreview(photo || null); }, [photo]);
+
+  const handleFile = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const url = URL.createObjectURL(file);
+    setPreview(url);
+    onFileSelected?.(file);
+    e.target.value = "";
+  };
+
+  const handleDelete = () => {
+    setPreview(null);
+    onDelete?.();
+  };
+
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+      <div style={{ position: "relative", flexShrink: 0 }}>
+        <PhotoAvatar photo={preview} initial={initial} size={80} radius={20} color={color} bg={bg} />
+        {loading && (
+          <div style={{ position: "absolute", inset: 0, borderRadius: 20, background: "rgba(0,0,0,.45)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <span className="spinner" style={{ width: 20, height: 20, borderTopColor: "#fff" }} />
+          </div>
+        )}
+      </div>
+
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        <label style={{
+          display: "inline-flex", alignItems: "center", gap: 6,
+          padding: "8px 14px", borderRadius: "var(--r-md)",
+          background: "var(--surface)", border: "1.5px solid var(--border-md)",
+          color: "var(--text-dim)", fontSize: 12.5, fontWeight: 500,
+          cursor: loading ? "not-allowed" : "pointer",
+          fontFamily: "'Instrument Sans',sans-serif",
+          transition: "background .13s",
+          opacity: loading ? 0.5 : 1,
+        }}
+          onMouseEnter={e => !loading && (e.currentTarget.style.background = "var(--surface-hover)")}
+          onMouseLeave={e => !loading && (e.currentTarget.style.background = "var(--surface)")}
+        >
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          {preview ? "Change photo" : "Upload photo"}
+          <input ref={inputRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handleFile} disabled={loading} />
+        </label>
+
+        {preview && (
+          <button type="button" onClick={handleDelete} disabled={loading} style={{
+            display: "inline-flex", alignItems: "center", gap: 6,
+            padding: "6px 14px", borderRadius: "var(--r-md)",
+            background: "var(--rose-dim)", border: "1px solid rgba(184,53,53,.18)",
+            color: "var(--rose)", fontSize: 12, fontWeight: 500,
+            cursor: loading ? "not-allowed" : "pointer",
+            fontFamily: "'Instrument Sans',sans-serif",
+          }}>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+            Remove photo
+          </button>
+        )}
+
+        <span style={{ fontSize: 11, color: "var(--text-faint)" }}>JPG, PNG or WebP · max 5 MB</span>
+      </div>
+    </div>
+  );
+}
+
+// ─── Small reusable pieces ────────────────────────────────────────────────────
+
 function BackBtn({ label, onClick }) {
   return (
     <button onClick={onClick} style={{ display:"inline-flex", alignItems:"center", gap:6, background:"none", border:"none", cursor:"pointer", color:"var(--text-muted)", fontSize:13, fontFamily:"'Instrument Sans',sans-serif", padding:0, marginBottom:28, transition:"color .13s" }}
@@ -40,11 +147,13 @@ function FormPanel({ children, onSubmit }) {
   );
 }
 
-function SidePanel({ title, items, accentColor, accentBg, initial }) {
+function SidePanel({ title, items, accentColor, accentBg, initial, photo }) {
   return (
     <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
       <div style={{ background:"var(--bg-card)", border:"1px solid var(--border)", borderRadius:"var(--r-xl)", padding:"28px 24px", boxShadow:"var(--shadow-sm)", textAlign:"center" }}>
-        <div style={{ width:72, height:72, borderRadius:20, background:accentBg, color:accentColor, border:`2px solid ${accentColor}30`, display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"'Instrument Serif',serif", fontSize:30, margin:"0 auto 14px" }}>{initial||"?"}</div>
+        <div style={{ margin:"0 auto 14px", width:72, height:72 }}>
+          <PhotoAvatar photo={photo} initial={initial} size={72} radius={20} color={accentColor} bg={accentBg} />
+        </div>
         <div style={{ fontSize:13, color:"var(--text-muted)", lineHeight:1.5 }}>{title}</div>
       </div>
       <div style={{ background:"var(--bg-card)", border:"1px solid var(--border)", borderRadius:"var(--r-xl)", padding:"20px 24px", boxShadow:"var(--shadow-sm)" }}>
@@ -84,12 +193,11 @@ function StatBox({ icon, label, value }) {
 
 function StudentCard({ r, onClick, onEdit, onDelete, t }) {
   const cn = r.classeName ?? r.classe?.name;
+  const initial = r.firstname?.[0] ?? "?";
   return (
     <div className="person-card" style={{ "--card-top":C_COLOR }} onClick={()=>onClick(r)}>
       <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", marginBottom:16 }}>
-        <div style={{ width:48, height:48, borderRadius:14, background:C_BG, color:C_COLOR, border:`1.5px solid ${C_COLOR}28`, display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"'Instrument Serif',serif", fontSize:20 }}>
-          {(r.firstname?.[0]??"?").toUpperCase()}
-        </div>
+        <PhotoAvatar photo={r.photo} initial={initial} size={48} radius={14} color={C_COLOR} bg={C_BG} />
         <div style={{ display:"flex", gap:6 }} onClick={e=>e.stopPropagation()}>
           <button onClick={()=>onEdit(r)} className="btn-ghost" style={{ padding:"5px 12px", fontSize:12 }}>{t("common.edit")}</button>
           <button onClick={()=>onDelete(r)} className="btn-danger" style={{ padding:"5px 12px", fontSize:12 }}>{t("common.delete")}</button>
@@ -111,48 +219,27 @@ function StudentCard({ r, onClick, onEdit, onDelete, t }) {
   );
 }
 
-/* ─── Filter Bar ─── */
+// ─── Filter Bar ───────────────────────────────────────────────────────────────
 function FilterBar({ q, setQ, filterClass, setFilterClass, filterStatus, setFilterStatus, classes, onReset, totalFiltered, total, t }) {
   const hasFilters = q.trim() || filterClass || filterStatus;
   return (
     <div style={{ background:"var(--bg-card)", border:"1px solid var(--border)", borderRadius:"var(--r-lg)", padding:"16px 20px", marginBottom:20, display:"flex", flexWrap:"wrap", gap:12, alignItems:"center", boxShadow:"var(--shadow-sm)" }}>
-      {/* Search */}
       <div className="search-wrap" style={{ flex:"1 1 220px", minWidth:180 }}>
         <svg className="search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-faint)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
         <input className="search-input" placeholder={t("students.searchPlaceholder")} value={q} onChange={e=>setQ(e.target.value)} style={{ width:"100%" }} />
       </div>
-
-      {/* Class filter */}
-      <select
-        value={filterClass}
-        onChange={e=>setFilterClass(e.target.value)}
-        className="t-select"
-        style={{ flex:"1 1 160px", minWidth:140, maxWidth:200 }}
-      >
+      <select value={filterClass} onChange={e=>setFilterClass(e.target.value)} className="t-select" style={{ flex:"1 1 160px", minWidth:140, maxWidth:200 }}>
         <option value="">All Classes</option>
         {classes.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}
       </select>
-
-      {/* Status filter */}
-      <select
-        value={filterStatus}
-        onChange={e=>setFilterStatus(e.target.value)}
-        className="t-select"
-        style={{ flex:"0 0 150px" }}
-      >
+      <select value={filterStatus} onChange={e=>setFilterStatus(e.target.value)} className="t-select" style={{ flex:"0 0 150px" }}>
         <option value="">All Statuses</option>
         <option value="approved">Approved</option>
         <option value="pending">Pending</option>
       </select>
-
-      {/* Reset */}
       {hasFilters && (
-        <button onClick={onReset} className="btn-ghost" style={{ padding:"8px 14px", fontSize:12.5, flexShrink:0, color:"var(--rose)", borderColor:"rgba(184,53,53,.25)" }}>
-          ✕ Clear
-        </button>
+        <button onClick={onReset} className="btn-ghost" style={{ padding:"8px 14px", fontSize:12.5, flexShrink:0, color:"var(--rose)", borderColor:"rgba(184,53,53,.25)" }}>✕ Clear</button>
       )}
-
-      {/* Count badge */}
       <div style={{ marginLeft:"auto", fontSize:12, color:"var(--text-faint)", flexShrink:0, whiteSpace:"nowrap" }}>
         {hasFilters ? <><span style={{ color:"var(--text-dim)", fontWeight:600 }}>{totalFiltered}</span> of {total}</> : <><span style={{ color:"var(--text-dim)", fontWeight:600 }}>{total}</span> total</>}
       </div>
@@ -160,17 +247,14 @@ function FilterBar({ q, setQ, filterClass, setFilterClass, filterStatus, setFilt
   );
 }
 
-/* ─── Pagination ─── */
+// ─── Pagination ───────────────────────────────────────────────────────────────
 function Pagination({ page, totalPages, pageSize, setPage, setPageSize, totalFiltered }) {
   if (totalPages <= 1 && totalFiltered <= PAGE_SIZE_OPTIONS[0]) return null;
   const pages = [];
   const delta = 2;
   for (let i = 0; i < totalPages; i++) {
-    if (i === 0 || i === totalPages - 1 || (i >= page - delta && i <= page + delta)) {
-      pages.push(i);
-    }
+    if (i === 0 || i === totalPages - 1 || (i >= page - delta && i <= page + delta)) pages.push(i);
   }
-  // Add ellipsis markers
   const withEllipsis = [];
   let prev = -1;
   for (const p of pages) {
@@ -178,7 +262,6 @@ function Pagination({ page, totalPages, pageSize, setPage, setPageSize, totalFil
     withEllipsis.push(p);
     prev = p;
   }
-
   const btnStyle = (active) => ({
     minWidth:34, height:34, borderRadius:8, border:"1px solid var(--border-md)",
     background: active ? "var(--accent)" : "var(--surface)",
@@ -187,50 +270,30 @@ function Pagination({ page, totalPages, pageSize, setPage, setPageSize, totalFil
     cursor: active ? "default" : "pointer", display:"flex", alignItems:"center", justifyContent:"center",
     transition:"background .14s, color .14s",
   });
-
   return (
     <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", flexWrap:"wrap", gap:12, marginTop:28, paddingTop:20, borderTop:"1px solid var(--border)" }}>
-      {/* Page size */}
       <div style={{ display:"flex", alignItems:"center", gap:8 }}>
         <span style={{ fontSize:12, color:"var(--text-faint)" }}>Per page:</span>
         {PAGE_SIZE_OPTIONS.map(s=>(
-          <button key={s} onClick={()=>{ setPageSize(s); setPage(0); }}
-            style={{ ...btnStyle(pageSize===s), padding:"0 12px" }}>
-            {s}
-          </button>
+          <button key={s} onClick={()=>{ setPageSize(s); setPage(0); }} style={{ ...btnStyle(pageSize===s), padding:"0 12px" }}>{s}</button>
         ))}
       </div>
-
-      {/* Page nav */}
       <div style={{ display:"flex", alignItems:"center", gap:6 }}>
-        <button onClick={()=>setPage(p=>Math.max(0,p-1))} disabled={page===0}
-          style={{ ...btnStyle(false), opacity: page===0 ? .35 : 1, padding:"0 10px" }}>
-          ‹
-        </button>
+        <button onClick={()=>setPage(p=>Math.max(0,p-1))} disabled={page===0} style={{ ...btnStyle(false), opacity:page===0?.35:1, padding:"0 10px" }}>‹</button>
         {withEllipsis.map((p,i)=>
-          p === "..." ? (
-            <span key={`e${i}`} style={{ color:"var(--text-faint)", fontSize:13, padding:"0 2px" }}>…</span>
-          ) : (
-            <button key={p} onClick={()=>setPage(p)} style={btnStyle(page===p)}>{p+1}</button>
-          )
+          p==="..." ? <span key={`e${i}`} style={{ color:"var(--text-faint)", fontSize:13, padding:"0 2px" }}>…</span>
+          : <button key={p} onClick={()=>setPage(p)} style={btnStyle(page===p)}>{p+1}</button>
         )}
-        <button onClick={()=>setPage(p=>Math.min(totalPages-1,p+1))} disabled={page>=totalPages-1}
-          style={{ ...btnStyle(false), opacity: page>=totalPages-1 ? .35 : 1, padding:"0 10px" }}>
-          ›
-        </button>
+        <button onClick={()=>setPage(p=>Math.min(totalPages-1,p+1))} disabled={page>=totalPages-1} style={{ ...btnStyle(false), opacity:page>=totalPages-1?.35:1, padding:"0 10px" }}>›</button>
       </div>
-
-      {/* Info */}
-      <span style={{ fontSize:12, color:"var(--text-faint)" }}>
-        Page {page+1} of {totalPages}
-      </span>
+      <span style={{ fontSize:12, color:"var(--text-faint)" }}>Page {page+1} of {totalPages}</span>
     </div>
   );
 }
 
-/* ═══════════════════════════════════════════════
-   MAIN PAGE
-═══════════════════════════════════════════════ */
+// ═══════════════════════════════════════════════════════
+//  MAIN PAGE
+// ═══════════════════════════════════════════════════════
 export default function StudentsPage() {
   const { t } = useLanguage();
   const toast = useToast();
@@ -242,10 +305,16 @@ export default function StudentsPage() {
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [saving, setSaving]     = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [photoLoading, setPhotoLoading] = useState(false);
+
+  // Pending photo file for create/edit (uploaded after save)
+  const [pendingPhoto, setPendingPhoto] = useState(null);
+  // For edit: track if user wants to delete existing photo
+  const [deletePhoto, setDeletePhoto]   = useState(false);
 
   // Filters
-  const [q, setQ]                     = useState("");
-  const [filterClass, setFilterClass] = useState("");
+  const [q, setQ]                       = useState("");
+  const [filterClass, setFilterClass]   = useState("");
   const [filterStatus, setFilterStatus] = useState("");
 
   // Pagination
@@ -268,8 +337,6 @@ export default function StudentsPage() {
       .catch(e=>toast(e.message,"error")).finally(()=>setLoading(false));
   };
   useEffect(load, []);
-
-  // Reset page when filters change
   useEffect(()=>setPage(0), [q, filterClass, filterStatus]);
 
   const filtered = useMemo(() => {
@@ -298,35 +365,63 @@ export default function StudentsPage() {
   const paginated  = filtered.slice(page * pageSize, (page + 1) * pageSize);
 
   const resetFilters = () => { setQ(""); setFilterClass(""); setFilterStatus(""); setPage(0); };
-  const goList = () => { setView("list"); setSelected(null); };
+  const goList = () => { setView("list"); setSelected(null); setPendingPhoto(null); setDeletePhoto(false); };
 
+  // ── Photo helpers ──────────────────────────────────────────────────────────
+  const handlePhotoForUser = async (userId, isNew) => {
+    if (deletePhoto && !isNew) {
+      setPhotoLoading(true);
+      try { await deleteUserPhoto(userId); } catch(e) { toast(e.message, "error"); }
+      finally { setPhotoLoading(false); }
+    } else if (pendingPhoto) {
+      setPhotoLoading(true);
+      try {
+        if (isNew) await uploadUserPhoto(userId, pendingPhoto);
+        else       await updateUserPhoto(userId, pendingPhoto);
+      } catch(e) { toast(e.message, "error"); }
+      finally { setPhotoLoading(false); }
+    }
+  };
+
+  // ── Create ─────────────────────────────────────────────────────────────────
   const handleCreate = async e => {
     e.preventDefault(); setSaving(true);
     try {
-      await createStudent({ registrationRequest:form, registrationNumber:regNum, idClasse:idClasse?parseInt(idClasse):undefined });
-      setForm({ firstname:"", lastname:"", email:"", phone:"", nni:"" }); setRegNum(""); setIdClasse("");
+      const created = await createStudent({ registrationRequest:form, registrationNumber:regNum, idClasse:idClasse?parseInt(idClasse):undefined });
+      // created may contain userId – try to upload photo
+      const uid = created?.userId ?? created?.id;
+      if (uid) await handlePhotoForUser(uid, true);
+      setForm({ firstname:"", lastname:"", email:"", phone:"", nni:"" });
+      setRegNum(""); setIdClasse(""); setPendingPhoto(null);
       toast(t("students.enrolled")); load(); goList();
     } catch(err) { toast(err.message,"error"); } finally { setSaving(false); }
   };
 
+  // ── Edit ───────────────────────────────────────────────────────────────────
   const openEdit = r => {
     setEditForm({ id:r.id, firstname:r.firstname??"", lastname:r.lastname??"", email:r.email??"", phone:r.phone??"", nni:r.nni??"", registrationNumber:r.registrationNumber??"", classeId:r.classeId??r.classe?.id??"" });
+    setPendingPhoto(null); setDeletePhoto(false);
     setSelected(r); setView("edit");
   };
 
   const handleEdit = async e => {
     e.preventDefault(); setSaving(true);
-    try { await updateStudent(selected.id, { ...editForm, classeId:editForm.classeId?parseInt(editForm.classeId):undefined }); toast(t("students.updated")); load(); goList(); }
-    catch(err) { toast(err.message,"error"); } finally { setSaving(false); }
+    try {
+      await updateStudent(selected.id, { ...editForm, classeId:editForm.classeId?parseInt(editForm.classeId):undefined });
+      const uid = selected.userId ?? selected.id;
+      if (uid) await handlePhotoForUser(uid, false);
+      toast(t("students.updated")); load(); goList();
+    } catch(err) { toast(err.message,"error"); } finally { setSaving(false); }
   };
 
+  // ── Delete ─────────────────────────────────────────────────────────────────
   const handleDelete = async () => {
     setDeleting(true);
     try { await deleteStudent(deleteTarget.userId??deleteTarget.id); setDeleteTarget(null); toast(t("students.deleted")); load(); if(view!=="list") goList(); }
     catch(err) { toast(err.message,"error"); } finally { setDeleting(false); }
   };
 
-  /* ══ LIST ══ */
+  // ══ LIST ══════════════════════════════════════════════════════════════════
   if (view === "list") return (
     <div className="page-enter" style={{ padding:"36px 44px" }}>
       <div style={{ display:"flex", alignItems:"flex-end", justifyContent:"space-between", marginBottom:28 }}>
@@ -335,16 +430,7 @@ export default function StudentsPage() {
         <button onClick={()=>setView("create")} className="btn-primary" style={{ marginBottom:32 }}>{t("students.addBtn")}</button>
       </div>
 
-      <FilterBar
-        q={q} setQ={setQ}
-        filterClass={filterClass} setFilterClass={setFilterClass}
-        filterStatus={filterStatus} setFilterStatus={setFilterStatus}
-        classes={classes}
-        onReset={resetFilters}
-        totalFiltered={filtered.length}
-        total={data.length}
-        t={t}
-      />
+      <FilterBar q={q} setQ={setQ} filterClass={filterClass} setFilterClass={setFilterClass} filterStatus={filterStatus} setFilterStatus={setFilterStatus} classes={classes} onReset={resetFilters} totalFiltered={filtered.length} total={data.length} t={t} />
 
       {loading
         ? <div className="empty-state"><div className="spinner" style={{ width:22, height:22 }} /><p>{t("common.loading")}</p></div>
@@ -377,13 +463,23 @@ export default function StudentsPage() {
     </div>
   );
 
-  /* ══ CREATE ══ */
+  // ══ CREATE ════════════════════════════════════════════════════════════════
   if (view === "create") return (
     <div className="page-enter" style={{ padding:"36px 44px" }}>
       <BackBtn label={t("students.detailBack")} onClick={goList} />
       <PageTitle crumb={`${t("students.crumb")} · ${t("students.title")}`} title={t("students.enrollTitle")} sub={t("students.enrollSub")} />
       <TwoCol
         left={<FormPanel onSubmit={handleCreate}>
+          {/* Photo upload */}
+          <Field label="Profile Photo">
+            <PhotoUploadField
+              photo={pendingPhoto ? URL.createObjectURL(pendingPhoto) : null}
+              initial={(form.firstname?.[0]??"?").toUpperCase()}
+              onFileSelected={setPendingPhoto}
+              onDelete={()=>setPendingPhoto(null)}
+              loading={photoLoading}
+            />
+          </Field>
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:16 }}>
             <Field label={t("fields.firstName")}><Input placeholder={t("fields.firstNamePlaceholder")} value={form.firstname} onChange={set("firstname")} required /></Field>
             <Field label={t("fields.lastName")}><Input placeholder={t("fields.lastNamePlaceholder")} value={form.lastname} onChange={set("lastname")} required /></Field>
@@ -404,26 +500,41 @@ export default function StudentsPage() {
           </div>
           <div style={{ display:"flex", gap:12, paddingTop:4 }}>
             <button type="button" onClick={goList} className="btn-ghost" style={{ flex:1, padding:"12px" }}>{t("common.cancel")}</button>
-            <div style={{ flex:2 }}><SubmitBtn loading={saving} label={t("students.enrollBtn")} /></div>
+            <div style={{ flex:2 }}><SubmitBtn loading={saving||photoLoading} label={t("students.enrollBtn")} /></div>
           </div>
         </FormPanel>}
-        right={<SidePanel title={t("students.sidePendingNote")} initial={(form.firstname?.[0]??"?").toUpperCase()} accentColor={C_COLOR} accentBg={C_BG}
+        right={<SidePanel
+          title={t("students.sidePendingNote")}
+          initial={(form.firstname?.[0]??"?").toUpperCase()}
+          photo={pendingPhoto ? URL.createObjectURL(pendingPhoto) : null}
+          accentColor={C_COLOR} accentBg={C_BG}
           items={{ sectionLabel:t("common.notes"), list:[
             { icon:"🔢", text:t("students.sideNote1") },
             { icon:"🏫", text:t("students.sideNote2") },
             { icon:"✅", text:t("students.sideNote3") },
-          ]}} />}
+          ]}}
+        />}
       />
     </div>
   );
 
-  /* ══ EDIT ══ */
+  // ══ EDIT ══════════════════════════════════════════════════════════════════
   if (view === "edit" && selected) return (
     <div className="page-enter" style={{ padding:"36px 44px" }}>
       <BackBtn label={t("students.detailBack")} onClick={goList} />
       <PageTitle crumb={`${t("students.crumb")} · ${t("students.title")}`} title={t("students.editTitle")} sub={t("students.editSub", { name:`${selected.firstname} ${selected.lastname}` })} />
       <TwoCol
         left={<FormPanel onSubmit={handleEdit}>
+          {/* Photo upload */}
+          <Field label="Profile Photo">
+            <PhotoUploadField
+              photo={deletePhoto ? null : (pendingPhoto ? URL.createObjectURL(pendingPhoto) : selected.photo ?? null)}
+              initial={(selected.firstname?.[0]??"?").toUpperCase()}
+              onFileSelected={f=>{ setPendingPhoto(f); setDeletePhoto(false); }}
+              onDelete={()=>{ setPendingPhoto(null); setDeletePhoto(true); }}
+              loading={photoLoading}
+            />
+          </Field>
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:16 }}>
             <Field label={t("fields.firstName")}><Input value={editForm.firstname} onChange={setEdit("firstname")} required /></Field>
             <Field label={t("fields.lastName")}><Input value={editForm.lastname} onChange={setEdit("lastname")} required /></Field>
@@ -444,19 +555,24 @@ export default function StudentsPage() {
           </div>
           <div style={{ display:"flex", gap:12, paddingTop:4 }}>
             <button type="button" onClick={goList} className="btn-ghost" style={{ flex:1, padding:"12px" }}>{t("common.cancel")}</button>
-            <div style={{ flex:2 }}><SubmitBtn loading={saving} label={t("students.saveBtn")} /></div>
+            <div style={{ flex:2 }}><SubmitBtn loading={saving||photoLoading} label={t("students.saveBtn")} /></div>
           </div>
         </FormPanel>}
-        right={<SidePanel title={t("students.editSub", { name:`${selected.firstname} ${selected.lastname}` })} initial={(selected.firstname?.[0]??"?").toUpperCase()} accentColor={C_COLOR} accentBg={C_BG}
+        right={<SidePanel
+          title={t("students.editSub", { name:`${selected.firstname} ${selected.lastname}` })}
+          initial={(selected.firstname?.[0]??"?").toUpperCase()}
+          photo={deletePhoto ? null : (pendingPhoto ? URL.createObjectURL(pendingPhoto) : selected.photo ?? null)}
+          accentColor={C_COLOR} accentBg={C_BG}
           items={{ sectionLabel:t("common.notes"), list:[
             { icon:"💡", text:t("students.editNote1") },
             { icon:"🏫", text:t("students.editNote2") },
-          ]}} />}
+          ]}}
+        />}
       />
     </div>
   );
 
-  /* ══ DETAIL ══ */
+  // ══ DETAIL ════════════════════════════════════════════════════════════════
   if (view === "detail" && selected) {
     const v = selected; const cn = v.classeName ?? v.classe?.name;
     return (
@@ -469,9 +585,12 @@ export default function StudentsPage() {
           <div style={{ padding:"0 36px 28px", marginTop:-36 }}>
             <div style={{ display:"flex", alignItems:"flex-end", justifyContent:"space-between", flexWrap:"wrap", gap:16 }}>
               <div style={{ display:"flex", alignItems:"flex-end", gap:20 }}>
-                <div style={{ width:80, height:80, borderRadius:22, background:C_BG, color:C_COLOR, border:"3px solid var(--bg-card)", boxShadow:`0 0 0 2px ${C_COLOR}40`, display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"'Instrument Serif',serif", fontSize:32, flexShrink:0 }}>
-                  {(v.firstname?.[0]??"S").toUpperCase()}
-                </div>
+                <PhotoAvatar
+                  photo={v.photo}
+                  initial={(v.firstname?.[0]??"S").toUpperCase()}
+                  size={80} radius={22}
+                  style={{ border:"3px solid var(--bg-card)", boxShadow:`0 0 0 2px ${C_COLOR}40` }}
+                />
                 <div style={{ paddingBottom:4 }}>
                   <h2 style={{ margin:0, fontSize:22, fontFamily:"'Instrument Serif',serif", color:"var(--text)", letterSpacing:"-.025em" }}>{v.firstname} {v.lastname}</h2>
                   <div style={{ display:"flex", gap:8, marginTop:7, flexWrap:"wrap" }}>

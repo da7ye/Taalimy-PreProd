@@ -1,5 +1,6 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import { getTeachers, createTeacher, updateTeacher, deleteTeacher } from "../api";
+import { uploadUserPhoto, updateUserPhoto, deleteUserPhoto } from "../api";
 import { Field, Input, SubmitBtn } from "../components/FormComponents";
 import { usePersonForm } from "../hooks/usePersonForm";
 import { useToast } from "../components/Toast";
@@ -9,6 +10,84 @@ import { useLanguage } from "../LanguageContext";
 const C_COLOR = "var(--accent)";
 const C_BG    = "var(--violet-dim)";
 const PAGE_SIZE_OPTIONS = [12, 24, 48];
+
+// ─── Photo helpers ────────────────────────────────────────────────────────────
+
+function PhotoAvatar({ photo, initial = "?", size = 48, radius = 14, color = C_COLOR, bg = C_BG, style = {} }) {
+  const fs = Math.round(size / 2.4);
+  const [failed, setFailed] = useState(false);
+  const base = {
+    width: size, height: size, borderRadius: radius, flexShrink: 0, overflow: "hidden",
+    display: "flex", alignItems: "center", justifyContent: "center", ...style,
+  };
+  if (photo && !failed) {
+    return (
+      <div style={base}>
+        <img src={photo} alt={initial} style={{ width:"100%", height:"100%", objectFit:"cover", display:"block" }} onError={()=>setFailed(true)} />
+      </div>
+    );
+  }
+  return (
+    <div style={{ ...base, background:bg, color, border:`1.5px solid ${color}28` }}>
+      <span style={{ fontFamily:"'Instrument Serif',serif", fontSize:fs, color }}>{(initial||"?").toUpperCase()}</span>
+    </div>
+  );
+}
+
+function PhotoUploadField({ photo, initial, color = C_COLOR, bg = C_BG, onFileSelected, onDelete, loading = false }) {
+  const inputRef = useRef(null);
+  const [preview, setPreview] = useState(photo || null);
+  useEffect(() => { setPreview(photo || null); }, [photo]);
+
+  const handleFile = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setPreview(URL.createObjectURL(file));
+    onFileSelected?.(file);
+    e.target.value = "";
+  };
+
+  return (
+    <div style={{ display:"flex", alignItems:"center", gap:16 }}>
+      <div style={{ position:"relative", flexShrink:0 }}>
+        <PhotoAvatar photo={preview} initial={initial} size={80} radius={20} color={color} bg={bg} />
+        {loading && (
+          <div style={{ position:"absolute", inset:0, borderRadius:20, background:"rgba(0,0,0,.45)", display:"flex", alignItems:"center", justifyContent:"center" }}>
+            <span className="spinner" style={{ width:20, height:20, borderTopColor:"#fff" }} />
+          </div>
+        )}
+      </div>
+      <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+        <label style={{
+          display:"inline-flex", alignItems:"center", gap:6, padding:"8px 14px", borderRadius:"var(--r-md)",
+          background:"var(--surface)", border:"1.5px solid var(--border-md)", color:"var(--text-dim)",
+          fontSize:12.5, fontWeight:500, cursor:loading?"not-allowed":"pointer",
+          fontFamily:"'Instrument Sans',sans-serif", transition:"background .13s", opacity:loading?0.5:1,
+        }}
+          onMouseEnter={e=>!loading&&(e.currentTarget.style.background="var(--surface-hover)")}
+          onMouseLeave={e=>!loading&&(e.currentTarget.style.background="var(--surface)")}
+        >
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          {preview ? "Change photo" : "Upload photo"}
+          <input ref={inputRef} type="file" accept="image/*" style={{ display:"none" }} onChange={handleFile} disabled={loading} />
+        </label>
+        {preview && (
+          <button type="button" onClick={()=>{ setPreview(null); onDelete?.(); }} disabled={loading} style={{
+            display:"inline-flex", alignItems:"center", gap:6, padding:"6px 14px", borderRadius:"var(--r-md)",
+            background:"var(--rose-dim)", border:"1px solid rgba(184,53,53,.18)", color:"var(--rose)",
+            fontSize:12, fontWeight:500, cursor:loading?"not-allowed":"pointer", fontFamily:"'Instrument Sans',sans-serif",
+          }}>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+            Remove photo
+          </button>
+        )}
+        <span style={{ fontSize:11, color:"var(--text-faint)" }}>JPG, PNG or WebP · max 5 MB</span>
+      </div>
+    </div>
+  );
+}
+
+// ─── Reusable pieces ──────────────────────────────────────────────────────────
 
 function BackBtn({ label, onClick }) {
   return (
@@ -32,12 +111,11 @@ function PageTitle({ crumb, title, sub }) {
 }
 
 function TeacherCard({ r, onClick, onEdit, onDelete, t }) {
+  const initial = r.firstname?.[0] ?? "?";
   return (
     <div className="person-card" style={{ "--card-top":C_COLOR }} onClick={()=>onClick(r)}>
       <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", marginBottom:16 }}>
-        <div style={{ width:48, height:48, borderRadius:14, background:C_BG, color:C_COLOR, border:`1.5px solid ${C_COLOR}28`, display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"'Instrument Serif',serif", fontSize:20 }}>
-          {(r.firstname?.[0]??"?").toUpperCase()}
-        </div>
+        <PhotoAvatar photo={r.photo} initial={initial} size={48} radius={14} color={C_COLOR} bg={C_BG} />
         <div style={{ display:"flex", gap:6 }} onClick={e=>e.stopPropagation()}>
           <button onClick={()=>onEdit(r)} className="btn-ghost" style={{ padding:"5px 12px", fontSize:12 }}>{t("common.edit")}</button>
           <button onClick={()=>onDelete(r)} className="btn-danger" style={{ padding:"5px 12px", fontSize:12 }}>{t("common.delete")}</button>
@@ -72,11 +150,13 @@ function FormPanel({ children, onSubmit }) {
   );
 }
 
-function SidePanel({ title, items, accentColor, accentBg, initial }) {
+function SidePanel({ title, items, accentColor, accentBg, initial, photo }) {
   return (
     <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
       <div style={{ background:"var(--bg-card)", border:"1px solid var(--border)", borderRadius:"var(--r-xl)", padding:"28px 24px", boxShadow:"var(--shadow-sm)", textAlign:"center" }}>
-        <div style={{ width:72, height:72, borderRadius:20, background:accentBg, color:accentColor, border:`2px solid ${accentColor}30`, display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"'Instrument Serif',serif", fontSize:30, margin:"0 auto 14px" }}>{initial||"?"}</div>
+        <div style={{ margin:"0 auto 14px", width:72, height:72 }}>
+          <PhotoAvatar photo={photo} initial={initial} size={72} radius={20} color={accentColor} bg={accentBg} />
+        </div>
         <div style={{ fontSize:13, color:"var(--text-muted)", lineHeight:1.5 }}>{title}</div>
       </div>
       <div style={{ background:"var(--bg-card)", border:"1px solid var(--border)", borderRadius:"var(--r-xl)", padding:"20px 24px", boxShadow:"var(--shadow-sm)" }}>
@@ -106,7 +186,7 @@ function StatBox({ icon, label, value, color, bg }) {
   );
 }
 
-/* ─── Filter Bar ─── */
+// ─── Filter Bar ───────────────────────────────────────────────────────────────
 function FilterBar({ q, setQ, filterSpeciality, setFilterSpeciality, filterStatus, setFilterStatus, specialities, onReset, totalFiltered, total, t }) {
   const hasFilters = q.trim() || filterSpeciality || filterStatus;
   return (
@@ -115,26 +195,18 @@ function FilterBar({ q, setQ, filterSpeciality, setFilterSpeciality, filterStatu
         <svg className="search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-faint)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
         <input className="search-input" placeholder={t("teachers.searchPlaceholder")} value={q} onChange={e=>setQ(e.target.value)} style={{ width:"100%" }} />
       </div>
-
-      {/* Speciality filter (dynamically built from data) */}
       <select value={filterSpeciality} onChange={e=>setFilterSpeciality(e.target.value)} className="t-select" style={{ flex:"1 1 180px", minWidth:160, maxWidth:220 }}>
         <option value="">All Specialities</option>
         {specialities.map(s=><option key={s} value={s}>{s}</option>)}
       </select>
-
-      {/* Status filter */}
       <select value={filterStatus} onChange={e=>setFilterStatus(e.target.value)} className="t-select" style={{ flex:"0 0 150px" }}>
         <option value="">All Statuses</option>
         <option value="approved">Approved</option>
         <option value="pending">Pending</option>
       </select>
-
       {hasFilters && (
-        <button onClick={onReset} className="btn-ghost" style={{ padding:"8px 14px", fontSize:12.5, flexShrink:0, color:"var(--rose)", borderColor:"rgba(184,53,53,.25)" }}>
-          ✕ Clear
-        </button>
+        <button onClick={onReset} className="btn-ghost" style={{ padding:"8px 14px", fontSize:12.5, flexShrink:0, color:"var(--rose)", borderColor:"rgba(184,53,53,.25)" }}>✕ Clear</button>
       )}
-
       <div style={{ marginLeft:"auto", fontSize:12, color:"var(--text-faint)", flexShrink:0, whiteSpace:"nowrap" }}>
         {hasFilters ? <><span style={{ color:"var(--text-dim)", fontWeight:600 }}>{totalFiltered}</span> of {total}</> : <><span style={{ color:"var(--text-dim)", fontWeight:600 }}>{total}</span> total</>}
       </div>
@@ -142,13 +214,13 @@ function FilterBar({ q, setQ, filterSpeciality, setFilterSpeciality, filterStatu
   );
 }
 
-/* ─── Pagination ─── */
+// ─── Pagination ───────────────────────────────────────────────────────────────
 function Pagination({ page, totalPages, pageSize, setPage, setPageSize, totalFiltered }) {
   if (totalPages <= 1 && totalFiltered <= PAGE_SIZE_OPTIONS[0]) return null;
   const pages = [];
   const delta = 2;
   for (let i = 0; i < totalPages; i++) {
-    if (i===0 || i===totalPages-1 || (i>=page-delta && i<=page+delta)) pages.push(i);
+    if (i===0||i===totalPages-1||(i>=page-delta&&i<=page+delta)) pages.push(i);
   }
   const withEllipsis = [];
   let prev = -1;
@@ -157,16 +229,13 @@ function Pagination({ page, totalPages, pageSize, setPage, setPageSize, totalFil
     withEllipsis.push(p);
     prev = p;
   }
-
   const btnStyle = (active) => ({
     minWidth:34, height:34, borderRadius:8, border:"1px solid var(--border-md)",
-    background: active ? "var(--accent)" : "var(--surface)",
-    color: active ? "#fff" : "var(--text-muted)",
-    fontFamily:"'Instrument Sans',sans-serif", fontSize:13, fontWeight: active ? 700 : 400,
-    cursor: active ? "default" : "pointer", display:"flex", alignItems:"center", justifyContent:"center",
+    background:active?"var(--accent)":"var(--surface)", color:active?"#fff":"var(--text-muted)",
+    fontFamily:"'Instrument Sans',sans-serif", fontSize:13, fontWeight:active?700:400,
+    cursor:active?"default":"pointer", display:"flex", alignItems:"center", justifyContent:"center",
     transition:"background .14s, color .14s",
   });
-
   return (
     <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", flexWrap:"wrap", gap:12, marginTop:28, paddingTop:20, borderTop:"1px solid var(--border)" }}>
       <div style={{ display:"flex", alignItems:"center", gap:8 }}>
@@ -178,8 +247,8 @@ function Pagination({ page, totalPages, pageSize, setPage, setPageSize, totalFil
       <div style={{ display:"flex", alignItems:"center", gap:6 }}>
         <button onClick={()=>setPage(p=>Math.max(0,p-1))} disabled={page===0} style={{ ...btnStyle(false), opacity:page===0?.35:1, padding:"0 10px" }}>‹</button>
         {withEllipsis.map((p,i)=>
-          p==="..." ? <span key={`e${i}`} style={{ color:"var(--text-faint)", fontSize:13, padding:"0 2px" }}>…</span>
-          : <button key={p} onClick={()=>setPage(p)} style={btnStyle(page===p)}>{p+1}</button>
+          p==="..."?<span key={`e${i}`} style={{ color:"var(--text-faint)", fontSize:13, padding:"0 2px" }}>…</span>
+          :<button key={p} onClick={()=>setPage(p)} style={btnStyle(page===p)}>{p+1}</button>
         )}
         <button onClick={()=>setPage(p=>Math.min(totalPages-1,p+1))} disabled={page>=totalPages-1} style={{ ...btnStyle(false), opacity:page>=totalPages-1?.35:1, padding:"0 10px" }}>›</button>
       </div>
@@ -188,9 +257,9 @@ function Pagination({ page, totalPages, pageSize, setPage, setPageSize, totalFil
   );
 }
 
-/* ═══════════════════════════════════════════════
-   MAIN PAGE
-═══════════════════════════════════════════════ */
+// ═══════════════════════════════════════════════════════
+//  MAIN PAGE
+// ═══════════════════════════════════════════════════════
 export default function TeachersPage() {
   const { t } = useLanguage();
   const toast = useToast();
@@ -201,15 +270,16 @@ export default function TeachersPage() {
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [saving, setSaving]     = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [photoLoading, setPhotoLoading] = useState(false);
 
-  // Filters
+  const [pendingPhoto, setPendingPhoto] = useState(null);
+  const [deletePhoto, setDeletePhoto]   = useState(false);
+
   const [q, setQ]                           = useState("");
   const [filterSpeciality, setFilterSpeciality] = useState("");
   const [filterStatus, setFilterStatus]     = useState("");
-
-  // Pagination
-  const [page, setPage]         = useState(0);
-  const [pageSize, setPageSize] = useState(12);
+  const [page, setPage]                     = useState(0);
+  const [pageSize, setPageSize]             = useState(12);
 
   const { form, set, setForm }  = usePersonForm();
   const [speciality, setSpeciality] = useState("");
@@ -220,7 +290,6 @@ export default function TeachersPage() {
   useEffect(load, []);
   useEffect(()=>setPage(0), [q, filterSpeciality, filterStatus]);
 
-  // Build unique specialities list from data
   const specialities = useMemo(()=>{
     const arr = Array.isArray(data) ? data : [];
     return [...new Set(arr.map(r=>r.speciality).filter(Boolean))].sort();
@@ -245,22 +314,50 @@ export default function TeachersPage() {
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
   const paginated  = filtered.slice(page * pageSize, (page + 1) * pageSize);
-
   const resetFilters = () => { setQ(""); setFilterSpeciality(""); setFilterStatus(""); setPage(0); };
-  const goList = () => { setView("list"); setSelected(null); };
+  const goList = () => { setView("list"); setSelected(null); setPendingPhoto(null); setDeletePhoto(false); };
+
+  const handlePhotoForUser = async (userId, isNew) => {
+    if (deletePhoto && !isNew) {
+      setPhotoLoading(true);
+      try { await deleteUserPhoto(userId); } catch(e) { toast(e.message,"error"); }
+      finally { setPhotoLoading(false); }
+    } else if (pendingPhoto) {
+      setPhotoLoading(true);
+      try {
+        if (isNew) await uploadUserPhoto(userId, pendingPhoto);
+        else       await updateUserPhoto(userId, pendingPhoto);
+      } catch(e) { toast(e.message,"error"); }
+      finally { setPhotoLoading(false); }
+    }
+  };
 
   const handleCreate = async e => {
     e.preventDefault(); setSaving(true);
-    try { await createTeacher({ registrationRequest:form, speciality }); setForm({ firstname:"", lastname:"", email:"", phone:"", nni:"" }); setSpeciality(""); toast(t("teachers.registered")); load(); goList(); }
-    catch(err) { toast(err.message,"error"); } finally { setSaving(false); }
+    try {
+      const created = await createTeacher({ registrationRequest:form, speciality });
+      const uid = created?.userId ?? created?.id;
+      if (uid) await handlePhotoForUser(uid, true);
+      setForm({ firstname:"", lastname:"", email:"", phone:"", nni:"" });
+      setSpeciality(""); setPendingPhoto(null);
+      toast(t("teachers.registered")); load(); goList();
+    } catch(err) { toast(err.message,"error"); } finally { setSaving(false); }
   };
 
-  const openEdit = r => { setEditForm({ id:r.id, firstname:r.firstname??"", lastname:r.lastname??"", email:r.email??"", phone:r.phone??"", nni:r.nni??"", speciality:r.speciality??"" }); setSelected(r); setView("edit"); };
+  const openEdit = r => {
+    setEditForm({ id:r.id, firstname:r.firstname??"", lastname:r.lastname??"", email:r.email??"", phone:r.phone??"", nni:r.nni??"", speciality:r.speciality??"" });
+    setPendingPhoto(null); setDeletePhoto(false);
+    setSelected(r); setView("edit");
+  };
 
   const handleEdit = async e => {
     e.preventDefault(); setSaving(true);
-    try { await updateTeacher(selected.id, editForm); toast(t("teachers.updated")); load(); goList(); }
-    catch(err) { toast(err.message,"error"); } finally { setSaving(false); }
+    try {
+      await updateTeacher(selected.id, editForm);
+      const uid = selected.userId ?? selected.id;
+      if (uid) await handlePhotoForUser(uid, false);
+      toast(t("teachers.updated")); load(); goList();
+    } catch(err) { toast(err.message,"error"); } finally { setSaving(false); }
   };
 
   const handleDelete = async () => {
@@ -269,7 +366,7 @@ export default function TeachersPage() {
     catch(err) { toast(err.message,"error"); } finally { setDeleting(false); }
   };
 
-  /* ══ LIST ══ */
+  // ══ LIST ══
   if (view === "list") return (
     <div className="page-enter" style={{ padding:"36px 44px" }}>
       <div style={{ display:"flex", alignItems:"flex-end", justifyContent:"space-between", marginBottom:28 }}>
@@ -277,18 +374,7 @@ export default function TeachersPage() {
           sub={loading ? t("common.loading") : `${filtered.length} ${t("teachers.title").toLowerCase()}`} />
         <button onClick={()=>setView("create")} className="btn-primary" style={{ marginBottom:32 }}>{t("teachers.addBtn")}</button>
       </div>
-
-      <FilterBar
-        q={q} setQ={setQ}
-        filterSpeciality={filterSpeciality} setFilterSpeciality={setFilterSpeciality}
-        filterStatus={filterStatus} setFilterStatus={setFilterStatus}
-        specialities={specialities}
-        onReset={resetFilters}
-        totalFiltered={filtered.length}
-        total={Array.isArray(data) ? data.length : 0}
-        t={t}
-      />
-
+      <FilterBar q={q} setQ={setQ} filterSpeciality={filterSpeciality} setFilterSpeciality={setFilterSpeciality} filterStatus={filterStatus} setFilterStatus={setFilterStatus} specialities={specialities} onReset={resetFilters} totalFiltered={filtered.length} total={Array.isArray(data)?data.length:0} t={t} />
       {loading
         ? <div className="empty-state"><div className="spinner" style={{ width:22, height:22 }} /><p>{t("common.loading")}</p></div>
         : paginated.length === 0
@@ -306,11 +392,9 @@ export default function TeachersPage() {
               ))}
             </div>
       }
-
       {!loading && filtered.length > 0 && (
         <Pagination page={page} totalPages={totalPages} pageSize={pageSize} setPage={setPage} setPageSize={setPageSize} totalFiltered={filtered.length} />
       )}
-
       {deleteTarget && (
         <ConfirmDialog
           title={t("teachers.deleteTitle", { name:`${deleteTarget.firstname} ${deleteTarget.lastname}` })}
@@ -320,13 +404,22 @@ export default function TeachersPage() {
     </div>
   );
 
-  /* ══ CREATE ══ */
+  // ══ CREATE ══
   if (view === "create") return (
     <div className="page-enter" style={{ padding:"36px 44px" }}>
       <BackBtn label={t("teachers.detailBack")} onClick={goList} />
       <PageTitle crumb={`${t("teachers.crumb")} · ${t("teachers.title")}`} title={t("teachers.registerTitle")} sub={t("teachers.registerSub")} />
       <TwoCol
         left={<FormPanel onSubmit={handleCreate}>
+          <Field label="Profile Photo">
+            <PhotoUploadField
+              photo={pendingPhoto ? URL.createObjectURL(pendingPhoto) : null}
+              initial={(form.firstname?.[0]??"?").toUpperCase()}
+              onFileSelected={setPendingPhoto}
+              onDelete={()=>setPendingPhoto(null)}
+              loading={photoLoading}
+            />
+          </Field>
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:16 }}>
             <Field label={t("fields.firstName")}><Input placeholder={t("fields.firstNamePlaceholder")} value={form.firstname} onChange={set("firstname")} required /></Field>
             <Field label={t("fields.lastName")}><Input placeholder={t("fields.lastNamePlaceholder")} value={form.lastname} onChange={set("lastname")} required /></Field>
@@ -339,10 +432,12 @@ export default function TeachersPage() {
           <Field label={t("teachers.speciality")}><Input placeholder={t("teachers.specialityPlaceholder")} value={speciality} onChange={e=>setSpeciality(e.target.value)} /></Field>
           <div style={{ display:"flex", gap:12, paddingTop:4 }}>
             <button type="button" onClick={goList} className="btn-ghost" style={{ flex:1, padding:"12px" }}>{t("common.cancel")}</button>
-            <div style={{ flex:2 }}><SubmitBtn loading={saving} label={t("teachers.registerBtn")} /></div>
+            <div style={{ flex:2 }}><SubmitBtn loading={saving||photoLoading} label={t("teachers.registerBtn")} /></div>
           </div>
         </FormPanel>}
-        right={<SidePanel title={t("teachers.sideNote3")} initial={(form.firstname?.[0]??"?").toUpperCase()} accentColor={C_COLOR} accentBg={C_BG}
+        right={<SidePanel title={t("teachers.sideNote3")} initial={(form.firstname?.[0]??"?").toUpperCase()}
+          photo={pendingPhoto ? URL.createObjectURL(pendingPhoto) : null}
+          accentColor={C_COLOR} accentBg={C_BG}
           items={{ sectionLabel:t("common.notes"), list:[
             { icon:"📧", text:t("teachers.sideNote1") },
             { icon:"🔢", text:t("teachers.sideNote2") },
@@ -352,13 +447,22 @@ export default function TeachersPage() {
     </div>
   );
 
-  /* ══ EDIT ══ */
+  // ══ EDIT ══
   if (view === "edit" && selected) return (
     <div className="page-enter" style={{ padding:"36px 44px" }}>
       <BackBtn label={t("teachers.detailBack")} onClick={goList} />
       <PageTitle crumb={`${t("teachers.crumb")} · ${t("teachers.title")}`} title={t("teachers.editTitle")} sub={t("teachers.editSub", { name:`${selected.firstname} ${selected.lastname}` })} />
       <TwoCol
         left={<FormPanel onSubmit={handleEdit}>
+          <Field label="Profile Photo">
+            <PhotoUploadField
+              photo={deletePhoto ? null : (pendingPhoto ? URL.createObjectURL(pendingPhoto) : selected.photo ?? null)}
+              initial={(selected.firstname?.[0]??"?").toUpperCase()}
+              onFileSelected={f=>{ setPendingPhoto(f); setDeletePhoto(false); }}
+              onDelete={()=>{ setPendingPhoto(null); setDeletePhoto(true); }}
+              loading={photoLoading}
+            />
+          </Field>
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:16 }}>
             <Field label={t("fields.firstName")}><Input value={editForm.firstname} onChange={setEdit("firstname")} required /></Field>
             <Field label={t("fields.lastName")}><Input value={editForm.lastname} onChange={setEdit("lastname")} required /></Field>
@@ -371,10 +475,13 @@ export default function TeachersPage() {
           <Field label={t("teachers.speciality")}><Input value={editForm.speciality} onChange={setEdit("speciality")} /></Field>
           <div style={{ display:"flex", gap:12, paddingTop:4 }}>
             <button type="button" onClick={goList} className="btn-ghost" style={{ flex:1, padding:"12px" }}>{t("common.cancel")}</button>
-            <div style={{ flex:2 }}><SubmitBtn loading={saving} label={t("teachers.saveBtn")} /></div>
+            <div style={{ flex:2 }}><SubmitBtn loading={saving||photoLoading} label={t("teachers.saveBtn")} /></div>
           </div>
         </FormPanel>}
-        right={<SidePanel title={t("teachers.editSub", { name:`${selected.firstname} ${selected.lastname}` })} initial={(selected.firstname?.[0]??"?").toUpperCase()} accentColor={C_COLOR} accentBg={C_BG}
+        right={<SidePanel title={t("teachers.editSub", { name:`${selected.firstname} ${selected.lastname}` })}
+          initial={(selected.firstname?.[0]??"?").toUpperCase()}
+          photo={deletePhoto ? null : (pendingPhoto ? URL.createObjectURL(pendingPhoto) : selected.photo ?? null)}
+          accentColor={C_COLOR} accentBg={C_BG}
           items={{ sectionLabel:t("common.notes"), list:[
             { icon:"💡", text:t("teachers.editNote1") },
             { icon:"📧", text:t("teachers.editNote2") },
@@ -383,7 +490,7 @@ export default function TeachersPage() {
     </div>
   );
 
-  /* ══ DETAIL ══ */
+  // ══ DETAIL ══
   if (view === "detail" && selected) {
     const v = selected;
     return (
@@ -396,9 +503,12 @@ export default function TeachersPage() {
           <div style={{ padding:"0 36px 28px", marginTop:-36 }}>
             <div style={{ display:"flex", alignItems:"flex-end", justifyContent:"space-between", flexWrap:"wrap", gap:16 }}>
               <div style={{ display:"flex", alignItems:"flex-end", gap:20 }}>
-                <div style={{ width:80, height:80, borderRadius:22, background:C_BG, color:C_COLOR, border:"3px solid var(--bg-card)", boxShadow:`0 0 0 2px ${C_COLOR}40`, display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"'Instrument Serif',serif", fontSize:32, flexShrink:0 }}>
-                  {(v.firstname?.[0]??"T").toUpperCase()}
-                </div>
+                <PhotoAvatar
+                  photo={v.photo}
+                  initial={(v.firstname?.[0]??"T").toUpperCase()}
+                  size={80} radius={22}
+                  style={{ border:"3px solid var(--bg-card)", boxShadow:`0 0 0 2px ${C_COLOR}40` }}
+                />
                 <div style={{ paddingBottom:4 }}>
                   <h2 style={{ margin:0, fontSize:22, fontFamily:"'Instrument Serif',serif", color:"var(--text)", letterSpacing:"-.025em" }}>{v.firstname} {v.lastname}</h2>
                   <div style={{ display:"flex", gap:8, marginTop:7, flexWrap:"wrap" }}>

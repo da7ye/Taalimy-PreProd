@@ -1,13 +1,12 @@
 import { useEffect, useState, useMemo } from "react";
-import { getTeachers, createTeacher, updateTeacher, deleteTeacher } from "../api";
-import { Field, Input, SubmitBtn } from "../components/FormComponents";
-import { usePersonForm } from "../hooks/usePersonForm";
+import { getClasses, createClasse, updateClasse, deleteClasse, getLevelNames } from "../api";
+import { Field, Input, Select, SubmitBtn } from "../components/FormComponents";
 import { useToast } from "../components/Toast";
 import ConfirmDialog from "../components/ConfirmDialog";
 import { useLanguage } from "../LanguageContext";
 
-const C_COLOR = "var(--accent)";
-const C_BG    = "var(--violet-dim)";
+const C_COLOR = "var(--purple)";
+const C_BG    = "var(--purple-dim)";
 const PAGE_SIZE_OPTIONS = [12, 24, 48];
 
 function BackBtn({ label, onClick }) {
@@ -31,27 +30,32 @@ function PageTitle({ crumb, title, sub }) {
   );
 }
 
-function TeacherCard({ r, onClick, onEdit, onDelete, t }) {
+function FormPanel({ children, onSubmit }) {
   return (
-    <div className="person-card" style={{ "--card-top":C_COLOR }} onClick={()=>onClick(r)}>
-      <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", marginBottom:16 }}>
-        <div style={{ width:48, height:48, borderRadius:14, background:C_BG, color:C_COLOR, border:`1.5px solid ${C_COLOR}28`, display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"'Instrument Serif',serif", fontSize:20 }}>
-          {(r.firstname?.[0]??"?").toUpperCase()}
+    <div style={{ background:"var(--bg-card)", border:"1px solid var(--border)", borderRadius:"var(--r-xl)", boxShadow:"var(--shadow-sm)" }}>
+      <form onSubmit={onSubmit} style={{ padding:"32px 36px", display:"flex", flexDirection:"column", gap:20 }}>{children}</form>
+    </div>
+  );
+}
+
+function SidePanel({ title, items, accentColor, accentBg, initial, sectionLabel }) {
+  return (
+    <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
+      <div style={{ background:"var(--bg-card)", border:"1px solid var(--border)", borderRadius:"var(--r-xl)", padding:"28px 24px", boxShadow:"var(--shadow-sm)", textAlign:"center" }}>
+        <div style={{ width:72, height:72, borderRadius:20, background:accentBg, color:accentColor, border:`2px solid ${accentColor}30`, display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"'Instrument Serif',serif", fontSize:30, margin:"0 auto 14px" }}>{initial||"?"}</div>
+        <div style={{ fontSize:13, color:"var(--text-muted)", lineHeight:1.5 }}>{title}</div>
+      </div>
+      <div style={{ background:"var(--bg-card)", border:"1px solid var(--border)", borderRadius:"var(--r-xl)", padding:"20px 24px", boxShadow:"var(--shadow-sm)" }}>
+        <div className="section-label" style={{ marginBottom:12 }}>{sectionLabel}</div>
+        <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+          {items.map((item,i)=>(
+            <div key={i} style={{ display:"flex", gap:10, alignItems:"flex-start" }}>
+              <span style={{ fontSize:14, flexShrink:0, marginTop:1 }}>{item.icon}</span>
+              <span style={{ fontSize:13, color:"var(--text-muted)", lineHeight:1.5 }}>{item.text}</span>
+            </div>
+          ))}
         </div>
-        <div style={{ display:"flex", gap:6 }} onClick={e=>e.stopPropagation()}>
-          <button onClick={()=>onEdit(r)} className="btn-ghost" style={{ padding:"5px 12px", fontSize:12 }}>{t("common.edit")}</button>
-          <button onClick={()=>onDelete(r)} className="btn-danger" style={{ padding:"5px 12px", fontSize:12 }}>{t("common.delete")}</button>
-        </div>
       </div>
-      <div style={{ marginBottom:12 }}>
-        <div style={{ fontWeight:600, fontSize:15, color:"var(--text)" }}>{r.firstname} {r.lastname}</div>
-        {r.speciality && <span style={{ display:"inline-block", marginTop:5, padding:"2px 9px", borderRadius:999, background:C_BG, color:C_COLOR, fontSize:11.5, fontWeight:600, border:`1px solid ${C_COLOR}22` }}>{r.speciality}</span>}
-      </div>
-      <div style={{ paddingTop:12, borderTop:"1px solid var(--border)", display:"flex", flexDirection:"column", gap:5 }}>
-        {r.email && <div style={{ fontSize:12.5, color:"var(--text-muted)", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>✉ {r.email}</div>}
-        {r.phone && <div style={{ fontSize:12.5, color:"var(--text-muted)" }}>📞 {r.phone}</div>}
-      </div>
-      <div style={{ position:"absolute", top:14, right:14, width:7, height:7, borderRadius:"50%", background:r.isApprove?"var(--green)":"var(--amber)", boxShadow:r.isApprove?"0 0 0 2px var(--green-dim)":"0 0 0 2px var(--amber-dim)" }} />
     </div>
   );
 }
@@ -64,69 +68,52 @@ function TwoCol({ left, right }) {
   );
 }
 
-function FormPanel({ children, onSubmit }) {
-  return (
-    <div style={{ background:"var(--bg-card)", border:"1px solid var(--border)", borderRadius:"var(--r-xl)", boxShadow:"var(--shadow-sm)", overflow:"hidden" }}>
-      <form onSubmit={onSubmit} style={{ padding:"32px 36px", display:"flex", flexDirection:"column", gap:20 }}>{children}</form>
-    </div>
-  );
-}
-
-function SidePanel({ title, items, accentColor, accentBg, initial }) {
-  return (
-    <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
-      <div style={{ background:"var(--bg-card)", border:"1px solid var(--border)", borderRadius:"var(--r-xl)", padding:"28px 24px", boxShadow:"var(--shadow-sm)", textAlign:"center" }}>
-        <div style={{ width:72, height:72, borderRadius:20, background:accentBg, color:accentColor, border:`2px solid ${accentColor}30`, display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"'Instrument Serif',serif", fontSize:30, margin:"0 auto 14px" }}>{initial||"?"}</div>
-        <div style={{ fontSize:13, color:"var(--text-muted)", lineHeight:1.5 }}>{title}</div>
-      </div>
-      <div style={{ background:"var(--bg-card)", border:"1px solid var(--border)", borderRadius:"var(--r-xl)", padding:"20px 24px", boxShadow:"var(--shadow-sm)" }}>
-        <div className="section-label" style={{ marginBottom:12 }}>{items.sectionLabel}</div>
-        <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
-          {items.list.map((item,i)=>(
-            <div key={i} style={{ display:"flex", gap:10, alignItems:"flex-start" }}>
-              <span style={{ fontSize:14, flexShrink:0, marginTop:1 }}>{item.icon}</span>
-              <span style={{ fontSize:13, color:"var(--text-muted)", lineHeight:1.5 }}>{item.text}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function StatBox({ icon, label, value, color, bg }) {
+function StatBox({ icon, label, value }) {
   return (
     <div style={{ background:"var(--bg-card)", border:"1px solid var(--border)", borderRadius:"var(--r-lg)", padding:"18px 20px", display:"flex", alignItems:"center", gap:14 }}>
-      <div style={{ width:40, height:40, borderRadius:11, background:bg, color, display:"flex", alignItems:"center", justifyContent:"center", fontSize:18, flexShrink:0 }}>{icon}</div>
-      <div>
+      <div style={{ width:40, height:40, borderRadius:11, background:C_BG, color:C_COLOR, display:"flex", alignItems:"center", justifyContent:"center", fontSize:18, flexShrink:0 }}>{icon}</div>
+      <div style={{ flex:1, minWidth:0 }}>
         <div style={{ fontSize:10.5, fontWeight:700, textTransform:"uppercase", letterSpacing:".08em", color:"var(--text-faint)", marginBottom:4 }}>{label}</div>
-        <div style={{ fontSize:14.5, fontWeight:600, color:"var(--text)", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", maxWidth:200 }}>{value ?? "—"}</div>
+        <div style={{ fontSize:14.5, fontWeight:600, color:"var(--text)", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{value ?? "—"}</div>
+      </div>
+    </div>
+  );
+}
+
+function ClassCard({ r, levelMap, onClick, onEdit, onDelete, t }) {
+  const levelName = r.level?.name ?? levelMap[r.levelId];
+  return (
+    <div className="person-card" style={{ "--card-top":C_COLOR }} onClick={()=>onClick(r)}>
+      <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", marginBottom:16 }}>
+        <div style={{ width:48, height:48, borderRadius:14, background:C_BG, color:C_COLOR, border:`1.5px solid ${C_COLOR}28`, display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"'Instrument Serif',serif", fontSize:22 }}>
+          {(r.name?.[0]??"C").toUpperCase()}
+        </div>
+        {levelName && <span style={{ padding:"3px 9px", borderRadius:999, background:"var(--green-dim)", color:"var(--green)", fontSize:11.5, fontWeight:600, border:"1px solid rgba(42,117,64,.2)" }}>{levelName}</span>}
+      </div>
+      <div style={{ fontWeight:600, fontSize:15, color:"var(--text)", marginBottom:6 }}>{r.name}</div>
+      {r.description && <div style={{ fontSize:13, color:"var(--text-muted)", lineHeight:1.5, marginBottom:14 }}>{r.description}</div>}
+      <div style={{ paddingTop:12, borderTop:"1px solid var(--border)", display:"flex", gap:8 }} onClick={e=>e.stopPropagation()}>
+        <button onClick={()=>onEdit(r)} className="btn-ghost" style={{ flex:1, padding:"7px", fontSize:12 }}>{t("common.edit")}</button>
+        <button onClick={()=>onDelete(r)} className="btn-danger" style={{ flex:1, padding:"7px", fontSize:12 }}>{t("common.delete")}</button>
       </div>
     </div>
   );
 }
 
 /* ─── Filter Bar ─── */
-function FilterBar({ q, setQ, filterSpeciality, setFilterSpeciality, filterStatus, setFilterStatus, specialities, onReset, totalFiltered, total, t }) {
-  const hasFilters = q.trim() || filterSpeciality || filterStatus;
+function FilterBar({ q, setQ, filterLevel, setFilterLevel, levels, onReset, totalFiltered, total, t }) {
+  const hasFilters = q.trim() || filterLevel;
   return (
     <div style={{ background:"var(--bg-card)", border:"1px solid var(--border)", borderRadius:"var(--r-lg)", padding:"16px 20px", marginBottom:20, display:"flex", flexWrap:"wrap", gap:12, alignItems:"center", boxShadow:"var(--shadow-sm)" }}>
       <div className="search-wrap" style={{ flex:"1 1 220px", minWidth:180 }}>
         <svg className="search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-faint)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-        <input className="search-input" placeholder={t("teachers.searchPlaceholder")} value={q} onChange={e=>setQ(e.target.value)} style={{ width:"100%" }} />
+        <input className="search-input" placeholder={t("classes.searchPlaceholder")} value={q} onChange={e=>setQ(e.target.value)} style={{ width:"100%" }} />
       </div>
 
-      {/* Speciality filter (dynamically built from data) */}
-      <select value={filterSpeciality} onChange={e=>setFilterSpeciality(e.target.value)} className="t-select" style={{ flex:"1 1 180px", minWidth:160, maxWidth:220 }}>
-        <option value="">All Specialities</option>
-        {specialities.map(s=><option key={s} value={s}>{s}</option>)}
-      </select>
-
-      {/* Status filter */}
-      <select value={filterStatus} onChange={e=>setFilterStatus(e.target.value)} className="t-select" style={{ flex:"0 0 150px" }}>
-        <option value="">All Statuses</option>
-        <option value="approved">Approved</option>
-        <option value="pending">Pending</option>
+      {/* Level filter */}
+      <select value={filterLevel} onChange={e=>setFilterLevel(e.target.value)} className="t-select" style={{ flex:"1 1 180px", minWidth:160, maxWidth:220 }}>
+        <option value="">All Levels</option>
+        {levels.map(l=><option key={l.id} value={l.id}>{l.name}</option>)}
       </select>
 
       {hasFilters && (
@@ -191,11 +178,12 @@ function Pagination({ page, totalPages, pageSize, setPage, setPageSize, totalFil
 /* ═══════════════════════════════════════════════
    MAIN PAGE
 ═══════════════════════════════════════════════ */
-export default function TeachersPage() {
+export default function ClassesPage() {
   const { t } = useLanguage();
   const toast = useToast();
   const [view, setView]         = useState("list");
   const [data, setData]         = useState([]);
+  const [levels, setLevels]     = useState([]);
   const [loading, setLoading]   = useState(true);
   const [selected, setSelected] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
@@ -203,69 +191,71 @@ export default function TeachersPage() {
   const [deleting, setDeleting] = useState(false);
 
   // Filters
-  const [q, setQ]                           = useState("");
-  const [filterSpeciality, setFilterSpeciality] = useState("");
-  const [filterStatus, setFilterStatus]     = useState("");
+  const [q, setQ]               = useState("");
+  const [filterLevel, setFilterLevel] = useState("");
 
   // Pagination
   const [page, setPage]         = useState(0);
   const [pageSize, setPageSize] = useState(12);
 
-  const { form, set, setForm }  = usePersonForm();
-  const [speciality, setSpeciality] = useState("");
+  const [form, setForm]         = useState({ name:"", description:"", levelId:"" });
   const [editForm, setEditForm] = useState({});
+  const set     = k => e => setForm(f=>({ ...f, [k]:e.target.value }));
   const setEdit = k => e => setEditForm(f=>({ ...f, [k]:e.target.value }));
 
-  const load = () => { setLoading(true); getTeachers().then(setData).catch(e=>toast(e.message,"error")).finally(()=>setLoading(false)); };
+  const load = () => {
+    setLoading(true);
+    Promise.all([getClasses(), getLevelNames()])
+      .then(([c, l]) => {
+        setData(c?.classes ?? c?.content ?? c ?? []);
+        setLevels(Array.isArray(l?.content ?? l) ? (l?.content ?? l) : []);
+      })
+      .catch(e=>toast(e.message,"error")).finally(()=>setLoading(false));
+  };
   useEffect(load, []);
-  useEffect(()=>setPage(0), [q, filterSpeciality, filterStatus]);
+  useEffect(()=>setPage(0), [q, filterLevel]);
 
-  // Build unique specialities list from data
-  const specialities = useMemo(()=>{
-    const arr = Array.isArray(data) ? data : [];
-    return [...new Set(arr.map(r=>r.speciality).filter(Boolean))].sort();
-  }, [data]);
+  const levelMap = useMemo(()=>Object.fromEntries(levels.map(l=>[l.id, l.name])), [levels]);
 
   const filtered = useMemo(() => {
     let arr = Array.isArray(data) ? data : [];
     if (q.trim()) {
       const lq = q.toLowerCase();
       arr = arr.filter(r =>
-        `${r.firstname} ${r.lastname}`.toLowerCase().includes(lq) ||
-        r.email?.toLowerCase().includes(lq) ||
-        r.speciality?.toLowerCase().includes(lq) ||
-        r.phone?.toLowerCase().includes(lq)
+        r.name?.toLowerCase().includes(lq) ||
+        r.description?.toLowerCase().includes(lq) ||
+        (r.level?.name ?? levelMap[r.levelId])?.toLowerCase().includes(lq)
       );
     }
-    if (filterSpeciality) arr = arr.filter(r=>r.speciality===filterSpeciality);
-    if (filterStatus==="approved") arr = arr.filter(r=>r.isApprove);
-    if (filterStatus==="pending")  arr = arr.filter(r=>!r.isApprove);
+    if (filterLevel) {
+      arr = arr.filter(r => String(r.levelId ?? r.level?.id) === String(filterLevel));
+    }
     return arr;
-  }, [data, q, filterSpeciality, filterStatus]);
+  }, [data, q, filterLevel, levelMap]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
   const paginated  = filtered.slice(page * pageSize, (page + 1) * pageSize);
 
-  const resetFilters = () => { setQ(""); setFilterSpeciality(""); setFilterStatus(""); setPage(0); };
+  const resetFilters = () => { setQ(""); setFilterLevel(""); setPage(0); };
   const goList = () => { setView("list"); setSelected(null); };
 
   const handleCreate = async e => {
     e.preventDefault(); setSaving(true);
-    try { await createTeacher({ registrationRequest:form, speciality }); setForm({ firstname:"", lastname:"", email:"", phone:"", nni:"" }); setSpeciality(""); toast(t("teachers.registered")); load(); goList(); }
+    try { await createClasse({ ...form, levelId:parseInt(form.levelId)||undefined }); setForm({ name:"", description:"", levelId:"" }); toast(t("classes.created")); load(); goList(); }
     catch(err) { toast(err.message,"error"); } finally { setSaving(false); }
   };
 
-  const openEdit = r => { setEditForm({ id:r.id, firstname:r.firstname??"", lastname:r.lastname??"", email:r.email??"", phone:r.phone??"", nni:r.nni??"", speciality:r.speciality??"" }); setSelected(r); setView("edit"); };
+  const openEdit = r => { setEditForm({ id:r.id, name:r.name??"", description:r.description??"", levelId:r.levelId??r.level?.id??"" }); setSelected(r); setView("edit"); };
 
   const handleEdit = async e => {
     e.preventDefault(); setSaving(true);
-    try { await updateTeacher(selected.id, editForm); toast(t("teachers.updated")); load(); goList(); }
+    try { await updateClasse(selected.id, { ...editForm, levelId:parseInt(editForm.levelId)||undefined }); toast(t("classes.updated")); load(); goList(); }
     catch(err) { toast(err.message,"error"); } finally { setSaving(false); }
   };
 
   const handleDelete = async () => {
     setDeleting(true);
-    try { await deleteTeacher(deleteTarget.id); setDeleteTarget(null); toast(t("teachers.deleted")); load(); if(view!=="list") goList(); }
+    try { await deleteClasse(deleteTarget.id); setDeleteTarget(null); toast(t("classes.deleted")); load(); if(view!=="list") goList(); }
     catch(err) { toast(err.message,"error"); } finally { setDeleting(false); }
   };
 
@@ -273,16 +263,15 @@ export default function TeachersPage() {
   if (view === "list") return (
     <div className="page-enter" style={{ padding:"36px 44px" }}>
       <div style={{ display:"flex", alignItems:"flex-end", justifyContent:"space-between", marginBottom:28 }}>
-        <PageTitle crumb={t("teachers.crumb")} title={t("teachers.title")}
-          sub={loading ? t("common.loading") : `${filtered.length} ${t("teachers.title").toLowerCase()}`} />
-        <button onClick={()=>setView("create")} className="btn-primary" style={{ marginBottom:32 }}>{t("teachers.addBtn")}</button>
+        <PageTitle crumb={t("classes.crumb")} title={t("classes.title")}
+          sub={loading ? t("common.loading") : t("classes.count", { n: filtered.length })} />
+        <button onClick={()=>setView("create")} className="btn-primary" style={{ marginBottom:32 }}>{t("classes.addBtn")}</button>
       </div>
 
       <FilterBar
         q={q} setQ={setQ}
-        filterSpeciality={filterSpeciality} setFilterSpeciality={setFilterSpeciality}
-        filterStatus={filterStatus} setFilterStatus={setFilterStatus}
-        specialities={specialities}
+        filterLevel={filterLevel} setFilterLevel={setFilterLevel}
+        levels={levels}
         onReset={resetFilters}
         totalFiltered={filtered.length}
         total={Array.isArray(data) ? data.length : 0}
@@ -293,13 +282,13 @@ export default function TeachersPage() {
         ? <div className="empty-state"><div className="spinner" style={{ width:22, height:22 }} /><p>{t("common.loading")}</p></div>
         : paginated.length === 0
           ? <div className="empty-state">
-              <span style={{ fontSize:36 }}>🎓</span>
-              <p>{q||filterSpeciality||filterStatus ? "No teachers match your filters." : t("teachers.empty")}</p>
-              {(q||filterSpeciality||filterStatus) && <button onClick={resetFilters} className="btn-ghost" style={{ marginTop:8 }}>Clear filters</button>}
+              <span style={{ fontSize:36 }}>🏫</span>
+              <p>{q||filterLevel ? "No classes match your filters." : t("classes.empty")}</p>
+              {(q||filterLevel) && <button onClick={resetFilters} className="btn-ghost" style={{ marginTop:8 }}>Clear filters</button>}
             </div>
-          : <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(280px, 1fr))", gap:16 }}>
+          : <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(240px, 1fr))", gap:16 }}>
               {paginated.map((r,i)=>(
-                <TeacherCard key={r.id??i} r={r} t={t}
+                <ClassCard key={r.id??i} r={r} levelMap={levelMap} t={t}
                   onClick={r=>{ setSelected(r); setView("detail"); }}
                   onEdit={openEdit}
                   onDelete={target=>setDeleteTarget(target)} />
@@ -313,8 +302,8 @@ export default function TeachersPage() {
 
       {deleteTarget && (
         <ConfirmDialog
-          title={t("teachers.deleteTitle", { name:`${deleteTarget.firstname} ${deleteTarget.lastname}` })}
-          message={t("teachers.deleteMsg")}
+          title={t("classes.deleteTitle", { name:deleteTarget.name })}
+          message={t("classes.deleteMsg")}
           onConfirm={handleDelete} onCancel={()=>setDeleteTarget(null)} loading={deleting} />
       )}
     </div>
@@ -323,31 +312,25 @@ export default function TeachersPage() {
   /* ══ CREATE ══ */
   if (view === "create") return (
     <div className="page-enter" style={{ padding:"36px 44px" }}>
-      <BackBtn label={t("teachers.detailBack")} onClick={goList} />
-      <PageTitle crumb={`${t("teachers.crumb")} · ${t("teachers.title")}`} title={t("teachers.registerTitle")} sub={t("teachers.registerSub")} />
+      <BackBtn label={t("classes.detailBack")} onClick={goList} />
+      <PageTitle crumb={`${t("classes.crumb")} · ${t("classes.title")}`} title={t("classes.createTitle")} sub={t("classes.createSub")} />
       <TwoCol
         left={<FormPanel onSubmit={handleCreate}>
-          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:16 }}>
-            <Field label={t("fields.firstName")}><Input placeholder={t("fields.firstNamePlaceholder")} value={form.firstname} onChange={set("firstname")} required /></Field>
-            <Field label={t("fields.lastName")}><Input placeholder={t("fields.lastNamePlaceholder")} value={form.lastname} onChange={set("lastname")} required /></Field>
-          </div>
-          <Field label={t("fields.email")}><Input type="email" placeholder={t("fields.emailPlaceholder")} value={form.email} onChange={set("email")} required /></Field>
-          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:16 }}>
-            <Field label={t("fields.phone")}><Input placeholder={t("fields.phonePlaceholder")} value={form.phone} onChange={set("phone")} required minLength={8} /></Field>
-            <Field label={t("fields.nni")}><Input placeholder={t("fields.nniPlaceholder")} value={form.nni} onChange={set("nni")} required minLength={8} /></Field>
-          </div>
-          <Field label={t("teachers.speciality")}><Input placeholder={t("teachers.specialityPlaceholder")} value={speciality} onChange={e=>setSpeciality(e.target.value)} /></Field>
+          <Field label={t("classes.className")}><Input placeholder={t("classes.classNamePlaceholder")} value={form.name} onChange={set("name")} required /></Field>
+          <Field label={t("classes.description")}><Input placeholder={t("classes.descriptionPlaceholder")} value={form.description} onChange={set("description")} /></Field>
+          <Field label={t("classes.level")} hint={t("classes.levelHint")}>
+            <Select value={form.levelId} onChange={set("levelId")} required>
+              <option value="">{t("classes.levelSelect")}</option>
+              {levels.map(l=><option key={l.id} value={l.id}>{l.name}</option>)}
+            </Select>
+          </Field>
           <div style={{ display:"flex", gap:12, paddingTop:4 }}>
             <button type="button" onClick={goList} className="btn-ghost" style={{ flex:1, padding:"12px" }}>{t("common.cancel")}</button>
-            <div style={{ flex:2 }}><SubmitBtn loading={saving} label={t("teachers.registerBtn")} /></div>
+            <div style={{ flex:2 }}><SubmitBtn loading={saving} label={t("classes.createBtn")} /></div>
           </div>
         </FormPanel>}
-        right={<SidePanel title={t("teachers.sideNote3")} initial={(form.firstname?.[0]??"?").toUpperCase()} accentColor={C_COLOR} accentBg={C_BG}
-          items={{ sectionLabel:t("common.notes"), list:[
-            { icon:"📧", text:t("teachers.sideNote1") },
-            { icon:"🔢", text:t("teachers.sideNote2") },
-            { icon:"✅", text:t("teachers.sideNote3") },
-          ]}} />}
+        right={<SidePanel title={t("classes.sideNote")} initial={(form.name?.[0]??"?").toUpperCase()} accentColor={C_COLOR} accentBg={C_BG} sectionLabel={t("common.notes")}
+          items={[{ icon:"🏷️", text:t("classes.sideNote1") }, { icon:"📚", text:t("classes.sideNote2") }, { icon:"🗓️", text:t("classes.sideNote3") }]} />}
       />
     </div>
   );
@@ -355,30 +338,25 @@ export default function TeachersPage() {
   /* ══ EDIT ══ */
   if (view === "edit" && selected) return (
     <div className="page-enter" style={{ padding:"36px 44px" }}>
-      <BackBtn label={t("teachers.detailBack")} onClick={goList} />
-      <PageTitle crumb={`${t("teachers.crumb")} · ${t("teachers.title")}`} title={t("teachers.editTitle")} sub={t("teachers.editSub", { name:`${selected.firstname} ${selected.lastname}` })} />
+      <BackBtn label={t("classes.detailBack")} onClick={goList} />
+      <PageTitle crumb={`${t("classes.crumb")} · ${t("classes.title")}`} title={t("classes.editTitle")} sub={t("classes.editSub", { name:selected.name })} />
       <TwoCol
         left={<FormPanel onSubmit={handleEdit}>
-          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:16 }}>
-            <Field label={t("fields.firstName")}><Input value={editForm.firstname} onChange={setEdit("firstname")} required /></Field>
-            <Field label={t("fields.lastName")}><Input value={editForm.lastname} onChange={setEdit("lastname")} required /></Field>
-          </div>
-          <Field label={t("fields.email")}><Input type="email" value={editForm.email} onChange={setEdit("email")} required /></Field>
-          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:16 }}>
-            <Field label={t("fields.phone")}><Input value={editForm.phone} onChange={setEdit("phone")} /></Field>
-            <Field label={t("fields.nni")}><Input value={editForm.nni} onChange={setEdit("nni")} /></Field>
-          </div>
-          <Field label={t("teachers.speciality")}><Input value={editForm.speciality} onChange={setEdit("speciality")} /></Field>
+          <Field label={t("classes.className")}><Input value={editForm.name} onChange={setEdit("name")} required /></Field>
+          <Field label={t("classes.description")}><Input value={editForm.description} onChange={setEdit("description")} /></Field>
+          <Field label={t("classes.level")}>
+            <Select value={editForm.levelId} onChange={setEdit("levelId")}>
+              <option value="">{t("classes.levelSelect")}</option>
+              {levels.map(l=><option key={l.id} value={l.id}>{l.name}</option>)}
+            </Select>
+          </Field>
           <div style={{ display:"flex", gap:12, paddingTop:4 }}>
             <button type="button" onClick={goList} className="btn-ghost" style={{ flex:1, padding:"12px" }}>{t("common.cancel")}</button>
-            <div style={{ flex:2 }}><SubmitBtn loading={saving} label={t("teachers.saveBtn")} /></div>
+            <div style={{ flex:2 }}><SubmitBtn loading={saving} label={t("classes.saveBtn")} /></div>
           </div>
         </FormPanel>}
-        right={<SidePanel title={t("teachers.editSub", { name:`${selected.firstname} ${selected.lastname}` })} initial={(selected.firstname?.[0]??"?").toUpperCase()} accentColor={C_COLOR} accentBg={C_BG}
-          items={{ sectionLabel:t("common.notes"), list:[
-            { icon:"💡", text:t("teachers.editNote1") },
-            { icon:"📧", text:t("teachers.editNote2") },
-          ]}} />}
+        right={<SidePanel title={t("classes.editSub", { name:selected.name })} initial={(selected.name?.[0]??"?").toUpperCase()} accentColor={C_COLOR} accentBg={C_BG} sectionLabel={t("common.notes")}
+          items={[{ icon:"💡", text:t("classes.editNote1") }, { icon:"🏷️", text:t("classes.editNote2") }]} />}
       />
     </div>
   );
@@ -386,9 +364,10 @@ export default function TeachersPage() {
   /* ══ DETAIL ══ */
   if (view === "detail" && selected) {
     const v = selected;
+    const levelName = v.level?.name ?? levelMap[v.levelId];
     return (
       <div className="page-enter" style={{ padding:"36px 44px" }}>
-        <BackBtn label={t("teachers.detailBack")} onClick={goList} />
+        <BackBtn label={t("classes.detailBack")} onClick={goList} />
         <div style={{ background:"var(--bg-card)", border:"1px solid var(--border)", borderRadius:"var(--r-xl)", boxShadow:"var(--shadow-sm)", overflow:"hidden", marginBottom:24 }}>
           <div style={{ height:90, background:`linear-gradient(135deg, ${C_COLOR}22 0%, ${C_COLOR}08 100%)`, position:"relative" }}>
             <div style={{ position:"absolute", inset:0, backgroundImage:`radial-gradient(circle at 80% 50%, ${C_COLOR}18 0%, transparent 60%)` }} />
@@ -397,17 +376,15 @@ export default function TeachersPage() {
             <div style={{ display:"flex", alignItems:"flex-end", justifyContent:"space-between", flexWrap:"wrap", gap:16 }}>
               <div style={{ display:"flex", alignItems:"flex-end", gap:20 }}>
                 <div style={{ width:80, height:80, borderRadius:22, background:C_BG, color:C_COLOR, border:"3px solid var(--bg-card)", boxShadow:`0 0 0 2px ${C_COLOR}40`, display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"'Instrument Serif',serif", fontSize:32, flexShrink:0 }}>
-                  {(v.firstname?.[0]??"T").toUpperCase()}
+                  {(v.name?.[0]??"C").toUpperCase()}
                 </div>
                 <div style={{ paddingBottom:4 }}>
-                  <h2 style={{ margin:0, fontSize:22, fontFamily:"'Instrument Serif',serif", color:"var(--text)", letterSpacing:"-.025em" }}>{v.firstname} {v.lastname}</h2>
-                  <div style={{ display:"flex", gap:8, marginTop:7, flexWrap:"wrap" }}>
-                    {v.speciality && <span style={{ padding:"3px 11px", borderRadius:999, background:C_BG, color:C_COLOR, fontSize:12, fontWeight:600, border:`1px solid ${C_COLOR}30` }}>{v.speciality}</span>}
-                    <span style={{ display:"inline-flex", alignItems:"center", gap:5, padding:"3px 10px", borderRadius:999, fontSize:12, fontWeight:600, background:v.isApprove?"var(--green-dim)":"var(--amber-dim)", color:v.isApprove?"var(--green)":"var(--amber)", border:`1px solid ${v.isApprove?"rgba(42,117,64,.25)":"rgba(168,100,30,.25)"}` }}>
-                      <span style={{ width:6, height:6, borderRadius:"50%", background:v.isApprove?"var(--green)":"var(--amber)" }} />
-                      {v.isApprove ? t("common.approved") : t("common.pending")}
+                  <h2 style={{ margin:0, fontSize:22, fontFamily:"'Instrument Serif',serif", color:"var(--text)", letterSpacing:"-.025em" }}>{v.name}</h2>
+                  {levelName && (
+                    <span style={{ display:"inline-block", marginTop:7, padding:"3px 11px", borderRadius:999, background:"var(--green-dim)", color:"var(--green)", fontSize:12, fontWeight:600, border:"1px solid rgba(42,117,64,.25)" }}>
+                      {levelName}
                     </span>
-                  </div>
+                  )}
                 </div>
               </div>
               <div style={{ display:"flex", gap:10 }}>
@@ -418,17 +395,15 @@ export default function TeachersPage() {
           </div>
         </div>
         <div style={{ display:"grid", gridTemplateColumns:"repeat(3, 1fr)", gap:14 }}>
-          <StatBox icon="✉️" label={t("teachers.fields.email")}  value={v.email}       color={C_COLOR} bg={C_BG} />
-          <StatBox icon="📞" label={t("teachers.fields.phone")}  value={v.phone}       color={C_COLOR} bg={C_BG} />
-          <StatBox icon="🪪" label={t("teachers.fields.nni")}    value={v.nni}         color={C_COLOR} bg={C_BG} />
-          <StatBox icon="🎓" label={t("teachers.speciality")}    value={v.speciality}  color={C_COLOR} bg={C_BG} />
-          <StatBox icon="🆔" label={t("teachers.fields.userId")} value={v.userId}      color={C_COLOR} bg={C_BG} />
-          <StatBox icon="🎂" label={t("teachers.fields.dob")}    value={v.dateOfBrith} color={C_COLOR} bg={C_BG} />
+          <StatBox icon="🏫" label={t("classes.fields.name")}        value={v.name} />
+          <StatBox icon="🏷️" label={t("classes.fields.level")}       value={levelName} />
+          <StatBox icon="🆔" label={t("classes.fields.id")}          value={v.id} />
+          {v.description && <StatBox icon="📝" label={t("classes.fields.description")} value={v.description} />}
         </div>
         {deleteTarget && (
           <ConfirmDialog
-            title={t("teachers.deleteTitle", { name:`${deleteTarget.firstname} ${deleteTarget.lastname}` })}
-            message={t("teachers.deleteMsg")}
+            title={t("classes.deleteTitle", { name:deleteTarget.name })}
+            message={t("classes.deleteDetailMsg")}
             onConfirm={handleDelete} onCancel={()=>setDeleteTarget(null)} loading={deleting} />
         )}
       </div>

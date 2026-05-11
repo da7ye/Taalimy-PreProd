@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { BASE_URL } from "../api";
 
 function EyeIcon({ open }) {
@@ -38,7 +38,7 @@ function MoonIcon() {
   );
 }
 
-export default function LoginPage({ onLogin, isDark, onToggleTheme }) {
+export default function LoginPage({ onLogin, isDark, onToggleTheme, banner, onClearBanner, onGoAuth }) {
   const [identifier, setIdentifier] = useState("");
   const [password,   setPassword]   = useState("");
   const [showPass,   setShowPass]   = useState(false);
@@ -48,24 +48,23 @@ export default function LoginPage({ onLogin, isDark, onToggleTheme }) {
   const [focusId,    setFocusId]    = useState(false);
   const [focusPw,    setFocusPw]    = useState(false);
 
-  // ── theme tokens ────────────────────────────────────────────
+  /* auto-dismiss banner after 6s */
+  useEffect(() => {
+    if (!banner) return;
+    const t = setTimeout(() => onClearBanner?.(), 6000);
+    return () => clearTimeout(t);
+  }, [banner]);
+
   const D = isDark;
 
-  // left panel always dark regardless of theme
   const LEFT_BG   = "linear-gradient(160deg, #12102A 0%, #0D1A14 65%, #0A0E1F 100%)";
-
-  // right panel adapts
-  const RIGHT_BG  = D
-    ? "linear-gradient(160deg, #13111E 0%, #0E0C1A 100%)"
-    : "linear-gradient(160deg, #F4F6FF 0%, #EDF0FA 100%)";
-
+  const RIGHT_BG  = D ? "linear-gradient(160deg, #13111E 0%, #0E0C1A 100%)" : "linear-gradient(160deg, #F4F6FF 0%, #EDF0FA 100%)";
   const TEXT_HEA  = D ? "#ffffff"                   : "#0F1520";
   const TEXT_SUB  = D ? "rgba(255,255,255,0.38)"    : "rgba(15,21,32,0.48)";
   const TEXT_TINY = D ? "rgba(155,143,255,0.75)"    : "rgba(79,67,192,0.75)";
   const INPUT_BG  = D ? "rgba(255,255,255,0.06)"    : "rgba(15,21,32,0.05)";
   const INPUT_BD  = D ? "rgba(255,255,255,0.10)"    : "rgba(15,21,32,0.14)";
   const INPUT_FG  = D ? "#ffffff"                   : "#0F1520";
-  const INPUT_PH  = D ? "rgba(255,255,255,0.28)"    : "rgba(15,21,32,0.32)";
   const INPUT_FOC_BD = D ? "rgba(155,143,255,0.65)" : "rgba(79,67,192,0.60)";
   const INPUT_FOC_SH = D ? "rgba(155,143,255,0.13)" : "rgba(79,67,192,0.10)";
   const INPUT_FOC_BG = D ? "rgba(255,255,255,0.10)" : "rgba(15,21,32,0.03)";
@@ -79,7 +78,10 @@ export default function LoginPage({ onLogin, isDark, onToggleTheme }) {
   const ERR_BG    = D ? "rgba(224,112,112,0.10)"    : "rgba(184,53,53,0.08)";
   const ERR_BD    = D ? "rgba(224,112,112,0.22)"    : "rgba(184,53,53,0.20)";
   const ERR_COL   = D ? "#E07070"                   : "#B83535";
-  const AUTOFILL  = D ? "#12102A"                   : "#EDF0FA";
+  const SUC_BG    = D ? "rgba(86,199,133,0.10)"     : "rgba(42,117,64,0.08)";
+  const SUC_BD    = D ? "rgba(86,199,133,0.25)"     : "rgba(42,117,64,0.22)";
+  const SUC_COL   = D ? "#56C785"                   : "#2A7540";
+  const LINK_COL  = D ? "rgba(155,143,255,0.85)"    : "rgba(79,67,192,0.85)";
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -142,65 +144,50 @@ export default function LoginPage({ onLogin, isDark, onToggleTheme }) {
           0%,100%{ transform:translate(0,0); }
           50%{ transform:translate(20px,-40px); }
         }
+        @keyframes bannerIn {
+          from{ opacity:0; transform:translateY(-8px); }
+          to  { opacity:1; transform:translateY(0); }
+        }
         .ll { animation: fadeSlideIn .7s cubic-bezier(.22,1,.36,1) both; }
         .lr { animation: fadeSlideUp .6s cubic-bezier(.22,1,.36,1) .1s both; }
         .lshake { animation: shakeX .5s ease-out; }
         .feat { animation: fadeSlideUp .5s ease-out both; }
+        .banner-anim { animation: bannerIn .3s ease-out both; }
       `}</style>
 
-      {/* ── FULL SCREEN ROOT ─────────────────────────────────── */}
       <div style={{
         position: "fixed", inset: 0, zIndex: 9999,
-        display: "flex",
-        fontFamily: "'Instrument Sans', sans-serif",
+        display: "flex", fontFamily: "'Instrument Sans', sans-serif",
         transition: "background .3s",
       }}>
 
-        {/* ── THEME TOGGLE (top-right, always visible) ───────── */}
-        <button
-          onClick={onToggleTheme}
+        {/* theme toggle */}
+        <button onClick={onToggleTheme}
           title={D ? "Switch to light mode" : "Switch to dark mode"}
           style={{
             position: "absolute", top: 22, right: 24, zIndex: 100,
             width: 40, height: 40, borderRadius: 11,
             background: TOG_BG, border: `1.5px solid ${TOG_BD}`,
-            color: TOG_COL,
-            display: "flex", alignItems: "center", justifyContent: "center",
-            cursor: "pointer",
-            transition: "background .2s, border-color .2s, color .2s, transform .15s",
+            color: TOG_COL, display: "flex", alignItems: "center", justifyContent: "center",
+            cursor: "pointer", transition: "background .2s, border-color .2s, color .2s, transform .15s",
           }}
-          onMouseEnter={e => {
-            e.currentTarget.style.transform = "scale(1.08)";
-            e.currentTarget.style.background = D ? "rgba(255,255,255,0.14)" : "rgba(15,21,32,0.12)";
-            e.currentTarget.style.color = D ? "#fff" : "#0F1520";
-          }}
-          onMouseLeave={e => {
-            e.currentTarget.style.transform = "";
-            e.currentTarget.style.background = TOG_BG;
-            e.currentTarget.style.color = TOG_COL;
-          }}
+          onMouseEnter={e => { e.currentTarget.style.transform="scale(1.08)"; e.currentTarget.style.background=D?"rgba(255,255,255,0.14)":"rgba(15,21,32,0.12)"; e.currentTarget.style.color=D?"#fff":"#0F1520"; }}
+          onMouseLeave={e => { e.currentTarget.style.transform=""; e.currentTarget.style.background=TOG_BG; e.currentTarget.style.color=TOG_COL; }}
         >
           {D ? <SunIcon /> : <MoonIcon />}
         </button>
 
-        {/* ════════════════════════════════════════
-            LEFT PANEL — always dark branded
-        ════════════════════════════════════════ */}
+        {/* ── LEFT PANEL ── */}
         <div className="ll" style={{
           width: "52%", flexShrink: 0,
-          background: LEFT_BG,
-          position: "relative", overflow: "hidden",
-          display: "flex", flexDirection: "column",
-          padding: "56px 72px",
+          background: LEFT_BG, position: "relative", overflow: "hidden",
+          display: "flex", flexDirection: "column", padding: "56px 72px",
         }}>
-          {/* orbs */}
           <div style={{ position:"absolute", top:"-15%", left:"-10%", width:560, height:560, borderRadius:"50%", background:"radial-gradient(circle,rgba(79,67,192,0.32) 0%,transparent 65%)", animation:"float1 10s ease-in-out infinite", pointerEvents:"none" }} />
           <div style={{ position:"absolute", bottom:"-20%", right:"-10%", width:640, height:640, borderRadius:"50%", background:"radial-gradient(circle,rgba(14,126,104,0.22) 0%,transparent 65%)", animation:"float2 14s ease-in-out infinite", pointerEvents:"none" }} />
           <div style={{ position:"absolute", top:"40%", right:"8%", width:300, height:300, borderRadius:"50%", background:"radial-gradient(circle,rgba(212,148,74,0.16) 0%,transparent 65%)", animation:"float3 18s ease-in-out infinite", pointerEvents:"none" }} />
-          {/* grid */}
           <div style={{ position:"absolute", inset:0, backgroundImage:"linear-gradient(rgba(255,255,255,.022) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.022) 1px,transparent 1px)", backgroundSize:"52px 52px", pointerEvents:"none" }} />
 
-          {/* logo */}
           <div style={{ display:"flex", alignItems:"center", gap:14, position:"relative" }}>
             <div style={{ width:48, height:48, borderRadius:14, background:"linear-gradient(135deg,#4F43C0,#9B8FFF)", display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"'Instrument Serif',serif", fontSize:22, color:"#fff", boxShadow:"0 4px 24px rgba(79,67,192,0.6)", flexShrink:0 }}>T</div>
             <div>
@@ -209,7 +196,6 @@ export default function LoginPage({ onLogin, isDark, onToggleTheme }) {
             </div>
           </div>
 
-          {/* hero */}
           <div style={{ flex:1, display:"flex", flexDirection:"column", justifyContent:"center", position:"relative" }}>
             <div style={{ fontSize:11, fontWeight:800, letterSpacing:".16em", textTransform:"uppercase", color:"rgba(155,143,255,0.75)", marginBottom:20 }}>School Management System</div>
             <h1 style={{ margin:"0 0 22px", fontFamily:"'Instrument Serif',serif", fontSize:"clamp(38px,3.5vw,54px)", color:"#fff", letterSpacing:"-.04em", lineHeight:1.08 }}>
@@ -234,7 +220,6 @@ export default function LoginPage({ onLogin, isDark, onToggleTheme }) {
             </div>
           </div>
 
-          {/* stats */}
           <div style={{ position:"relative", borderTop:"1px solid rgba(255,255,255,0.07)", paddingTop:32, display:"grid", gridTemplateColumns:"repeat(4,1fr)" }}>
             {[
               { value:"48+",  label:"Teachers" },
@@ -250,36 +235,41 @@ export default function LoginPage({ onLogin, isDark, onToggleTheme }) {
           </div>
         </div>
 
-        {/* ════════════════════════════════════════
-            RIGHT PANEL — theme-aware form
-        ════════════════════════════════════════ */}
+        {/* ── RIGHT PANEL ── */}
         <div className="lr" style={{
-          flex: 1,
-          background: RIGHT_BG,
+          flex: 1, background: RIGHT_BG,
           display: "flex", flexDirection: "column",
           alignItems: "center", justifyContent: "center",
-          padding: "56px 72px",
-          position: "relative", overflow: "hidden",
+          padding: "56px 72px", position: "relative", overflow: "hidden",
           transition: "background .3s",
         }}>
-          {/* right orbs */}
-          <div style={{ position:"absolute", top:"-12%", right:"-8%", width:420, height:420, borderRadius:"50%", background: D ? "radial-gradient(circle,rgba(155,143,255,0.13) 0%,transparent 70%)" : "radial-gradient(circle,rgba(79,67,192,0.09) 0%,transparent 70%)", pointerEvents:"none", transition:"background .3s" }} />
-          <div style={{ position:"absolute", bottom:"-12%", left:"-8%", width:380, height:380, borderRadius:"50%", background: D ? "radial-gradient(circle,rgba(78,201,176,0.10) 0%,transparent 70%)" : "radial-gradient(circle,rgba(14,126,104,0.08) 0%,transparent 70%)", pointerEvents:"none", transition:"background .3s" }} />
+          <div style={{ position:"absolute", top:"-12%", right:"-8%", width:420, height:420, borderRadius:"50%", background: D ? "radial-gradient(circle,rgba(155,143,255,0.13) 0%,transparent 70%)" : "radial-gradient(circle,rgba(79,67,192,0.09) 0%,transparent 70%)", pointerEvents:"none" }} />
+          <div style={{ position:"absolute", bottom:"-12%", left:"-8%", width:380, height:380, borderRadius:"50%", background: D ? "radial-gradient(circle,rgba(78,201,176,0.10) 0%,transparent 70%)" : "radial-gradient(circle,rgba(14,126,104,0.08) 0%,transparent 70%)", pointerEvents:"none" }} />
 
           <div style={{ width:"100%", maxWidth:420, position:"relative" }}>
 
-            {/* header */}
+            {/* banner (success from setup / already has account) */}
+            {banner && (
+              <div className="banner-anim" style={{
+                marginBottom:24, padding:"13px 16px", borderRadius:12,
+                background:SUC_BG, border:`1px solid ${SUC_BD}`,
+                display:"flex", gap:10, alignItems:"flex-start",
+              }}>
+                <div style={{ width:22, height:22, borderRadius:7, flexShrink:0, background:D?"rgba(86,199,133,0.20)":"rgba(42,117,64,0.14)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:12, color:SUC_COL, fontWeight:700, marginTop:1 }}>✓</div>
+                <span style={{ fontSize:13.5, color:SUC_COL, lineHeight:1.45, flex:1 }}>{banner}</span>
+                <button type="button" onClick={onClearBanner} style={{ background:"none", border:"none", cursor:"pointer", color:SUC_COL, opacity:.6, padding:0, fontSize:14, flexShrink:0, marginTop:1 }}>✕</button>
+              </div>
+            )}
+
             <div style={{ marginBottom:48 }}>
               <div style={{ fontSize:11, fontWeight:800, letterSpacing:".16em", textTransform:"uppercase", color:TEXT_TINY, marginBottom:14, transition:"color .3s" }}>Welcome back</div>
               <h2 style={{ margin:"0 0 12px", fontFamily:"'Instrument Serif',serif", fontSize:40, color:TEXT_HEA, letterSpacing:"-.04em", lineHeight:1.05, transition:"color .3s" }}>Sign in</h2>
               <p style={{ margin:0, fontSize:15, color:TEXT_SUB, lineHeight:1.6, transition:"color .3s" }}>Enter your staff credentials to continue</p>
             </div>
 
-            {/* form */}
             <form onSubmit={handleSubmit}>
               <div className={shake ? "lshake" : ""} style={{ display:"flex", flexDirection:"column", gap:16 }}>
 
-                {/* identifier */}
                 <div style={{ position:"relative" }}>
                   <div style={{ position:"absolute", left:16, top:"50%", transform:"translateY(-50%)", color: focusId ? ICON_FOC : ICON_COL, transition:"color .2s", pointerEvents:"none", display:"flex" }}>
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -298,8 +288,7 @@ export default function LoginPage({ onLogin, isDark, onToggleTheme }) {
                       padding:"16px 16px 16px 48px",
                       background: focusId ? INPUT_FOC_BG : INPUT_BG,
                       border: `1.5px solid ${focusId ? INPUT_FOC_BD : INPUT_BD}`,
-                      borderRadius:14,
-                      color: INPUT_FG,
+                      borderRadius:14, color: INPUT_FG,
                       fontFamily:"'Instrument Sans',sans-serif",
                       fontSize:15, outline:"none",
                       boxShadow: focusId ? `0 0 0 4px ${INPUT_FOC_SH}` : "none",
@@ -309,7 +298,6 @@ export default function LoginPage({ onLogin, isDark, onToggleTheme }) {
                   />
                 </div>
 
-                {/* password */}
                 <div style={{ position:"relative" }}>
                   <div style={{ position:"absolute", left:16, top:"50%", transform:"translateY(-50%)", color: focusPw ? ICON_FOC : ICON_COL, transition:"color .2s", pointerEvents:"none", display:"flex" }}>
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -328,8 +316,7 @@ export default function LoginPage({ onLogin, isDark, onToggleTheme }) {
                       padding:"16px 50px 16px 48px",
                       background: focusPw ? INPUT_FOC_BG : INPUT_BG,
                       border: `1.5px solid ${focusPw ? INPUT_FOC_BD : INPUT_BD}`,
-                      borderRadius:14,
-                      color: INPUT_FG,
+                      borderRadius:14, color: INPUT_FG,
                       fontFamily:"'Instrument Sans',sans-serif",
                       fontSize:15, outline:"none",
                       boxShadow: focusPw ? `0 0 0 4px ${INPUT_FOC_SH}` : "none",
@@ -346,7 +333,6 @@ export default function LoginPage({ onLogin, isDark, onToggleTheme }) {
                   </button>
                 </div>
 
-                {/* error */}
                 {error && (
                   <div style={{ padding:"13px 16px", borderRadius:12, background:ERR_BG, border:`1px solid ${ERR_BD}`, display:"flex", gap:10, alignItems:"center" }}>
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={ERR_COL} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink:0 }}>
@@ -356,7 +342,6 @@ export default function LoginPage({ onLogin, isDark, onToggleTheme }) {
                   </div>
                 )}
 
-                {/* submit */}
                 <button
                   type="submit"
                   disabled={loading}
@@ -364,8 +349,7 @@ export default function LoginPage({ onLogin, isDark, onToggleTheme }) {
                     marginTop:8, width:"100%", padding:"16px",
                     borderRadius:14, border:"none",
                     background:"linear-gradient(135deg,#9B8FFF 0%,#6B5FE8 50%,#4F43C0 100%)",
-                    color:"#fff",
-                    fontFamily:"'Instrument Sans',sans-serif",
+                    color:"#fff", fontFamily:"'Instrument Sans',sans-serif",
                     fontSize:15, fontWeight:700, cursor: loading ? "not-allowed" : "pointer",
                     letterSpacing:".02em",
                     display:"flex", alignItems:"center", justifyContent:"center", gap:8,
@@ -387,10 +371,25 @@ export default function LoginPage({ onLogin, isDark, onToggleTheme }) {
               </div>
             </form>
 
-            {/* footer */}
-            <div style={{ marginTop:44, paddingTop:28, borderTop:`1px solid ${DIV_LINE}`, display:"flex", alignItems:"center", justifyContent:"center", gap:8, transition:"border-color .3s" }}>
-              <div style={{ width:7, height:7, borderRadius:"50%", background:"#56C785", boxShadow:"0 0 8px #56C785" }} />
-              <span style={{ fontSize:12.5, color:FOOT_TXT, transition:"color .3s" }}>Secured with JWT authentication</span>
+            {/* divider + first-time link */}
+            <div style={{ marginTop:28, paddingTop:22, borderTop:`1px solid ${DIV_LINE}`, display:"flex", flexDirection:"column", gap:14 }}>
+              {onGoAuth && (
+                <div style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
+                  <span style={{ fontSize:13, color:FOOT_TXT }}>First time here?</span>
+                  <button
+                    onClick={onGoAuth}
+                    style={{ background:"none", border:"none", cursor:"pointer", fontFamily:"'Instrument Sans',sans-serif", fontSize:13, fontWeight:600, color:LINK_COL, padding:0, transition:"opacity .15s" }}
+                    onMouseEnter={e => e.currentTarget.style.opacity=".7"}
+                    onMouseLeave={e => e.currentTarget.style.opacity="1"}
+                  >
+                    Set up your account →
+                  </button>
+                </div>
+              )}
+              <div style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
+                <div style={{ width:7, height:7, borderRadius:"50%", background:"#56C785", boxShadow:"0 0 8px #56C785" }} />
+                <span style={{ fontSize:12.5, color:FOOT_TXT }}>Secured with JWT authentication</span>
+              </div>
             </div>
           </div>
         </div>

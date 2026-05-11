@@ -1,5 +1,20 @@
-// export const BASE_URL = "http://144.91.85.23/api/v1";
-export const BASE_URL = "/api/v1";
+export const BASE_URL = "http://144.91.85.23/api/v1";
+// export const BASE_URL = "/api/v1";
+
+const MINIO_ORIGIN = "http://144.91.85.23:9000";
+const IS_PROD = window.location.hostname !== "localhost";
+
+function fixPhotos(data) {
+  if (!data || typeof data !== "object") return data;
+  if (Array.isArray(data)) return data.map(fixPhotos);
+  const out = {};
+  for (const [k, v] of Object.entries(data)) {
+    out[k] = (k === "photo" && typeof v === "string" && IS_PROD)
+      ? v.replace(MINIO_ORIGIN, "")
+      : fixPhotos(v);
+  }
+  return out;
+}
 
 async function request(path, options = {}) {
   const res = await fetch(`${BASE_URL}${path}`, {
@@ -11,7 +26,8 @@ async function request(path, options = {}) {
     throw new Error(err || `HTTP ${res.status}`);
   }
   const text = await res.text();
-  return text ? JSON.parse(text) : null;
+  const data = text ? JSON.parse(text) : null;
+  return fixPhotos(data);
 }
 
 // Teachers
@@ -74,7 +90,7 @@ export const createAssignment = (teacherId, matiereId, classeId)  => request(`/a
 export const deleteAssignment = (id)                              => request(`/assignments/${id}`, { method: "DELETE" });
 
 // Assignment lookups — teacher-scoped
-export const getClassesByTeacher          = (teacherId)             => request(`/assignments/${teacherId}/classes`);
+export const getClassesByTeacher           = (teacherId)            => request(`/assignments/${teacherId}/classes`);
 export const getMatieresByTeacherAndClasse = (teacherId, classeId)  => request(`/assignments/${teacherId}/classes/${classeId}/matieres`);
 
 // Absences
@@ -100,9 +116,9 @@ export const getPaymentReceipt    = async (paymentId) => {
 };
 
 // Notes (Grades) — paths include /api prefix as shown in OpenAPI spec
-export const createNote                    = (data)               => request("/api/notes",                                                                      { method: "POST",   body: JSON.stringify(data) });
-export const updateNote                    = (id, data)           => request(`/api/notes/${id}`,                                                                { method: "PUT",    body: JSON.stringify(data) });
-export const deleteNote                    = (id)                 => request(`/api/notes/${id}`,                                                                { method: "DELETE" });
+export const createNote                    = (data)               => request("/api/notes",                                                                       { method: "POST",   body: JSON.stringify(data) });
+export const updateNote                    = (id, data)           => request(`/api/notes/${id}`,                                                                 { method: "PUT",    body: JSON.stringify(data) });
+export const deleteNote                    = (id)                 => request(`/api/notes/${id}`,                                                                 { method: "DELETE" });
 export const getNoteById                   = (id)                 => request(`/api/notes/${id}`);
 export const getNotesByStudent             = (studentId)          => request(`/api/notes/student/${studentId}`);
 export const getNotesByStudentAndTrimestre = (studentId, trId)    => request(`/api/notes/student/${studentId}/trimestre/${trId}`);
@@ -115,13 +131,13 @@ export const getBulletinPdf                = async (studentId, trId) => {
   const buffer = await res.arrayBuffer();
   return new Blob([buffer], { type: "application/pdf" });
 };
+
 // Parent → Children
 export const getChildren        = (pid)            => request(`/parents/${pid}/children`);
 export const addStudentToParent = (pid, sid)       => request(`/parents/${pid}/add-student/${sid}`, { method: "POST" });
 export const getChildTimetable  = (pid, sid)       => request(`/parents/${pid}/children/${sid}/timetable`);
 export const getChildNotes      = (pid, sid, trId) => request(`/parents/${pid}/children/${sid}/notes?trimestreId=${trId}`);
 export const getChildBulletin   = (pid, sid, trId) => request(`/parents/${pid}/children/${sid}/bulletin?trimestreId=${trId}`);
-
 
 export const uploadUserPhoto = async (userId, file) => {
   const formData = new FormData();

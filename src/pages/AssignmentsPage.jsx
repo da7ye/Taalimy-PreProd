@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from "react";
-import { getAssignments, createAssignment, deleteAssignment, getTeacherNames, getMatiereNames, getClasseNames } from "../api";
+import { getAssignments, createAssignment, deleteAssignment, getTeachers, getMatiereNames, getClasseNames } from "../api";
 import { Field, Select, SubmitBtn } from "../components/FormComponents";
 import { useToast } from "../components/Toast";
 import ConfirmDialog from "../components/ConfirmDialog";
@@ -8,6 +8,64 @@ import { useLanguage } from "../LanguageContext";
 const C_COLOR = "var(--amber)";
 const C_BG    = "var(--amber-dim)";
 
+// ─── Step indicator ───────────────────────────────────────────────────────────
+function StepIndicator({ step, classeId, matiereId }) {
+  const steps = [
+    { num: 1, label: "Class",   icon: "🏫", done: !!classeId },
+    { num: 2, label: "Subject", icon: "📐", done: !!matiereId },
+    { num: 3, label: "Teacher", icon: "🎓", done: false },
+  ];
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 0, marginBottom: 28 }}>
+      {steps.map((s, i) => {
+        const isActive = step === s.num;
+        const isDone   = s.done && step > s.num;
+        const isLocked = step < s.num;
+        return (
+          <div key={s.num} style={{ display: "flex", alignItems: "center", flex: i < steps.length - 1 ? 1 : 0 }}>
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, minWidth: 72 }}>
+              <div style={{
+                width: 40, height: 40, borderRadius: 12,
+                display: "flex", alignItems: "center", justifyContent: "center",
+                fontSize: 17, fontWeight: 700,
+                transition: "all .2s ease",
+                background: isDone
+                  ? "var(--green-dim)"
+                  : isActive
+                    ? C_BG
+                    : "var(--surface)",
+                color: isDone
+                  ? "var(--green)"
+                  : isActive
+                    ? C_COLOR
+                    : "var(--text-faint)",
+                border: `1.5px solid ${isDone ? "rgba(42,117,64,.25)" : isActive ? `${C_COLOR}40` : "var(--border)"}`,
+                boxShadow: isActive ? `0 0 0 3px ${C_COLOR}18` : "none",
+              }}>
+                {isDone ? "✓" : s.icon}
+              </div>
+              <span style={{
+                fontSize: 11, fontWeight: isActive ? 700 : 500,
+                color: isLocked ? "var(--text-faint)" : isActive ? C_COLOR : "var(--text-muted)",
+                letterSpacing: ".02em",
+                transition: "color .2s",
+              }}>{s.label}</span>
+            </div>
+            {i < steps.length - 1 && (
+              <div style={{
+                flex: 1, height: 2, margin: "0 4px", marginBottom: 22,
+                background: isDone ? "var(--green-dim)" : "var(--border)",
+                borderRadius: 2, transition: "background .2s",
+              }} />
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ─── Shared UI ────────────────────────────────────────────────────────────────
 function BackBtn({ label, onClick }) {
   return (
     <button onClick={onClick} style={{ display:"inline-flex", alignItems:"center", gap:6, background:"none", border:"none", cursor:"pointer", color:"var(--text-muted)", fontSize:13, fontFamily:"'Instrument Sans',sans-serif", padding:0, marginBottom:28, transition:"color .13s" }}
@@ -79,6 +137,27 @@ function StatBox({ icon, label, value, color, bg }) {
   );
 }
 
+// ─── Locked-field placeholder ─────────────────────────────────────────────────
+function LockedField({ label, hint, message }) {
+  return (
+    <Field label={label} hint={hint}>
+      <div style={{
+        width: "100%", padding: "11px 14px",
+        borderRadius: "var(--r-md)",
+        border: "1.5px dashed var(--border-md)",
+        background: "var(--surface)",
+        color: "var(--text-faint)",
+        fontSize: 13.5,
+        display: "flex", alignItems: "center", gap: 8,
+        fontFamily: "'Instrument Sans', sans-serif",
+      }}>
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        {message}
+      </div>
+    </Field>
+  );
+}
+
 function AssignmentCard({ r, onClick, onDelete, t }) {
   return (
     <div className="person-card" style={{ "--card-top":C_COLOR }} onClick={() => onClick(r)}>
@@ -104,6 +183,7 @@ function AssignmentCard({ r, onClick, onDelete, t }) {
   );
 }
 
+// ─── Main Page ────────────────────────────────────────────────────────────────
 export default function AssignmentsPage() {
   const { t } = useLanguage();
   const toast = useToast();
@@ -119,14 +199,23 @@ export default function AssignmentsPage() {
   const [deleting, setDeleting] = useState(false);
   const [q, setQ]               = useState("");
   const [filterClass, setFilterClass] = useState("ALL");
-  const [form, setForm]         = useState({ teacherId:"", matiereId:"", classeId:"" });
-  const set = k => e => setForm(f => ({ ...f, [k]:e.target.value }));
+
+  // Cascading form state
+  const [classeId,   setClasseId]   = useState("");
+  const [matiereId,  setMatiereId]  = useState("");
+  const [teacherId,  setTeacherId]  = useState("");
 
   const load = () => {
     setLoading(true);
-    Promise.all([getAssignments(), getTeacherNames(), getMatiereNames(), getClasseNames()])
-      .then(([a, te, m, c]) => { setData(Array.isArray(a)?a:[]); setTeachers(te??[]); setMatieres(m??[]); setClasses(c??[]); })
-      .catch(e => toast(e.message, "error")).finally(() => setLoading(false));
+    Promise.all([getAssignments(), getTeachers(), getMatiereNames(), getClasseNames()])
+      .then(([a, te, m, c]) => {
+        setData(Array.isArray(a) ? a : []);
+        setTeachers(te ?? []);
+        setMatieres(m  ?? []);
+        setClasses(c   ?? []);
+      })
+      .catch(e => toast(e.message, "error"))
+      .finally(() => setLoading(false));
   };
   useEffect(load, []);
 
@@ -138,26 +227,94 @@ export default function AssignmentsPage() {
     return mc && mq;
   }), [data, filterClass, q]);
 
-  const goList = () => { setView("list"); setSelected(null); };
+  const goList = () => {
+    setView("list");
+    setSelected(null);
+    setClasseId(""); setMatiereId(""); setTeacherId("");
+  };
+
+  // Which matieres are already assigned to the selected class?
+  // We use existing assignments to populate the subject list for that class.
+  // If none exist yet, fall back to the full matieres list.
+  const matieresForClass = useMemo(() => {
+    if (!classeId) return [];
+    // Gather matiereIds already mapped to this class from existing assignments
+    const assigned = data.filter(r => String(r.classeId) === String(classeId));
+    const assignedIds = new Set(assigned.map(r => String(r.matiereId)));
+    // Use the full matieres list but highlight/filter to those already in this class
+    // If there are known mappings, show those; otherwise show all matieres
+    if (assignedIds.size > 0) {
+      return matieres.filter(m => assignedIds.has(String(m.id)));
+    }
+    // No existing assignments for this class yet — show all matieres
+    return matieres;
+  }, [classeId, data, matieres]);
+
+  // Which teachers can teach the selected matiere in the selected class?
+  // Derive from existing assignments or fall back to all teachers.
+  const teachersForMatiere = useMemo(() => {
+    if (!matiereId) return [];
+    const assigned = data.filter(
+      r => String(r.classeId) === String(classeId) && String(r.matiereId) === String(matiereId)
+    );
+    const assignedIds = new Set(assigned.map(r => String(r.teacherId)));
+    if (assignedIds.size > 0) {
+      return teachers.filter(t => assignedIds.has(String(t.id)));
+    }
+    return teachers;
+  }, [matiereId, classeId, data, teachers]);
+
+  // Derived step (1 = picking class, 2 = picking matiere, 3 = picking teacher)
+  const step = !classeId ? 1 : !matiereId ? 2 : 3;
+
+  const selectedClassName  = classes.find(c  => String(c.id)  === String(classeId))?.name;
+  const selectedMatiereName = matieres.find(m => String(m.id)  === String(matiereId))?.name;
+  const selectedTeacherName = teachers.find(te => String(te.id) === String(teacherId));
 
   const handleCreate = async e => {
-    e.preventDefault(); setSaving(true);
-    try { await createAssignment(form.teacherId, form.matiereId, form.classeId); setForm({ teacherId:"", matiereId:"", classeId:"" }); toast(t("assignments.created")); load(); goList(); }
-    catch (err) { toast(err.message, "error"); } finally { setSaving(false); }
+    e.preventDefault();
+    if (!classeId || !matiereId || !teacherId) return;
+    setSaving(true);
+    try {
+      await createAssignment(teacherId, matiereId, classeId);
+      setClasseId(""); setMatiereId(""); setTeacherId("");
+      toast(t("assignments.created"));
+      load();
+      goList();
+    } catch (err) {
+      toast(err.message, "error");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleDelete = async () => {
     setDeleting(true);
-    try { await deleteAssignment(deleteTarget.id); setDeleteTarget(null); toast(t("assignments.deleted")); load(); if (view !== "list") goList(); }
-    catch (err) { toast(err.message, "error"); } finally { setDeleting(false); }
+    try {
+      await deleteAssignment(deleteTarget.id);
+      setDeleteTarget(null);
+      toast(t("assignments.deleted"));
+      load();
+      if (view !== "list") goList();
+    } catch (err) {
+      toast(err.message, "error");
+    } finally {
+      setDeleting(false);
+    }
   };
 
-  /* LIST */
+  /* ── LIST ── */
   if (view === "list") return (
     <div className="page-enter" style={{ padding:"36px 44px" }}>
       <div style={{ display:"flex", alignItems:"flex-end", justifyContent:"space-between", marginBottom:28 }}>
-        <PageTitle crumb={t("assignments.crumb")} title={t("assignments.title")} sub={loading ? t("common.loading") : t("assignments.count", { n: filtered.length })} />
-        <button onClick={() => setView("create")} className="btn-primary" style={{ marginBottom:32 }}>{t("assignments.addBtn")}</button>
+        <PageTitle
+          crumb={t("assignments.crumb")}
+          title={t("assignments.title")}
+          sub={loading ? t("common.loading") : t("assignments.count", { n: filtered.length })}
+        />
+        <button onClick={() => setView("create")} className="btn-primary" style={{ marginBottom:32 }}>
+          {t("assignments.addBtn")}
+        </button>
       </div>
 
       <div style={{ display:"flex", gap:12, marginBottom:24, flexWrap:"wrap" }}>
@@ -173,53 +330,181 @@ export default function AssignmentsPage() {
         )}
       </div>
 
-      {loading ? <div className="empty-state"><div className="spinner" style={{ width:22, height:22 }} /><p>{t("common.loading")}</p></div>
-      : filtered.length === 0 ? <div className="empty-state"><span style={{ fontSize:36 }}>📋</span><p>{q ? `${t("common.noResults")} "${q}"` : t("assignments.empty")}</p></div>
-      : <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(260px, 1fr))", gap:16 }}>
-          {filtered.map((r,i) => <AssignmentCard key={r.id??i} r={r} t={t} onClick={r => { setSelected(r); setView("detail"); }} onDelete={target => setDeleteTarget(target)} />)}
-        </div>}
+      {loading
+        ? <div className="empty-state"><div className="spinner" style={{ width:22, height:22 }} /><p>{t("common.loading")}</p></div>
+        : filtered.length === 0
+          ? <div className="empty-state"><span style={{ fontSize:36 }}>📋</span><p>{q ? `${t("common.noResults")} "${q}"` : t("assignments.empty")}</p></div>
+          : <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(260px, 1fr))", gap:16 }}>
+              {filtered.map((r,i) => (
+                <AssignmentCard
+                  key={r.id ?? i} r={r} t={t}
+                  onClick={r => { setSelected(r); setView("detail"); }}
+                  onDelete={target => setDeleteTarget(target)}
+                />
+              ))}
+            </div>
+      }
 
-      {deleteTarget && <ConfirmDialog title={t("assignments.deleteTitle")} message={t("assignments.deleteMsg", { teacher: deleteTarget.teacherName, subject: deleteTarget.matiereName, class: deleteTarget.classeName })} onConfirm={handleDelete} onCancel={() => setDeleteTarget(null)} loading={deleting} />}
+      {deleteTarget && (
+        <ConfirmDialog
+          title={t("assignments.deleteTitle")}
+          message={t("assignments.deleteMsg", { teacher: deleteTarget.teacherName, subject: deleteTarget.matiereName, class: deleteTarget.classeName })}
+          onConfirm={handleDelete} onCancel={() => setDeleteTarget(null)} loading={deleting}
+        />
+      )}
     </div>
   );
 
-  /* CREATE */
+  /* ── CREATE ── */
   if (view === "create") return (
     <div className="page-enter" style={{ padding:"36px 44px" }}>
       <BackBtn label={t("assignments.detailBack")} onClick={goList} />
-      <PageTitle crumb={t("assignments.crumb")} title={t("assignments.createTitle")} sub={t("assignments.createSub")} />
+      <PageTitle
+        crumb={t("assignments.crumb")}
+        title={t("assignments.createTitle")}
+        sub={t("assignments.createSub")}
+      />
       <TwoCol
-        left={<FormPanel onSubmit={handleCreate}>
-          <Field label={t("assignments.teacher")} hint={t("assignments.teacherHint")}>
-            <Select value={form.teacherId} onChange={set("teacherId")} required>
-              <option value="">{t("assignments.selectTeacher")}</option>
-              {teachers.map(te => <option key={te.id} value={te.id}>{te.phone}{te.speciality ? ` · ${te.speciality}` : ""}</option>)}
-            </Select>
-          </Field>
-          <Field label={t("assignments.subject")} hint={t("assignments.subjectHint")}>
-            <Select value={form.matiereId} onChange={set("matiereId")} required>
-              <option value="">{t("assignments.selectSubject")}</option>
-              {matieres.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
-            </Select>
-          </Field>
-          <Field label={t("assignments.class")} hint={t("assignments.classHint")}>
-            <Select value={form.classeId} onChange={set("classeId")} required>
-              <option value="">{t("assignments.selectClass")}</option>
-              {classes.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-            </Select>
-          </Field>
-          <div style={{ display:"flex", gap:12, paddingTop:4 }}>
-            <button type="button" onClick={goList} className="btn-ghost" style={{ flex:1, padding:"12px" }}>{t("common.cancel")}</button>
-            <div style={{ flex:2 }}><SubmitBtn loading={saving} label={t("assignments.createBtn")} /></div>
-          </div>
-        </FormPanel>}
-        right={<SidePanel icon="📋" title={t("assignments.sideNote")} accentColor={C_COLOR} accentBg={C_BG} sectionLabel={t("assignments.howItWorks")}
-          items={[{ icon:"🎓", text:t("assignments.sideNote1") }, { icon:"📐", text:t("assignments.sideNote2") }, { icon:"🗓️", text:t("assignments.sideNote3") }]} />}
+        left={
+          <FormPanel onSubmit={handleCreate}>
+            {/* Step indicator */}
+            <StepIndicator step={step} classeId={classeId} matiereId={matiereId} />
+
+            {/* ── Step 1: Class ── */}
+            <Field label={t("assignments.class")} hint={t("assignments.classHint")}>
+              <select
+                className="t-select"
+                value={classeId}
+                onChange={e => {
+                  setClasseId(e.target.value);
+                  setMatiereId("");   // reset downstream
+                  setTeacherId("");
+                }}
+                required
+              >
+                <option value="">{t("assignments.selectClass")}</option>
+                {classes.map(c => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </select>
+            </Field>
+
+            {/* ── Step 2: Subject (locked until class chosen) ── */}
+            {!classeId ? (
+              <LockedField
+                label={t("assignments.subject")}
+                hint={t("assignments.subjectHint")}
+                message="Select a class first"
+              />
+            ) : (
+              <Field label={t("assignments.subject")} hint={t("assignments.subjectHint")}>
+                <select
+                  className="t-select"
+                  value={matiereId}
+                  onChange={e => {
+                    setMatiereId(e.target.value);
+                    setTeacherId("");  // reset downstream
+                  }}
+                  required
+                >
+                  <option value="">{t("assignments.selectSubject")}</option>
+                  {matieresForClass.map(m => (
+                    <option key={m.id} value={m.id}>{m.name}</option>
+                  ))}
+                </select>
+                {matieresForClass.length === 0 && (
+                  <div style={{ marginTop: 6, fontSize: 12, color: "var(--text-faint)", display: "flex", alignItems: "center", gap: 5 }}>
+                    <span>⚠️</span> No subjects found for this class yet — showing all subjects.
+                  </div>
+                )}
+              </Field>
+            )}
+
+            {/* ── Step 3: Teacher (locked until subject chosen) ── */}
+            {!matiereId ? (
+              <LockedField
+                label={t("assignments.teacher")}
+                hint={t("assignments.teacherHint")}
+                message={classeId ? "Select a subject first" : "Select a class first"}
+              />
+            ) : (
+              <Field label={t("assignments.teacher")} hint={t("assignments.teacherHint")}>
+                <select
+                  className="t-select"
+                  value={teacherId}
+                  onChange={e => setTeacherId(e.target.value)}
+                  required
+                >
+                  <option value="">{t("assignments.selectTeacher")}</option>
+                  {teachersForMatiere.map(te => (
+                    <option key={te.id} value={te.id}>
+                      {te.firstname} {te.lastname}{te.speciality ? ` · ${te.speciality}` : ""}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+            )}
+
+            {/* Summary strip (shown when all three are chosen) */}
+            {classeId && matiereId && teacherId && (
+              <div style={{
+                padding: "14px 16px",
+                borderRadius: "var(--r-md)",
+                background: C_BG,
+                border: `1px solid ${C_COLOR}30`,
+                display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center",
+              }}>
+                <span style={{ fontSize: 12, color: "var(--text-muted)", marginRight: 4 }}>Ready to assign:</span>
+                {[
+                  { icon: "🏫", label: selectedClassName },
+                  { icon: "📐", label: selectedMatiereName },
+                  { icon: "🎓", label: selectedTeacherName ? `${selectedTeacherName.firstname} ${selectedTeacherName.lastname}${selectedTeacherName.speciality ? ` · ${selectedTeacherName.speciality}` : ""}` : "—" },
+                ].map((chip, i) => (
+                  <span key={i} style={{
+                    display: "inline-flex", alignItems: "center", gap: 5,
+                    padding: "3px 10px", borderRadius: 999,
+                    background: "var(--bg-card)", border: "1px solid var(--border-md)",
+                    fontSize: 12, fontWeight: 600, color: "var(--text-dim)",
+                  }}>
+                    {chip.icon} {chip.label}
+                  </span>
+                ))}
+              </div>
+            )}
+
+            <div style={{ display:"flex", gap:12, paddingTop:4 }}>
+              <button type="button" onClick={goList} className="btn-ghost" style={{ flex:1, padding:"12px" }}>
+                {t("common.cancel")}
+              </button>
+              <div style={{ flex:2 }}>
+                <SubmitBtn
+                  loading={saving}
+                  label={t("assignments.createBtn")}
+                  disabled={!classeId || !matiereId || !teacherId}
+                />
+              </div>
+            </div>
+          </FormPanel>
+        }
+        right={
+          <SidePanel
+            icon="📋"
+            title={t("assignments.sideNote")}
+            accentColor={C_COLOR}
+            accentBg={C_BG}
+            sectionLabel={t("assignments.howItWorks")}
+            items={[
+              { icon: "🏫", text: "Start by choosing the class you want to assign a subject to." },
+              { icon: "📐", text: "Then pick the subject from the list available for that class." },
+              { icon: "🎓", text: "Finally select the teacher who will teach that subject." },
+            ]}
+          />
+        }
       />
     </div>
   );
 
-  /* DETAIL */
+  /* ── DETAIL ── */
   if (view === "detail" && selected) {
     const v = selected;
     return (
@@ -250,9 +535,16 @@ export default function AssignmentsPage() {
           <StatBox icon="🏫" label={t("assignments.fields.class")}   value={v.classeName}  color="var(--purple)"     bg="var(--purple-dim)" />
           <StatBox icon="🎓" label={t("assignments.fields.teacher")} value={v.teacherName} color="var(--violet)"     bg="var(--violet-dim)" />
         </div>
-        {deleteTarget && <ConfirmDialog title={t("assignments.deleteTitle")} message={t("assignments.deleteMsg", { teacher: deleteTarget.teacherName, subject: deleteTarget.matiereName, class: deleteTarget.classeName })} onConfirm={handleDelete} onCancel={() => setDeleteTarget(null)} loading={deleting} />}
+        {deleteTarget && (
+          <ConfirmDialog
+            title={t("assignments.deleteTitle")}
+            message={t("assignments.deleteMsg", { teacher: deleteTarget.teacherName, subject: deleteTarget.matiereName, class: deleteTarget.classeName })}
+            onConfirm={handleDelete} onCancel={() => setDeleteTarget(null)} loading={deleting}
+          />
+        )}
       </div>
     );
   }
+
   return null;
 }

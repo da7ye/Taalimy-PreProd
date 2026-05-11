@@ -73,6 +73,10 @@ export const getAssignments   = ()                                => request("/a
 export const createAssignment = (teacherId, matiereId, classeId)  => request(`/assignments?teacherId=${teacherId}&matiereId=${matiereId}&classeId=${classeId}`, { method: "POST" });
 export const deleteAssignment = (id)                              => request(`/assignments/${id}`, { method: "DELETE" });
 
+// Assignment lookups — teacher-scoped
+export const getClassesByTeacher          = (teacherId)             => request(`/assignments/${teacherId}/classes`);
+export const getMatieresByTeacherAndClasse = (teacherId, classeId)  => request(`/assignments/${teacherId}/classes/${classeId}/matieres`);
+
 // Absences
 export const markAbsences           = (data) => request("/absences",                   { method: "POST", body: JSON.stringify(data) });
 export const getAbsencesByTimetable = (id)   => request(`/absences/timetable/${id}`);

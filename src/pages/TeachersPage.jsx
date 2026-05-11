@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo, useRef } from "react";
 import { getTeachers, createTeacher, updateTeacher, deleteTeacher } from "../api";
 import { uploadUserPhoto, updateUserPhoto, deleteUserPhoto } from "../api";
+import { getClassesByTeacher, getMatieresByTeacherAndClasse } from "../api";
 import { Field, Input, SubmitBtn } from "../components/FormComponents";
 import { usePersonForm } from "../hooks/usePersonForm";
 import { useToast } from "../components/Toast";
@@ -10,6 +11,252 @@ import { useLanguage } from "../LanguageContext";
 const C_COLOR = "var(--accent)";
 const C_BG    = "var(--violet-dim)";
 const PAGE_SIZE_OPTIONS = [12, 24, 48];
+
+// ─── Teaching Schedule ────────────────────────────────────────────────────────
+
+/**
+ * Fetches all classes for a teacher, then lazily loads the matieres for each
+ * class when the user expands that row. Renders as an accordion-style list.
+ */
+function TeachingSchedule({ teacherId, t }) {
+  const [classes, setClasses]       = useState(null);   // null = loading, [] = empty
+  const [loadingClasses, setLoadingClasses] = useState(true);
+  const [error, setError]           = useState(null);
+  const [expanded, setExpanded]     = useState({});     // classeId → true/false
+  const [matieres, setMatieres]     = useState({});     // classeId → array | "loading" | "error"
+
+  useEffect(() => {
+    if (!teacherId) return;
+    setLoadingClasses(true);
+    setError(null);
+    getClassesByTeacher(teacherId)
+      .then(data => setClasses(Array.isArray(data) ? data : []))
+      .catch(err => setError(err.message))
+      .finally(() => setLoadingClasses(false));
+  }, [teacherId]);
+
+  const toggle = async (classeId) => {
+    const isOpen = expanded[classeId];
+    setExpanded(prev => ({ ...prev, [classeId]: !isOpen }));
+
+    // Only fetch once
+    if (!isOpen && matieres[classeId] === undefined) {
+      setMatieres(prev => ({ ...prev, [classeId]: "loading" }));
+      try {
+        const data = await getMatieresByTeacherAndClasse(teacherId, classeId);
+        setMatieres(prev => ({ ...prev, [classeId]: Array.isArray(data) ? data : [] }));
+      } catch (err) {
+        setMatieres(prev => ({ ...prev, [classeId]: "error" }));
+      }
+    }
+  };
+
+  return (
+    <div style={{
+      background: "var(--bg-card)",
+      border: "1px solid var(--border)",
+      borderRadius: "var(--r-xl)",
+      boxShadow: "var(--shadow-sm)",
+      overflow: "hidden",
+      marginTop: 20,
+    }}>
+      {/* Header */}
+      <div style={{
+        padding: "20px 28px",
+        borderBottom: "1px solid var(--border)",
+        display: "flex",
+        alignItems: "center",
+        gap: 12,
+      }}>
+        <div style={{
+          width: 36, height: 36, borderRadius: 10,
+          background: "var(--teal-dim)", color: "var(--teal)",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          fontSize: 18, flexShrink: 0,
+        }}>🗂️</div>
+        <div>
+          <div style={{ fontWeight: 700, fontSize: 14, color: "var(--text)" }}>
+            Teaching Schedule
+          </div>
+          <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>
+            Classes and subjects assigned to this teacher
+          </div>
+        </div>
+        {!loadingClasses && classes && (
+          <span style={{
+            marginLeft: "auto",
+            padding: "3px 10px", borderRadius: 999,
+            background: "var(--teal-dim)", color: "var(--teal)",
+            fontSize: 12, fontWeight: 700,
+            border: "1px solid rgba(14,126,104,.2)",
+          }}>
+            {classes.length} {classes.length === 1 ? "class" : "classes"}
+          </span>
+        )}
+      </div>
+
+      {/* Body */}
+      <div style={{ padding: "12px 16px" }}>
+        {loadingClasses && (
+          <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "20px 12px", color: "var(--text-muted)", fontSize: 13 }}>
+            <span className="spinner" style={{ width: 16, height: 16 }} />
+            Loading classes…
+          </div>
+        )}
+
+        {error && (
+          <div style={{ padding: "16px 12px", color: "var(--rose)", fontSize: 13, display: "flex", alignItems: "center", gap: 8 }}>
+            <span>⚠️</span> {error}
+          </div>
+        )}
+
+        {!loadingClasses && !error && classes?.length === 0 && (
+          <div style={{ padding: "28px 12px", textAlign: "center", color: "var(--text-faint)", fontSize: 13 }}>
+            <div style={{ fontSize: 28, marginBottom: 8 }}>📭</div>
+            No classes assigned yet
+          </div>
+        )}
+
+        {!loadingClasses && !error && classes?.map((cls) => {
+          const isOpen = !!expanded[cls.id];
+          const clsMatieres = matieres[cls.id];
+
+          return (
+            <div key={cls.id} style={{
+              borderRadius: "var(--r-md)",
+              border: "1px solid var(--border)",
+              marginBottom: 8,
+              overflow: "hidden",
+              transition: "border-color .15s",
+              ...(isOpen ? { borderColor: "var(--border-md)" } : {}),
+            }}>
+              {/* Class row — clickable header */}
+              <button
+                onClick={() => toggle(cls.id)}
+                style={{
+                  width: "100%",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 12,
+                  padding: "13px 16px",
+                  background: isOpen ? "var(--surface)" : "transparent",
+                  border: "none",
+                  cursor: "pointer",
+                  textAlign: "left",
+                  transition: "background .14s",
+                  fontFamily: "'Instrument Sans', sans-serif",
+                }}
+                onMouseEnter={e => !isOpen && (e.currentTarget.style.background = "var(--surface)")}
+                onMouseLeave={e => !isOpen && (e.currentTarget.style.background = "transparent")}
+              >
+                {/* Class icon */}
+                <div style={{
+                  width: 34, height: 34, borderRadius: 9,
+                  background: "var(--purple-dim)", color: "var(--purple)",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  fontSize: 16, flexShrink: 0,
+                }}>🏫</div>
+
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontWeight: 600, fontSize: 14, color: "var(--text)" }}>{cls.name}</div>
+                  {cls.levelName && (
+                    <div style={{ fontSize: 11.5, color: "var(--text-muted)", marginTop: 2 }}>{cls.levelName}</div>
+                  )}
+                </div>
+
+                {/* Subject count badge (once loaded) */}
+                {Array.isArray(clsMatieres) && (
+                  <span style={{
+                    padding: "2px 9px", borderRadius: 999,
+                    background: "var(--violet-dim)", color: "var(--violet)",
+                    fontSize: 11.5, fontWeight: 600,
+                    border: "1px solid rgba(79,67,192,.18)",
+                    flexShrink: 0,
+                  }}>
+                    {clsMatieres.length} {clsMatieres.length === 1 ? "subject" : "subjects"}
+                  </span>
+                )}
+
+                {/* Chevron */}
+                <svg
+                  width="14" height="14"
+                  viewBox="0 0 24 24" fill="none"
+                  stroke="var(--text-faint)" strokeWidth="2.2"
+                  strokeLinecap="round" strokeLinejoin="round"
+                  style={{
+                    flexShrink: 0, marginLeft: 4,
+                    transform: isOpen ? "rotate(180deg)" : "rotate(0deg)",
+                    transition: "transform .2s ease",
+                  }}
+                >
+                  <polyline points="6 9 12 15 18 9" />
+                </svg>
+              </button>
+
+              {/* Expanded matieres panel */}
+              {isOpen && (
+                <div style={{
+                  borderTop: "1px solid var(--border)",
+                  padding: "12px 16px",
+                  background: "var(--surface)",
+                }}>
+                  {clsMatieres === "loading" && (
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, color: "var(--text-muted)", fontSize: 13, padding: "8px 0" }}>
+                      <span className="spinner" style={{ width: 14, height: 14 }} />
+                      Loading subjects…
+                    </div>
+                  )}
+
+                  {clsMatieres === "error" && (
+                    <div style={{ color: "var(--rose)", fontSize: 13, padding: "8px 0", display: "flex", alignItems: "center", gap: 6 }}>
+                      <span>⚠️</span> Failed to load subjects
+                    </div>
+                  )}
+
+                  {Array.isArray(clsMatieres) && clsMatieres.length === 0 && (
+                    <div style={{ color: "var(--text-faint)", fontSize: 13, padding: "8px 0", textAlign: "center" }}>
+                      No subjects found for this class
+                    </div>
+                  )}
+
+                  {Array.isArray(clsMatieres) && clsMatieres.length > 0 && (
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                      {clsMatieres.map(m => (
+                        <div key={m.id} style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 8,
+                          padding: "7px 12px",
+                          borderRadius: "var(--r-md)",
+                          background: "var(--bg-card)",
+                          border: "1px solid var(--border-md)",
+                          boxShadow: "var(--shadow-sm)",
+                        }}>
+                          <span style={{ fontSize: 13 }}>📐</span>
+                          <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text)" }}>{m.name}</span>
+                          {m.coefficient != null && (
+                            <span style={{
+                              fontSize: 11, fontWeight: 700,
+                              padding: "1px 7px", borderRadius: 999,
+                              background: "var(--amber-dim)", color: "var(--amber)",
+                              border: "1px solid rgba(168,100,30,.2)",
+                            }}>
+                              ×{m.coefficient}
+                            </span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 
 // ─── Photo helpers ────────────────────────────────────────────────────────────
 
@@ -493,9 +740,14 @@ export default function TeachersPage() {
   // ══ DETAIL ══
   if (view === "detail" && selected) {
     const v = selected;
+    // Use v.id as the teacher ID for the assignment endpoints
+    const teacherId = v.id;
+
     return (
       <div className="page-enter" style={{ padding:"36px 44px" }}>
         <BackBtn label={t("teachers.detailBack")} onClick={goList} />
+
+        {/* Hero card */}
         <div style={{ background:"var(--bg-card)", border:"1px solid var(--border)", borderRadius:"var(--r-xl)", boxShadow:"var(--shadow-sm)", overflow:"hidden", marginBottom:24 }}>
           <div style={{ height:90, background:`linear-gradient(135deg, ${C_COLOR}22 0%, ${C_COLOR}08 100%)`, position:"relative" }}>
             <div style={{ position:"absolute", inset:0, backgroundImage:`radial-gradient(circle at 80% 50%, ${C_COLOR}18 0%, transparent 60%)` }} />
@@ -527,6 +779,8 @@ export default function TeachersPage() {
             </div>
           </div>
         </div>
+
+        {/* Stat boxes */}
         <div style={{ display:"grid", gridTemplateColumns:"repeat(3, 1fr)", gap:14 }}>
           <StatBox icon="✉️" label={t("teachers.fields.email")}  value={v.email}       color={C_COLOR} bg={C_BG} />
           <StatBox icon="📞" label={t("teachers.fields.phone")}  value={v.phone}       color={C_COLOR} bg={C_BG} />
@@ -535,6 +789,10 @@ export default function TeachersPage() {
           <StatBox icon="🆔" label={t("teachers.fields.userId")} value={v.userId}      color={C_COLOR} bg={C_BG} />
           <StatBox icon="🎂" label={t("teachers.fields.dob")}    value={v.dateOfBrith} color={C_COLOR} bg={C_BG} />
         </div>
+
+        {/* Teaching Schedule — new section using the two endpoints */}
+        <TeachingSchedule teacherId={teacherId} t={t} />
+
         {deleteTarget && (
           <ConfirmDialog
             title={t("teachers.deleteTitle", { name:`${deleteTarget.firstname} ${deleteTarget.lastname}` })}

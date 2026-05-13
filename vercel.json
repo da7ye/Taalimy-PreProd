@@ -2,7 +2,7 @@
   "rewrites": [
     {
       "source": "/api/v1/:path*",
-      "destination": "http://144.91.85.23/api/v1/:path*"
+      "destination": "http://144.91.85.23:8086/api/v1/:path*"
     },
     {
       "source": "/mybucket/:path*",

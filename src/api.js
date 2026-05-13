@@ -1,4 +1,4 @@
-// export const BASE_URL = "http://144.91.85.23/api/v1";
+// export const BASE_URL = "http://144.91.85.23:8086/api/v1";
 export const BASE_URL = "/api/v1";
 
 const MINIO_ORIGIN = "http://144.91.85.23:9000";

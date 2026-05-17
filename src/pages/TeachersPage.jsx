@@ -10,25 +10,20 @@ import { useLanguage } from "../LanguageContext";
 
 const C_COLOR = "var(--accent)";
 const C_BG    = "var(--violet-dim)";
-const PAGE_SIZE_OPTIONS = [12, 24, 48];
+const PAGE_SIZE_OPTIONS = [25, 50, 100];
 
 // ─── Teaching Schedule ────────────────────────────────────────────────────────
 
-/**
- * Fetches all classes for a teacher, then lazily loads the matieres for each
- * class when the user expands that row. Renders as an accordion-style list.
- */
 function TeachingSchedule({ teacherId, t }) {
-  const [classes, setClasses]       = useState(null);   // null = loading, [] = empty
+  const [classes, setClasses]           = useState(null);
   const [loadingClasses, setLoadingClasses] = useState(true);
-  const [error, setError]           = useState(null);
-  const [expanded, setExpanded]     = useState({});     // classeId → true/false
-  const [matieres, setMatieres]     = useState({});     // classeId → array | "loading" | "error"
+  const [error, setError]               = useState(null);
+  const [expanded, setExpanded]         = useState({});
+  const [matieres, setMatieres]         = useState({});
 
   useEffect(() => {
     if (!teacherId) return;
-    setLoadingClasses(true);
-    setError(null);
+    setLoadingClasses(true); setError(null);
     getClassesByTeacher(teacherId)
       .then(data => setClasses(Array.isArray(data) ? data : []))
       .catch(err => setError(err.message))
@@ -38,212 +33,72 @@ function TeachingSchedule({ teacherId, t }) {
   const toggle = async (classeId) => {
     const isOpen = expanded[classeId];
     setExpanded(prev => ({ ...prev, [classeId]: !isOpen }));
-
-    // Only fetch once
     if (!isOpen && matieres[classeId] === undefined) {
       setMatieres(prev => ({ ...prev, [classeId]: "loading" }));
       try {
         const data = await getMatieresByTeacherAndClasse(teacherId, classeId);
         setMatieres(prev => ({ ...prev, [classeId]: Array.isArray(data) ? data : [] }));
-      } catch (err) {
+      } catch {
         setMatieres(prev => ({ ...prev, [classeId]: "error" }));
       }
     }
   };
 
   return (
-    <div style={{
-      background: "var(--bg-card)",
-      border: "1px solid var(--border)",
-      borderRadius: "var(--r-xl)",
-      boxShadow: "var(--shadow-sm)",
-      overflow: "hidden",
-      marginTop: 20,
-    }}>
-      {/* Header */}
-      <div style={{
-        padding: "20px 28px",
-        borderBottom: "1px solid var(--border)",
-        display: "flex",
-        alignItems: "center",
-        gap: 12,
-      }}>
-        <div style={{
-          width: 36, height: 36, borderRadius: 10,
-          background: "var(--teal-dim)", color: "var(--teal)",
-          display: "flex", alignItems: "center", justifyContent: "center",
-          fontSize: 18, flexShrink: 0,
-        }}>🗂️</div>
+    <div style={{ background:"var(--bg-card)", border:"1px solid var(--border)", borderRadius:"var(--r-xl)", boxShadow:"var(--shadow-sm)", overflow:"hidden", marginTop:20 }}>
+      <div style={{ padding:"20px 28px", borderBottom:"1px solid var(--border)", display:"flex", alignItems:"center", gap:12 }}>
+        <div style={{ width:36, height:36, borderRadius:10, background:"var(--teal-dim)", color:"var(--teal)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:18, flexShrink:0 }}>🗂️</div>
         <div>
-          <div style={{ fontWeight: 700, fontSize: 14, color: "var(--text)" }}>
-            Teaching Schedule
-          </div>
-          <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>
-            Classes and subjects assigned to this teacher
-          </div>
+          <div style={{ fontWeight:700, fontSize:14, color:"var(--text)" }}>Teaching Schedule</div>
+          <div style={{ fontSize:12, color:"var(--text-muted)", marginTop:2 }}>Classes and subjects assigned to this teacher</div>
         </div>
         {!loadingClasses && classes && (
-          <span style={{
-            marginLeft: "auto",
-            padding: "3px 10px", borderRadius: 999,
-            background: "var(--teal-dim)", color: "var(--teal)",
-            fontSize: 12, fontWeight: 700,
-            border: "1px solid rgba(14,126,104,.2)",
-          }}>
+          <span style={{ marginLeft:"auto", padding:"3px 10px", borderRadius:999, background:"var(--teal-dim)", color:"var(--teal)", fontSize:12, fontWeight:700, border:"1px solid rgba(14,126,104,.2)" }}>
             {classes.length} {classes.length === 1 ? "class" : "classes"}
           </span>
         )}
       </div>
-
-      {/* Body */}
-      <div style={{ padding: "12px 16px" }}>
-        {loadingClasses && (
-          <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "20px 12px", color: "var(--text-muted)", fontSize: 13 }}>
-            <span className="spinner" style={{ width: 16, height: 16 }} />
-            Loading classes…
-          </div>
-        )}
-
-        {error && (
-          <div style={{ padding: "16px 12px", color: "var(--rose)", fontSize: 13, display: "flex", alignItems: "center", gap: 8 }}>
-            <span>⚠️</span> {error}
-          </div>
-        )}
-
+      <div style={{ padding:"12px 16px" }}>
+        {loadingClasses && <div style={{ display:"flex", alignItems:"center", gap:10, padding:"20px 12px", color:"var(--text-muted)", fontSize:13 }}><span className="spinner" style={{ width:16, height:16 }} />Loading classes…</div>}
+        {error && <div style={{ padding:"16px 12px", color:"var(--rose)", fontSize:13, display:"flex", alignItems:"center", gap:8 }}><span>⚠️</span> {error}</div>}
         {!loadingClasses && !error && classes?.length === 0 && (
-          <div style={{ padding: "28px 12px", textAlign: "center", color: "var(--text-faint)", fontSize: 13 }}>
-            <div style={{ fontSize: 28, marginBottom: 8 }}>📭</div>
-            No classes assigned yet
+          <div style={{ padding:"28px 12px", textAlign:"center", color:"var(--text-faint)", fontSize:13 }}>
+            <div style={{ fontSize:28, marginBottom:8 }}>📭</div>No classes assigned yet
           </div>
         )}
-
-        {!loadingClasses && !error && classes?.map((cls) => {
+        {!loadingClasses && !error && classes?.map(cls => {
           const isOpen = !!expanded[cls.id];
           const clsMatieres = matieres[cls.id];
-
           return (
-            <div key={cls.id} style={{
-              borderRadius: "var(--r-md)",
-              border: "1px solid var(--border)",
-              marginBottom: 8,
-              overflow: "hidden",
-              transition: "border-color .15s",
-              ...(isOpen ? { borderColor: "var(--border-md)" } : {}),
-            }}>
-              {/* Class row — clickable header */}
-              <button
-                onClick={() => toggle(cls.id)}
-                style={{
-                  width: "100%",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 12,
-                  padding: "13px 16px",
-                  background: isOpen ? "var(--surface)" : "transparent",
-                  border: "none",
-                  cursor: "pointer",
-                  textAlign: "left",
-                  transition: "background .14s",
-                  fontFamily: "'Instrument Sans', sans-serif",
-                }}
-                onMouseEnter={e => !isOpen && (e.currentTarget.style.background = "var(--surface)")}
-                onMouseLeave={e => !isOpen && (e.currentTarget.style.background = "transparent")}
+            <div key={cls.id} style={{ borderRadius:"var(--r-md)", border:"1px solid var(--border)", marginBottom:8, overflow:"hidden", transition:"border-color .15s", ...(isOpen?{borderColor:"var(--border-md)"}:{}) }}>
+              <button onClick={() => toggle(cls.id)} style={{ width:"100%", display:"flex", alignItems:"center", gap:12, padding:"13px 16px", background:isOpen?"var(--surface)":"transparent", border:"none", cursor:"pointer", textAlign:"left", transition:"background .14s", fontFamily:"'Instrument Sans',sans-serif" }}
+                onMouseEnter={e=>!isOpen&&(e.currentTarget.style.background="var(--surface)")}
+                onMouseLeave={e=>!isOpen&&(e.currentTarget.style.background="transparent")}
               >
-                {/* Class icon */}
-                <div style={{
-                  width: 34, height: 34, borderRadius: 9,
-                  background: "var(--purple-dim)", color: "var(--purple)",
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  fontSize: 16, flexShrink: 0,
-                }}>🏫</div>
-
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontWeight: 600, fontSize: 14, color: "var(--text)" }}>{cls.name}</div>
-                  {cls.levelName && (
-                    <div style={{ fontSize: 11.5, color: "var(--text-muted)", marginTop: 2 }}>{cls.levelName}</div>
-                  )}
+                <div style={{ width:34, height:34, borderRadius:9, background:"var(--purple-dim)", color:"var(--purple)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:16, flexShrink:0 }}>🏫</div>
+                <div style={{ flex:1, minWidth:0 }}>
+                  <div style={{ fontWeight:600, fontSize:14, color:"var(--text)" }}>{cls.name}</div>
+                  {cls.levelName && <div style={{ fontSize:11.5, color:"var(--text-muted)", marginTop:2 }}>{cls.levelName}</div>}
                 </div>
-
-                {/* Subject count badge (once loaded) */}
                 {Array.isArray(clsMatieres) && (
-                  <span style={{
-                    padding: "2px 9px", borderRadius: 999,
-                    background: "var(--violet-dim)", color: "var(--violet)",
-                    fontSize: 11.5, fontWeight: 600,
-                    border: "1px solid rgba(79,67,192,.18)",
-                    flexShrink: 0,
-                  }}>
+                  <span style={{ padding:"2px 9px", borderRadius:999, background:"var(--violet-dim)", color:"var(--violet)", fontSize:11.5, fontWeight:600, border:"1px solid rgba(79,67,192,.18)", flexShrink:0 }}>
                     {clsMatieres.length} {clsMatieres.length === 1 ? "subject" : "subjects"}
                   </span>
                 )}
-
-                {/* Chevron */}
-                <svg
-                  width="14" height="14"
-                  viewBox="0 0 24 24" fill="none"
-                  stroke="var(--text-faint)" strokeWidth="2.2"
-                  strokeLinecap="round" strokeLinejoin="round"
-                  style={{
-                    flexShrink: 0, marginLeft: 4,
-                    transform: isOpen ? "rotate(180deg)" : "rotate(0deg)",
-                    transition: "transform .2s ease",
-                  }}
-                >
-                  <polyline points="6 9 12 15 18 9" />
-                </svg>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-faint)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink:0, marginLeft:4, transform:isOpen?"rotate(180deg)":"rotate(0deg)", transition:"transform .2s ease" }}><polyline points="6 9 12 15 18 9"/></svg>
               </button>
-
-              {/* Expanded matieres panel */}
               {isOpen && (
-                <div style={{
-                  borderTop: "1px solid var(--border)",
-                  padding: "12px 16px",
-                  background: "var(--surface)",
-                }}>
-                  {clsMatieres === "loading" && (
-                    <div style={{ display: "flex", alignItems: "center", gap: 8, color: "var(--text-muted)", fontSize: 13, padding: "8px 0" }}>
-                      <span className="spinner" style={{ width: 14, height: 14 }} />
-                      Loading subjects…
-                    </div>
-                  )}
-
-                  {clsMatieres === "error" && (
-                    <div style={{ color: "var(--rose)", fontSize: 13, padding: "8px 0", display: "flex", alignItems: "center", gap: 6 }}>
-                      <span>⚠️</span> Failed to load subjects
-                    </div>
-                  )}
-
-                  {Array.isArray(clsMatieres) && clsMatieres.length === 0 && (
-                    <div style={{ color: "var(--text-faint)", fontSize: 13, padding: "8px 0", textAlign: "center" }}>
-                      No subjects found for this class
-                    </div>
-                  )}
-
+                <div style={{ borderTop:"1px solid var(--border)", padding:"12px 16px", background:"var(--surface)" }}>
+                  {clsMatieres === "loading" && <div style={{ display:"flex", alignItems:"center", gap:8, color:"var(--text-muted)", fontSize:13, padding:"8px 0" }}><span className="spinner" style={{ width:14, height:14 }}/>Loading subjects…</div>}
+                  {clsMatieres === "error" && <div style={{ color:"var(--rose)", fontSize:13, padding:"8px 0", display:"flex", alignItems:"center", gap:6 }}><span>⚠️</span> Failed to load subjects</div>}
+                  {Array.isArray(clsMatieres) && clsMatieres.length === 0 && <div style={{ color:"var(--text-faint)", fontSize:13, padding:"8px 0", textAlign:"center" }}>No subjects found for this class</div>}
                   {Array.isArray(clsMatieres) && clsMatieres.length > 0 && (
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                    <div style={{ display:"flex", flexWrap:"wrap", gap:8 }}>
                       {clsMatieres.map(m => (
-                        <div key={m.id} style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: 8,
-                          padding: "7px 12px",
-                          borderRadius: "var(--r-md)",
-                          background: "var(--bg-card)",
-                          border: "1px solid var(--border-md)",
-                          boxShadow: "var(--shadow-sm)",
-                        }}>
-                          <span style={{ fontSize: 13 }}>📐</span>
-                          <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text)" }}>{m.name}</span>
-                          {m.coefficient != null && (
-                            <span style={{
-                              fontSize: 11, fontWeight: 700,
-                              padding: "1px 7px", borderRadius: 999,
-                              background: "var(--amber-dim)", color: "var(--amber)",
-                              border: "1px solid rgba(168,100,30,.2)",
-                            }}>
-                              ×{m.coefficient}
-                            </span>
-                          )}
+                        <div key={m.id} style={{ display:"flex", alignItems:"center", gap:8, padding:"7px 12px", borderRadius:"var(--r-md)", background:"var(--bg-card)", border:"1px solid var(--border-md)", boxShadow:"var(--shadow-sm)" }}>
+                          <span style={{ fontSize:13 }}>📐</span>
+                          <span style={{ fontSize:13, fontWeight:600, color:"var(--text)" }}>{m.name}</span>
+                          {m.coefficient != null && <span style={{ fontSize:11, fontWeight:700, padding:"1px 7px", borderRadius:999, background:"var(--amber-dim)", color:"var(--amber)", border:"1px solid rgba(168,100,30,.2)" }}>×{m.coefficient}</span>}
                         </div>
                       ))}
                     </div>
@@ -263,16 +118,9 @@ function TeachingSchedule({ teacherId, t }) {
 function PhotoAvatar({ photo, initial = "?", size = 48, radius = 14, color = C_COLOR, bg = C_BG, style = {} }) {
   const fs = Math.round(size / 2.4);
   const [failed, setFailed] = useState(false);
-  const base = {
-    width: size, height: size, borderRadius: radius, flexShrink: 0, overflow: "hidden",
-    display: "flex", alignItems: "center", justifyContent: "center", ...style,
-  };
+  const base = { width:size, height:size, borderRadius:radius, flexShrink:0, overflow:"hidden", display:"flex", alignItems:"center", justifyContent:"center", ...style };
   if (photo && !failed) {
-    return (
-      <div style={base}>
-        <img src={photo} alt={initial} style={{ width:"100%", height:"100%", objectFit:"cover", display:"block" }} onError={()=>setFailed(true)} />
-      </div>
-    );
+    return <div style={base}><img src={photo} alt={initial} style={{ width:"100%", height:"100%", objectFit:"cover", display:"block" }} onError={()=>setFailed(true)} /></div>;
   }
   return (
     <div style={{ ...base, background:bg, color, border:`1.5px solid ${color}28` }}>
@@ -298,19 +146,10 @@ function PhotoUploadField({ photo, initial, color = C_COLOR, bg = C_BG, onFileSe
     <div style={{ display:"flex", alignItems:"center", gap:16 }}>
       <div style={{ position:"relative", flexShrink:0 }}>
         <PhotoAvatar photo={preview} initial={initial} size={80} radius={20} color={color} bg={bg} />
-        {loading && (
-          <div style={{ position:"absolute", inset:0, borderRadius:20, background:"rgba(0,0,0,.45)", display:"flex", alignItems:"center", justifyContent:"center" }}>
-            <span className="spinner" style={{ width:20, height:20, borderTopColor:"#fff" }} />
-          </div>
-        )}
+        {loading && <div style={{ position:"absolute", inset:0, borderRadius:20, background:"rgba(0,0,0,.45)", display:"flex", alignItems:"center", justifyContent:"center" }}><span className="spinner" style={{ width:20, height:20, borderTopColor:"#fff" }}/></div>}
       </div>
       <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
-        <label style={{
-          display:"inline-flex", alignItems:"center", gap:6, padding:"8px 14px", borderRadius:"var(--r-md)",
-          background:"var(--surface)", border:"1.5px solid var(--border-md)", color:"var(--text-dim)",
-          fontSize:12.5, fontWeight:500, cursor:loading?"not-allowed":"pointer",
-          fontFamily:"'Instrument Sans',sans-serif", transition:"background .13s", opacity:loading?0.5:1,
-        }}
+        <label style={{ display:"inline-flex", alignItems:"center", gap:6, padding:"8px 14px", borderRadius:"var(--r-md)", background:"var(--surface)", border:"1.5px solid var(--border-md)", color:"var(--text-dim)", fontSize:12.5, fontWeight:500, cursor:loading?"not-allowed":"pointer", fontFamily:"'Instrument Sans',sans-serif", transition:"background .13s", opacity:loading?0.5:1 }}
           onMouseEnter={e=>!loading&&(e.currentTarget.style.background="var(--surface-hover)")}
           onMouseLeave={e=>!loading&&(e.currentTarget.style.background="var(--surface)")}
         >
@@ -319,11 +158,7 @@ function PhotoUploadField({ photo, initial, color = C_COLOR, bg = C_BG, onFileSe
           <input ref={inputRef} type="file" accept="image/*" style={{ display:"none" }} onChange={handleFile} disabled={loading} />
         </label>
         {preview && (
-          <button type="button" onClick={()=>{ setPreview(null); onDelete?.(); }} disabled={loading} style={{
-            display:"inline-flex", alignItems:"center", gap:6, padding:"6px 14px", borderRadius:"var(--r-md)",
-            background:"var(--rose-dim)", border:"1px solid rgba(184,53,53,.18)", color:"var(--rose)",
-            fontSize:12, fontWeight:500, cursor:loading?"not-allowed":"pointer", fontFamily:"'Instrument Sans',sans-serif",
-          }}>
+          <button type="button" onClick={()=>{ setPreview(null); onDelete?.(); }} disabled={loading} style={{ display:"inline-flex", alignItems:"center", gap:6, padding:"6px 14px", borderRadius:"var(--r-md)", background:"var(--rose-dim)", border:"1px solid rgba(184,53,53,.18)", color:"var(--rose)", fontSize:12, fontWeight:500, cursor:loading?"not-allowed":"pointer", fontFamily:"'Instrument Sans',sans-serif" }}>
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
             Remove photo
           </button>
@@ -353,30 +188,6 @@ function PageTitle({ crumb, title, sub }) {
       <div className="section-label" style={{ marginBottom:6 }}>{crumb}</div>
       <h1 style={{ margin:0, fontSize:26, fontFamily:"'Instrument Serif',serif", color:"var(--text)", letterSpacing:"-.03em" }}>{title}</h1>
       {sub && <p style={{ margin:"6px 0 0", fontSize:14, color:"var(--text-muted)" }}>{sub}</p>}
-    </div>
-  );
-}
-
-function TeacherCard({ r, onClick, onEdit, onDelete, t }) {
-  const initial = r.firstname?.[0] ?? "?";
-  return (
-    <div className="person-card" style={{ "--card-top":C_COLOR }} onClick={()=>onClick(r)}>
-      <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", marginBottom:16 }}>
-        <PhotoAvatar photo={r.photo} initial={initial} size={48} radius={14} color={C_COLOR} bg={C_BG} />
-        <div style={{ display:"flex", gap:6 }} onClick={e=>e.stopPropagation()}>
-          <button onClick={()=>onEdit(r)} className="btn-ghost" style={{ padding:"5px 12px", fontSize:12 }}>{t("common.edit")}</button>
-          <button onClick={()=>onDelete(r)} className="btn-danger" style={{ padding:"5px 12px", fontSize:12 }}>{t("common.delete")}</button>
-        </div>
-      </div>
-      <div style={{ marginBottom:12 }}>
-        <div style={{ fontWeight:600, fontSize:15, color:"var(--text)" }}>{r.firstname} {r.lastname}</div>
-        {r.speciality && <span style={{ display:"inline-block", marginTop:5, padding:"2px 9px", borderRadius:999, background:C_BG, color:C_COLOR, fontSize:11.5, fontWeight:600, border:`1px solid ${C_COLOR}22` }}>{r.speciality}</span>}
-      </div>
-      <div style={{ paddingTop:12, borderTop:"1px solid var(--border)", display:"flex", flexDirection:"column", gap:5 }}>
-        {r.email && <div style={{ fontSize:12.5, color:"var(--text-muted)", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>✉ {r.email}</div>}
-        {r.phone && <div style={{ fontSize:12.5, color:"var(--text-muted)" }}>📞 {r.phone}</div>}
-      </div>
-      <div style={{ position:"absolute", top:14, right:14, width:7, height:7, borderRadius:"50%", background:r.isApprove?"var(--green)":"var(--amber)", boxShadow:r.isApprove?"0 0 0 2px var(--green-dim)":"0 0 0 2px var(--amber-dim)" }} />
     </div>
   );
 }
@@ -433,11 +244,116 @@ function StatBox({ icon, label, value, color, bg }) {
   );
 }
 
+// ─── Sort icon ────────────────────────────────────────────────────────────────
+
+function SortIcon({ dir }) {
+  if (!dir) return <svg width="10" height="10" viewBox="0 0 10 14" fill="none" style={{ opacity:0.3 }}><path d="M5 1L1 5h8L5 1zM5 13l4-4H1l4 4z" fill="currentColor"/></svg>;
+  if (dir === "asc") return <svg width="10" height="10" viewBox="0 0 10 14" fill="none"><path d="M5 1L1 7h8L5 1z" fill="currentColor"/><path d="M5 13l4-4H1l4 4z" fill="currentColor" opacity="0.25"/></svg>;
+  return <svg width="10" height="10" viewBox="0 0 10 14" fill="none"><path d="M5 1L1 7h8L5 1z" fill="currentColor" opacity="0.25"/><path d="M5 13l4-4H1l4 4z" fill="currentColor"/></svg>;
+}
+
+// ─── Table Header Cell ────────────────────────────────────────────────────────
+
+function ThCell({ label, sortKey, sortBy, sortDir, onSort, style = {} }) {
+  const active = sortBy === sortKey;
+  return (
+    <th onClick={() => sortKey && onSort(sortKey)} style={{
+      padding:"11px 16px", textAlign:"left", fontSize:11, fontWeight:700,
+      textTransform:"uppercase", letterSpacing:".07em",
+      color: active ? C_COLOR : "var(--text-faint)",
+      background:"var(--surface, rgba(0,0,0,.03))",
+      borderBottom:"2px solid var(--border)",
+      cursor: sortKey ? "pointer" : "default",
+      userSelect:"none", whiteSpace:"nowrap", transition:"color .13s",
+      ...style,
+    }}>
+      <span style={{ display:"inline-flex", alignItems:"center", gap:6 }}>
+        {label}
+        {sortKey && <SortIcon dir={active ? sortDir : null} />}
+      </span>
+    </th>
+  );
+}
+
+// ─── Table Row ────────────────────────────────────────────────────────────────
+
+function TeacherRow({ r, index, onClick, onEdit, onDelete, t }) {
+  const initial = r.firstname?.[0] ?? "?";
+  const [hovered, setHovered] = useState(false);
+
+  return (
+    <tr
+      onClick={() => onClick(r)}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        cursor:"pointer",
+        background: hovered ? "var(--surface-hover, rgba(0,0,0,.025))" : index % 2 === 0 ? "transparent" : "rgba(0,0,0,.012)",
+        transition:"background .12s",
+        borderBottom:"1px solid var(--border)",
+      }}
+    >
+      {/* # */}
+      <td style={{ padding:"12px 16px", width:44, color:"var(--text-faint)", fontSize:12, fontWeight:500, fontFamily:"'JetBrains Mono',monospace", textAlign:"center" }}>
+        {index + 1}
+      </td>
+
+      {/* Avatar + Name */}
+      <td style={{ padding:"10px 16px" }}>
+        <div style={{ display:"flex", alignItems:"center", gap:12 }}>
+          <PhotoAvatar photo={r.photo} initial={initial} size={36} radius={10} color={C_COLOR} bg={C_BG} />
+          <div>
+            <div style={{ fontWeight:600, fontSize:14, color:"var(--text)", whiteSpace:"nowrap" }}>{r.firstname} {r.lastname}</div>
+            {r.email && <div style={{ fontSize:12, color:"var(--text-muted)", marginTop:1, overflow:"hidden", textOverflow:"ellipsis", maxWidth:220, whiteSpace:"nowrap" }}>{r.email}</div>}
+          </div>
+        </div>
+      </td>
+
+      {/* Speciality */}
+      <td style={{ padding:"12px 16px" }}>
+        {r.speciality
+          ? <span style={{ padding:"3px 10px", borderRadius:999, background:C_BG, color:C_COLOR, fontSize:12, fontWeight:600, border:`1px solid ${C_COLOR}22`, whiteSpace:"nowrap" }}>{r.speciality}</span>
+          : <span style={{ color:"var(--text-faint)", fontSize:12 }}>—</span>
+        }
+      </td>
+
+      {/* Phone */}
+      <td style={{ padding:"12px 16px", fontSize:13, color:"var(--text-muted)", whiteSpace:"nowrap" }}>
+        {r.phone ?? <span style={{ color:"var(--text-faint)" }}>—</span>}
+      </td>
+
+      {/* Status */}
+      <td style={{ padding:"12px 16px" }}>
+        <span style={{
+          display:"inline-flex", alignItems:"center", gap:5,
+          padding:"3px 10px", borderRadius:999, fontSize:11.5, fontWeight:600,
+          background: r.isApprove ? "var(--green-dim)" : "var(--amber-dim)",
+          color: r.isApprove ? "var(--green)" : "var(--amber)",
+          border:`1px solid ${r.isApprove ? "rgba(42,117,64,.2)" : "rgba(168,100,30,.2)"}`,
+          whiteSpace:"nowrap",
+        }}>
+          <span style={{ width:5, height:5, borderRadius:"50%", background:r.isApprove?"var(--green)":"var(--amber)", flexShrink:0 }}/>
+          {r.isApprove ? t("common.approved") : t("common.pending")}
+        </span>
+      </td>
+
+      {/* Actions */}
+      <td style={{ padding:"10px 16px", textAlign:"right" }} onClick={e => e.stopPropagation()}>
+        <div style={{ display:"flex", gap:6, justifyContent:"flex-end" }}>
+          <button onClick={() => onEdit(r)} className="btn-ghost" style={{ padding:"5px 12px", fontSize:12 }}>{t("common.edit")}</button>
+          <button onClick={() => onDelete(r)} className="btn-danger" style={{ padding:"5px 12px", fontSize:12 }}>{t("common.delete")}</button>
+        </div>
+      </td>
+    </tr>
+  );
+}
+
 // ─── Filter Bar ───────────────────────────────────────────────────────────────
+
 function FilterBar({ q, setQ, filterSpeciality, setFilterSpeciality, filterStatus, setFilterStatus, specialities, onReset, totalFiltered, total, t }) {
   const hasFilters = q.trim() || filterSpeciality || filterStatus;
   return (
-    <div style={{ background:"var(--bg-card)", border:"1px solid var(--border)", borderRadius:"var(--r-lg)", padding:"16px 20px", marginBottom:20, display:"flex", flexWrap:"wrap", gap:12, alignItems:"center", boxShadow:"var(--shadow-sm)" }}>
+    <div style={{ background:"var(--bg-card)", border:"1px solid var(--border)", borderRadius:"var(--r-lg)", padding:"14px 20px", marginBottom:16, display:"flex", flexWrap:"wrap", gap:10, alignItems:"center", boxShadow:"var(--shadow-sm)" }}>
       <div className="search-wrap" style={{ flex:"1 1 220px", minWidth:180 }}>
         <svg className="search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-faint)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
         <input className="search-input" placeholder={t("teachers.searchPlaceholder")} value={q} onChange={e=>setQ(e.target.value)} style={{ width:"100%" }} />
@@ -451,9 +367,7 @@ function FilterBar({ q, setQ, filterSpeciality, setFilterSpeciality, filterStatu
         <option value="approved">Approved</option>
         <option value="pending">Pending</option>
       </select>
-      {hasFilters && (
-        <button onClick={onReset} className="btn-ghost" style={{ padding:"8px 14px", fontSize:12.5, flexShrink:0, color:"var(--rose)", borderColor:"rgba(184,53,53,.25)" }}>✕ Clear</button>
-      )}
+      {hasFilters && <button onClick={onReset} className="btn-ghost" style={{ padding:"8px 14px", fontSize:12.5, flexShrink:0, color:"var(--rose)", borderColor:"rgba(184,53,53,.25)" }}>✕ Clear</button>}
       <div style={{ marginLeft:"auto", fontSize:12, color:"var(--text-faint)", flexShrink:0, whiteSpace:"nowrap" }}>
         {hasFilters ? <><span style={{ color:"var(--text-dim)", fontWeight:600 }}>{totalFiltered}</span> of {total}</> : <><span style={{ color:"var(--text-dim)", fontWeight:600 }}>{total}</span> total</>}
       </div>
@@ -462,6 +376,7 @@ function FilterBar({ q, setQ, filterSpeciality, setFilterSpeciality, filterStatu
 }
 
 // ─── Pagination ───────────────────────────────────────────────────────────────
+
 function Pagination({ page, totalPages, pageSize, setPage, setPageSize, totalFiltered }) {
   if (totalPages <= 1 && totalFiltered <= PAGE_SIZE_OPTIONS[0]) return null;
   const pages = [];
@@ -473,8 +388,7 @@ function Pagination({ page, totalPages, pageSize, setPage, setPageSize, totalFil
   let prev = -1;
   for (const p of pages) {
     if (prev !== -1 && p-prev > 1) withEllipsis.push("...");
-    withEllipsis.push(p);
-    prev = p;
+    withEllipsis.push(p); prev = p;
   }
   const btnStyle = (active) => ({
     minWidth:34, height:34, borderRadius:8, border:"1px solid var(--border-md)",
@@ -484,12 +398,10 @@ function Pagination({ page, totalPages, pageSize, setPage, setPageSize, totalFil
     transition:"background .14s, color .14s",
   });
   return (
-    <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", flexWrap:"wrap", gap:12, marginTop:28, paddingTop:20, borderTop:"1px solid var(--border)" }}>
+    <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", flexWrap:"wrap", gap:12, marginTop:20, paddingTop:16, borderTop:"1px solid var(--border)" }}>
       <div style={{ display:"flex", alignItems:"center", gap:8 }}>
         <span style={{ fontSize:12, color:"var(--text-faint)" }}>Per page:</span>
-        {PAGE_SIZE_OPTIONS.map(s=>(
-          <button key={s} onClick={()=>{ setPageSize(s); setPage(0); }} style={{ ...btnStyle(pageSize===s), padding:"0 12px" }}>{s}</button>
-        ))}
+        {PAGE_SIZE_OPTIONS.map(s=><button key={s} onClick={()=>{ setPageSize(s); setPage(0); }} style={{ ...btnStyle(pageSize===s), padding:"0 12px" }}>{s}</button>)}
       </div>
       <div style={{ display:"flex", alignItems:"center", gap:6 }}>
         <button onClick={()=>setPage(p=>Math.max(0,p-1))} disabled={page===0} style={{ ...btnStyle(false), opacity:page===0?.35:1, padding:"0 10px" }}>‹</button>
@@ -507,6 +419,7 @@ function Pagination({ page, totalPages, pageSize, setPage, setPageSize, totalFil
 // ═══════════════════════════════════════════════════════
 //  MAIN PAGE
 // ═══════════════════════════════════════════════════════
+
 export default function TeachersPage() {
   const { t } = useLanguage();
   const toast = useToast();
@@ -525,17 +438,27 @@ export default function TeachersPage() {
   const [q, setQ]                           = useState("");
   const [filterSpeciality, setFilterSpeciality] = useState("");
   const [filterStatus, setFilterStatus]     = useState("");
-  const [page, setPage]                     = useState(0);
-  const [pageSize, setPageSize]             = useState(12);
+
+  // Sort — default: lastname ascending
+  const [sortBy, setSortBy]   = useState("lastname");
+  const [sortDir, setSortDir] = useState("asc");
+
+  const [page, setPage]         = useState(0);
+  const [pageSize, setPageSize] = useState(25);
 
   const { form, set, setForm }  = usePersonForm();
   const [speciality, setSpeciality] = useState("");
   const [editForm, setEditForm] = useState({});
   const setEdit = k => e => setEditForm(f=>({ ...f, [k]:e.target.value }));
 
-  const load = () => { setLoading(true); getTeachers().then(setData).catch(e=>toast(e.message,"error")).finally(()=>setLoading(false)); };
+  const load = () => { setLoading(true); getTeachers().then(d => setData(Array.isArray(d) ? d : d?.content ?? [])).catch(e=>toast(e.message,"error")).finally(()=>setLoading(false)); };
   useEffect(load, []);
-  useEffect(()=>setPage(0), [q, filterSpeciality, filterStatus]);
+  useEffect(()=>setPage(0), [q, filterSpeciality, filterStatus, sortBy, sortDir]);
+
+  const handleSort = (key) => {
+    if (sortBy === key) setSortDir(d => d === "asc" ? "desc" : "asc");
+    else { setSortBy(key); setSortDir("asc"); }
+  };
 
   const specialities = useMemo(()=>{
     const arr = Array.isArray(data) ? data : [];
@@ -556,8 +479,20 @@ export default function TeachersPage() {
     if (filterSpeciality) arr = arr.filter(r=>r.speciality===filterSpeciality);
     if (filterStatus==="approved") arr = arr.filter(r=>r.isApprove);
     if (filterStatus==="pending")  arr = arr.filter(r=>!r.isApprove);
+
+    // Sort
+    arr = [...arr].sort((a, b) => {
+      let av = a[sortBy] ?? "";
+      let bv = b[sortBy] ?? "";
+      if (typeof av === "string") av = av.toLowerCase();
+      if (typeof bv === "string") bv = bv.toLowerCase();
+      if (av < bv) return sortDir === "asc" ? -1 : 1;
+      if (av > bv) return sortDir === "asc" ? 1 : -1;
+      return 0;
+    });
+
     return arr;
-  }, [data, q, filterSpeciality, filterStatus]);
+  }, [data, q, filterSpeciality, filterStatus, sortBy, sortDir]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
   const paginated  = filtered.slice(page * pageSize, (page + 1) * pageSize);
@@ -613,7 +548,7 @@ export default function TeachersPage() {
     catch(err) { toast(err.message,"error"); } finally { setDeleting(false); }
   };
 
-  // ══ LIST ══
+  // ══ LIST ══════════════════════════════════════════════════════════════════
   if (view === "list") return (
     <div className="page-enter" style={{ padding:"36px 44px" }}>
       <div style={{ display:"flex", alignItems:"flex-end", justifyContent:"space-between", marginBottom:28 }}>
@@ -621,27 +556,52 @@ export default function TeachersPage() {
           sub={loading ? t("common.loading") : `${filtered.length} ${t("teachers.title").toLowerCase()}`} />
         <button onClick={()=>setView("create")} className="btn-primary" style={{ marginBottom:32 }}>{t("teachers.addBtn")}</button>
       </div>
+
       <FilterBar q={q} setQ={setQ} filterSpeciality={filterSpeciality} setFilterSpeciality={setFilterSpeciality} filterStatus={filterStatus} setFilterStatus={setFilterStatus} specialities={specialities} onReset={resetFilters} totalFiltered={filtered.length} total={Array.isArray(data)?data.length:0} t={t} />
-      {loading
-        ? <div className="empty-state"><div className="spinner" style={{ width:22, height:22 }} /><p>{t("common.loading")}</p></div>
-        : paginated.length === 0
-          ? <div className="empty-state">
-              <span style={{ fontSize:36 }}>🎓</span>
-              <p>{q||filterSpeciality||filterStatus ? "No teachers match your filters." : t("teachers.empty")}</p>
-              {(q||filterSpeciality||filterStatus) && <button onClick={resetFilters} className="btn-ghost" style={{ marginTop:8 }}>Clear filters</button>}
-            </div>
-          : <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(280px, 1fr))", gap:16 }}>
-              {paginated.map((r,i)=>(
-                <TeacherCard key={r.id??i} r={r} t={t}
-                  onClick={r=>{ setSelected(r); setView("detail"); }}
-                  onEdit={openEdit}
-                  onDelete={target=>setDeleteTarget(target)} />
-              ))}
-            </div>
-      }
-      {!loading && filtered.length > 0 && (
-        <Pagination page={page} totalPages={totalPages} pageSize={pageSize} setPage={setPage} setPageSize={setPageSize} totalFiltered={filtered.length} />
+
+      {loading ? (
+        <div className="empty-state"><div className="spinner" style={{ width:22, height:22 }}/><p>{t("common.loading")}</p></div>
+      ) : filtered.length === 0 ? (
+        <div className="empty-state">
+          <span style={{ fontSize:36 }}>🎓</span>
+          <p>{q||filterSpeciality||filterStatus ? "No teachers match your filters." : t("teachers.empty")}</p>
+          {(q||filterSpeciality||filterStatus) && <button onClick={resetFilters} className="btn-ghost" style={{ marginTop:8 }}>Clear filters</button>}
+        </div>
+      ) : (
+        <div style={{ background:"var(--bg-card)", border:"1px solid var(--border)", borderRadius:"var(--r-xl)", boxShadow:"var(--shadow-sm)", overflow:"hidden" }}>
+          <div style={{ overflowX:"auto" }}>
+            <table style={{ width:"100%", borderCollapse:"collapse", tableLayout:"auto" }}>
+              <thead>
+                <tr>
+                  <ThCell label="#"                         sortKey={null}          sortBy={sortBy} sortDir={sortDir} onSort={handleSort} style={{ width:44, textAlign:"center" }} />
+                  <ThCell label="Teacher"                   sortKey="lastname"      sortBy={sortBy} sortDir={sortDir} onSort={handleSort} />
+                  <ThCell label={t("teachers.speciality")}  sortKey="speciality"    sortBy={sortBy} sortDir={sortDir} onSort={handleSort} />
+                  <ThCell label={t("fields.phone")}         sortKey="phone"         sortBy={sortBy} sortDir={sortDir} onSort={handleSort} />
+                  <ThCell label="Status"                    sortKey="isApprove"     sortBy={sortBy} sortDir={sortDir} onSort={handleSort} />
+                  <ThCell label=""                          sortKey={null}          sortBy={sortBy} sortDir={sortDir} onSort={handleSort} style={{ width:140, textAlign:"right" }} />
+                </tr>
+              </thead>
+              <tbody>
+                {paginated.map((r, i) => (
+                  <TeacherRow
+                    key={r.id ?? i}
+                    r={r}
+                    index={page * pageSize + i}
+                    t={t}
+                    onClick={r => { setSelected(r); setView("detail"); }}
+                    onEdit={openEdit}
+                    onDelete={target => setDeleteTarget(target)}
+                  />
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div style={{ padding:"0 20px 20px" }}>
+            <Pagination page={page} totalPages={totalPages} pageSize={pageSize} setPage={setPage} setPageSize={setPageSize} totalFiltered={filtered.length} />
+          </div>
+        </div>
       )}
+
       {deleteTarget && (
         <ConfirmDialog
           title={t("teachers.deleteTitle", { name:`${deleteTarget.firstname} ${deleteTarget.lastname}` })}
@@ -651,7 +611,7 @@ export default function TeachersPage() {
     </div>
   );
 
-  // ══ CREATE ══
+  // ══ CREATE ════════════════════════════════════════════════════════════════
   if (view === "create") return (
     <div className="page-enter" style={{ padding:"36px 44px" }}>
       <BackBtn label={t("teachers.detailBack")} onClick={goList} />
@@ -659,13 +619,7 @@ export default function TeachersPage() {
       <TwoCol
         left={<FormPanel onSubmit={handleCreate}>
           <Field label="Profile Photo">
-            <PhotoUploadField
-              photo={pendingPhoto ? URL.createObjectURL(pendingPhoto) : null}
-              initial={(form.firstname?.[0]??"?").toUpperCase()}
-              onFileSelected={setPendingPhoto}
-              onDelete={()=>setPendingPhoto(null)}
-              loading={photoLoading}
-            />
+            <PhotoUploadField photo={pendingPhoto ? URL.createObjectURL(pendingPhoto) : null} initial={(form.firstname?.[0]??"?").toUpperCase()} onFileSelected={setPendingPhoto} onDelete={()=>setPendingPhoto(null)} loading={photoLoading} />
           </Field>
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:16 }}>
             <Field label={t("fields.firstName")}><Input placeholder={t("fields.firstNamePlaceholder")} value={form.firstname} onChange={set("firstname")} required /></Field>
@@ -682,9 +636,7 @@ export default function TeachersPage() {
             <div style={{ flex:2 }}><SubmitBtn loading={saving||photoLoading} label={t("teachers.registerBtn")} /></div>
           </div>
         </FormPanel>}
-        right={<SidePanel title={t("teachers.sideNote3")} initial={(form.firstname?.[0]??"?").toUpperCase()}
-          photo={pendingPhoto ? URL.createObjectURL(pendingPhoto) : null}
-          accentColor={C_COLOR} accentBg={C_BG}
+        right={<SidePanel title={t("teachers.sideNote3")} initial={(form.firstname?.[0]??"?").toUpperCase()} photo={pendingPhoto ? URL.createObjectURL(pendingPhoto) : null} accentColor={C_COLOR} accentBg={C_BG}
           items={{ sectionLabel:t("common.notes"), list:[
             { icon:"📧", text:t("teachers.sideNote1") },
             { icon:"🔢", text:t("teachers.sideNote2") },
@@ -694,7 +646,7 @@ export default function TeachersPage() {
     </div>
   );
 
-  // ══ EDIT ══
+  // ══ EDIT ══════════════════════════════════════════════════════════════════
   if (view === "edit" && selected) return (
     <div className="page-enter" style={{ padding:"36px 44px" }}>
       <BackBtn label={t("teachers.detailBack")} onClick={goList} />
@@ -702,13 +654,7 @@ export default function TeachersPage() {
       <TwoCol
         left={<FormPanel onSubmit={handleEdit}>
           <Field label="Profile Photo">
-            <PhotoUploadField
-              photo={deletePhoto ? null : (pendingPhoto ? URL.createObjectURL(pendingPhoto) : selected.photo ?? null)}
-              initial={(selected.firstname?.[0]??"?").toUpperCase()}
-              onFileSelected={f=>{ setPendingPhoto(f); setDeletePhoto(false); }}
-              onDelete={()=>{ setPendingPhoto(null); setDeletePhoto(true); }}
-              loading={photoLoading}
-            />
+            <PhotoUploadField photo={deletePhoto ? null : (pendingPhoto ? URL.createObjectURL(pendingPhoto) : selected.photo ?? null)} initial={(selected.firstname?.[0]??"?").toUpperCase()} onFileSelected={f=>{ setPendingPhoto(f); setDeletePhoto(false); }} onDelete={()=>{ setPendingPhoto(null); setDeletePhoto(true); }} loading={photoLoading} />
           </Field>
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:16 }}>
             <Field label={t("fields.firstName")}><Input value={editForm.firstname} onChange={setEdit("firstname")} required /></Field>
@@ -725,10 +671,7 @@ export default function TeachersPage() {
             <div style={{ flex:2 }}><SubmitBtn loading={saving||photoLoading} label={t("teachers.saveBtn")} /></div>
           </div>
         </FormPanel>}
-        right={<SidePanel title={t("teachers.editSub", { name:`${selected.firstname} ${selected.lastname}` })}
-          initial={(selected.firstname?.[0]??"?").toUpperCase()}
-          photo={deletePhoto ? null : (pendingPhoto ? URL.createObjectURL(pendingPhoto) : selected.photo ?? null)}
-          accentColor={C_COLOR} accentBg={C_BG}
+        right={<SidePanel title={t("teachers.editSub", { name:`${selected.firstname} ${selected.lastname}` })} initial={(selected.firstname?.[0]??"?").toUpperCase()} photo={deletePhoto ? null : (pendingPhoto ? URL.createObjectURL(pendingPhoto) : selected.photo ?? null)} accentColor={C_COLOR} accentBg={C_BG}
           items={{ sectionLabel:t("common.notes"), list:[
             { icon:"💡", text:t("teachers.editNote1") },
             { icon:"📧", text:t("teachers.editNote2") },
@@ -737,17 +680,12 @@ export default function TeachersPage() {
     </div>
   );
 
-  // ══ DETAIL ══
+  // ══ DETAIL ════════════════════════════════════════════════════════════════
   if (view === "detail" && selected) {
     const v = selected;
-    // Use v.id as the teacher ID for the assignment endpoints
-    const teacherId = v.id;
-
     return (
       <div className="page-enter" style={{ padding:"36px 44px" }}>
         <BackBtn label={t("teachers.detailBack")} onClick={goList} />
-
-        {/* Hero card */}
         <div style={{ background:"var(--bg-card)", border:"1px solid var(--border)", borderRadius:"var(--r-xl)", boxShadow:"var(--shadow-sm)", overflow:"hidden", marginBottom:24 }}>
           <div style={{ height:90, background:`linear-gradient(135deg, ${C_COLOR}22 0%, ${C_COLOR}08 100%)`, position:"relative" }}>
             <div style={{ position:"absolute", inset:0, backgroundImage:`radial-gradient(circle at 80% 50%, ${C_COLOR}18 0%, transparent 60%)` }} />
@@ -755,18 +693,13 @@ export default function TeachersPage() {
           <div style={{ padding:"0 36px 28px", marginTop:-36 }}>
             <div style={{ display:"flex", alignItems:"flex-end", justifyContent:"space-between", flexWrap:"wrap", gap:16 }}>
               <div style={{ display:"flex", alignItems:"flex-end", gap:20 }}>
-                <PhotoAvatar
-                  photo={v.photo}
-                  initial={(v.firstname?.[0]??"T").toUpperCase()}
-                  size={80} radius={22}
-                  style={{ border:"3px solid var(--bg-card)", boxShadow:`0 0 0 2px ${C_COLOR}40` }}
-                />
+                <PhotoAvatar photo={v.photo} initial={(v.firstname?.[0]??"T").toUpperCase()} size={80} radius={22} style={{ border:"3px solid var(--bg-card)", boxShadow:`0 0 0 2px ${C_COLOR}40` }} />
                 <div style={{ paddingBottom:4 }}>
                   <h2 style={{ margin:0, fontSize:22, fontFamily:"'Instrument Serif',serif", color:"var(--text)", letterSpacing:"-.025em" }}>{v.firstname} {v.lastname}</h2>
                   <div style={{ display:"flex", gap:8, marginTop:7, flexWrap:"wrap" }}>
                     {v.speciality && <span style={{ padding:"3px 11px", borderRadius:999, background:C_BG, color:C_COLOR, fontSize:12, fontWeight:600, border:`1px solid ${C_COLOR}30` }}>{v.speciality}</span>}
                     <span style={{ display:"inline-flex", alignItems:"center", gap:5, padding:"3px 10px", borderRadius:999, fontSize:12, fontWeight:600, background:v.isApprove?"var(--green-dim)":"var(--amber-dim)", color:v.isApprove?"var(--green)":"var(--amber)", border:`1px solid ${v.isApprove?"rgba(42,117,64,.25)":"rgba(168,100,30,.25)"}` }}>
-                      <span style={{ width:6, height:6, borderRadius:"50%", background:v.isApprove?"var(--green)":"var(--amber)" }} />
+                      <span style={{ width:6, height:6, borderRadius:"50%", background:v.isApprove?"var(--green)":"var(--amber)" }}/>
                       {v.isApprove ? t("common.approved") : t("common.pending")}
                     </span>
                   </div>
@@ -780,7 +713,6 @@ export default function TeachersPage() {
           </div>
         </div>
 
-        {/* Stat boxes */}
         <div style={{ display:"grid", gridTemplateColumns:"repeat(3, 1fr)", gap:14 }}>
           <StatBox icon="✉️" label={t("teachers.fields.email")}  value={v.email}       color={C_COLOR} bg={C_BG} />
           <StatBox icon="📞" label={t("teachers.fields.phone")}  value={v.phone}       color={C_COLOR} bg={C_BG} />
@@ -790,8 +722,7 @@ export default function TeachersPage() {
           <StatBox icon="🎂" label={t("teachers.fields.dob")}    value={v.dateOfBrith} color={C_COLOR} bg={C_BG} />
         </div>
 
-        {/* Teaching Schedule — new section using the two endpoints */}
-        <TeachingSchedule teacherId={teacherId} t={t} />
+        <TeachingSchedule teacherId={v.id} t={t} />
 
         {deleteTarget && (
           <ConfirmDialog
@@ -802,5 +733,6 @@ export default function TeachersPage() {
       </div>
     );
   }
+
   return null;
 }

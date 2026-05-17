@@ -13,25 +13,18 @@ import ConfirmDialog from "../components/ConfirmDialog";
 import { useLanguage } from "../LanguageContext";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
-const C_COLOR   = "var(--amber)";
-const C_BG      = "var(--amber-dim)";
-const PAGE_SIZE = 12;
+const C_COLOR        = "var(--amber)";
+const C_BG           = "var(--amber-dim)";
+const PAGE_SIZE_OPTIONS = [25, 50, 100];
 
 // ── Photo helpers ─────────────────────────────────────────────────────────────
 
 function PhotoAvatar({ photo, initial = "?", size = 48, radius = 14, color = C_COLOR, bg = C_BG, style = {} }) {
   const fs = Math.round(size / 2.4);
   const [failed, setFailed] = useState(false);
-  const base = {
-    width: size, height: size, borderRadius: radius, flexShrink: 0, overflow: "hidden",
-    display: "flex", alignItems: "center", justifyContent: "center", ...style,
-  };
+  const base = { width:size, height:size, borderRadius:radius, flexShrink:0, overflow:"hidden", display:"flex", alignItems:"center", justifyContent:"center", ...style };
   if (photo && !failed) {
-    return (
-      <div style={base}>
-        <img src={photo} alt={initial} style={{ width:"100%", height:"100%", objectFit:"cover", display:"block" }} onError={()=>setFailed(true)} />
-      </div>
-    );
+    return <div style={base}><img src={photo} alt={initial} style={{ width:"100%", height:"100%", objectFit:"cover", display:"block" }} onError={()=>setFailed(true)} /></div>;
   }
   return (
     <div style={{ ...base, background:bg, color, border:`1.5px solid ${color}28` }}>
@@ -57,19 +50,10 @@ function PhotoUploadField({ photo, initial, color = C_COLOR, bg = C_BG, onFileSe
     <div style={{ display:"flex", alignItems:"center", gap:16 }}>
       <div style={{ position:"relative", flexShrink:0 }}>
         <PhotoAvatar photo={preview} initial={initial} size={80} radius={20} color={color} bg={bg} />
-        {loading && (
-          <div style={{ position:"absolute", inset:0, borderRadius:20, background:"rgba(0,0,0,.45)", display:"flex", alignItems:"center", justifyContent:"center" }}>
-            <span className="spinner" style={{ width:20, height:20, borderTopColor:"#fff" }} />
-          </div>
-        )}
+        {loading && <div style={{ position:"absolute", inset:0, borderRadius:20, background:"rgba(0,0,0,.45)", display:"flex", alignItems:"center", justifyContent:"center" }}><span className="spinner" style={{ width:20, height:20, borderTopColor:"#fff" }}/></div>}
       </div>
       <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
-        <label style={{
-          display:"inline-flex", alignItems:"center", gap:6, padding:"8px 14px", borderRadius:"var(--r-md)",
-          background:"var(--surface)", border:"1.5px solid var(--border-md)", color:"var(--text-dim)",
-          fontSize:12.5, fontWeight:500, cursor:loading?"not-allowed":"pointer",
-          fontFamily:"'Instrument Sans',sans-serif", transition:"background .13s", opacity:loading?0.5:1,
-        }}
+        <label style={{ display:"inline-flex", alignItems:"center", gap:6, padding:"8px 14px", borderRadius:"var(--r-md)", background:"var(--surface)", border:"1.5px solid var(--border-md)", color:"var(--text-dim)", fontSize:12.5, fontWeight:500, cursor:loading?"not-allowed":"pointer", fontFamily:"'Instrument Sans',sans-serif", transition:"background .13s", opacity:loading?0.5:1 }}
           onMouseEnter={e=>!loading&&(e.currentTarget.style.background="var(--surface-hover)")}
           onMouseLeave={e=>!loading&&(e.currentTarget.style.background="var(--surface)")}
         >
@@ -78,11 +62,7 @@ function PhotoUploadField({ photo, initial, color = C_COLOR, bg = C_BG, onFileSe
           <input ref={inputRef} type="file" accept="image/*" style={{ display:"none" }} onChange={handleFile} disabled={loading} />
         </label>
         {preview && (
-          <button type="button" onClick={()=>{ setPreview(null); onDelete?.(); }} disabled={loading} style={{
-            display:"inline-flex", alignItems:"center", gap:6, padding:"6px 14px", borderRadius:"var(--r-md)",
-            background:"var(--rose-dim)", border:"1px solid rgba(184,53,53,.18)", color:"var(--rose)",
-            fontSize:12, fontWeight:500, cursor:loading?"not-allowed":"pointer", fontFamily:"'Instrument Sans',sans-serif",
-          }}>
+          <button type="button" onClick={()=>{ setPreview(null); onDelete?.(); }} disabled={loading} style={{ display:"inline-flex", alignItems:"center", gap:6, padding:"6px 14px", borderRadius:"var(--r-md)", background:"var(--rose-dim)", border:"1px solid rgba(184,53,53,.18)", color:"var(--rose)", fontSize:12, fontWeight:500, cursor:loading?"not-allowed":"pointer", fontFamily:"'Instrument Sans',sans-serif" }}>
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
             Remove photo
           </button>
@@ -94,10 +74,10 @@ function PhotoUploadField({ photo, initial, color = C_COLOR, bg = C_BG, onFileSe
 }
 
 // ── Small reusable UI pieces ──────────────────────────────────────────────────
+
 function BackBtn({ label, onClick }) {
   return (
-    <button onClick={onClick}
-      style={{ display:"inline-flex", alignItems:"center", gap:6, background:"none", border:"none", cursor:"pointer", color:"var(--text-muted)", fontSize:13, fontFamily:"'Instrument Sans',sans-serif", padding:0, marginBottom:28, transition:"color .13s" }}
+    <button onClick={onClick} style={{ display:"inline-flex", alignItems:"center", gap:6, background:"none", border:"none", cursor:"pointer", color:"var(--text-muted)", fontSize:13, fontFamily:"'Instrument Sans',sans-serif", padding:0, marginBottom:28, transition:"color .13s" }}
       onMouseEnter={e=>(e.currentTarget.style.color="var(--text)")}
       onMouseLeave={e=>(e.currentTarget.style.color="var(--text-muted)")}
     >
@@ -152,8 +132,7 @@ function SidePanel({ title, items, accentColor, accentBg, initial, photo, sectio
 function TwoCol({ left, right }) {
   return (
     <div style={{ display:"grid", gridTemplateColumns:"1fr 380px", gap:24, alignItems:"start" }}>
-      <div>{left}</div>
-      <div>{right}</div>
+      <div>{left}</div><div>{right}</div>
     </div>
   );
 }
@@ -170,81 +149,182 @@ function StatBox({ icon, label, value }) {
   );
 }
 
-// ── Pagination bar ────────────────────────────────────────────────────────────
-function Pagination({ page, total, pageSize, onChange }) {
-  const totalPages = Math.ceil(total / pageSize);
-  if (totalPages <= 1) return null;
-  const pages = [];
-  for (let i = 0; i < totalPages; i++) pages.push(i);
-  const btnStyle = (active) => ({
-    minWidth:34, height:34, borderRadius:"var(--r-md)", border:"1.5px solid",
-    borderColor: active ? C_COLOR : "var(--border-md)",
-    background: active ? C_BG : "var(--bg-card)",
-    color: active ? C_COLOR : "var(--text-muted)",
-    fontWeight: active ? 700 : 500, fontSize:13,
-    cursor: active ? "default" : "pointer",
-    display:"inline-flex", alignItems:"center", justifyContent:"center",
-    transition:"all .14s",
-  });
+// ── Sort icon ─────────────────────────────────────────────────────────────────
+
+function SortIcon({ dir }) {
+  if (!dir) return <svg width="10" height="10" viewBox="0 0 10 14" fill="none" style={{ opacity:0.3 }}><path d="M5 1L1 5h8L5 1zM5 13l4-4H1l4 4z" fill="currentColor"/></svg>;
+  if (dir === "asc") return <svg width="10" height="10" viewBox="0 0 10 14" fill="none"><path d="M5 1L1 7h8L5 1z" fill="currentColor"/><path d="M5 13l4-4H1l4 4z" fill="currentColor" opacity="0.25"/></svg>;
+  return <svg width="10" height="10" viewBox="0 0 10 14" fill="none"><path d="M5 1L1 7h8L5 1z" fill="currentColor" opacity="0.25"/><path d="M5 13l4-4H1l4 4z" fill="currentColor"/></svg>;
+}
+
+// ── Table header cell ─────────────────────────────────────────────────────────
+
+function ThCell({ label, sortKey, sortBy, sortDir, onSort, style = {} }) {
+  const active = sortBy === sortKey;
   return (
-    <div style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:6, marginTop:28 }}>
-      <button style={{ ...btnStyle(false), minWidth:34 }} disabled={page===0} onClick={()=>onChange(page-1)}>
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
-      </button>
-      {pages.map(p=>{
-        if (totalPages > 7 && Math.abs(p-page) > 2 && p!==0 && p!==totalPages-1) {
-          if (p===1 && page>3) return <span key={p} style={{ color:"var(--text-faint)", fontSize:13 }}>…</span>;
-          if (p===totalPages-2 && page<totalPages-4) return <span key={p} style={{ color:"var(--text-faint)", fontSize:13 }}>…</span>;
-          if (Math.abs(p-page)>2) return null;
-        }
-        return <button key={p} style={btnStyle(p===page)} onClick={()=>onChange(p)}>{p+1}</button>;
-      })}
-      <button style={{ ...btnStyle(false), minWidth:34 }} disabled={page===totalPages-1} onClick={()=>onChange(page+1)}>
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-      </button>
-      <span style={{ fontSize:12.5, color:"var(--text-faint)", marginLeft:8 }}>
-        {page*pageSize+1}–{Math.min((page+1)*pageSize, total)} of {total}
+    <th onClick={() => sortKey && onSort(sortKey)} style={{
+      padding:"11px 16px", textAlign:"left", fontSize:11, fontWeight:700,
+      textTransform:"uppercase", letterSpacing:".07em",
+      color: active ? C_COLOR : "var(--text-faint)",
+      background:"var(--surface, rgba(0,0,0,.03))",
+      borderBottom:"2px solid var(--border)",
+      cursor: sortKey ? "pointer" : "default",
+      userSelect:"none", whiteSpace:"nowrap", transition:"color .13s",
+      ...style,
+    }}>
+      <span style={{ display:"inline-flex", alignItems:"center", gap:6 }}>
+        {label}
+        {sortKey && <SortIcon dir={active ? sortDir : null} />}
       </span>
+    </th>
+  );
+}
+
+// ── Table row ─────────────────────────────────────────────────────────────────
+
+function ParentRow({ r, index, onClick, onEdit, onDeactivate, t }) {
+  const initial = r.firstname?.[0] ?? "?";
+  const [hovered, setHovered] = useState(false);
+  return (
+    <tr
+      onClick={() => onClick(r)}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        cursor:"pointer",
+        background: hovered ? "var(--surface-hover, rgba(0,0,0,.025))" : index % 2 === 0 ? "transparent" : "rgba(0,0,0,.012)",
+        transition:"background .12s",
+        borderBottom:"1px solid var(--border)",
+      }}
+    >
+      {/* # */}
+      <td style={{ padding:"12px 16px", width:44, color:"var(--text-faint)", fontSize:12, fontWeight:500, fontFamily:"'JetBrains Mono',monospace", textAlign:"center" }}>
+        {index + 1}
+      </td>
+
+      {/* Avatar + Name */}
+      <td style={{ padding:"10px 16px" }}>
+        <div style={{ display:"flex", alignItems:"center", gap:12 }}>
+          <PhotoAvatar photo={r.photo} initial={initial} size={36} radius={10} color={C_COLOR} bg={C_BG} />
+          <div>
+            <div style={{ fontWeight:600, fontSize:14, color:"var(--text)", whiteSpace:"nowrap" }}>{r.firstname} {r.lastname}</div>
+            {r.email && <div style={{ fontSize:12, color:"var(--text-muted)", marginTop:1, overflow:"hidden", textOverflow:"ellipsis", maxWidth:220, whiteSpace:"nowrap" }}>{r.email}</div>}
+          </div>
+        </div>
+      </td>
+
+      {/* Phone */}
+      <td style={{ padding:"12px 16px", fontSize:13, color:"var(--text-muted)", whiteSpace:"nowrap" }}>
+        {r.phone ?? <span style={{ color:"var(--text-faint)" }}>—</span>}
+      </td>
+
+      {/* Address */}
+      <td style={{ padding:"12px 16px", fontSize:13, color:"var(--text-muted)", maxWidth:200, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+        {r.address ?? <span style={{ color:"var(--text-faint)" }}>—</span>}
+      </td>
+
+      {/* Status */}
+      <td style={{ padding:"12px 16px" }}>
+        <span style={{
+          display:"inline-flex", alignItems:"center", gap:5,
+          padding:"3px 10px", borderRadius:999, fontSize:11.5, fontWeight:600,
+          background: r.isApprove ? "var(--green-dim)" : "var(--amber-dim)",
+          color: r.isApprove ? "var(--green)" : "var(--amber)",
+          border:`1px solid ${r.isApprove ? "rgba(42,117,64,.2)" : "rgba(168,100,30,.2)"}`,
+          whiteSpace:"nowrap",
+        }}>
+          <span style={{ width:5, height:5, borderRadius:"50%", background:r.isApprove?"var(--green)":"var(--amber)", flexShrink:0 }}/>
+          {r.isApprove ? t("common.approved") : t("common.pending")}
+        </span>
+      </td>
+
+      {/* Actions */}
+      <td style={{ padding:"10px 16px", textAlign:"right" }} onClick={e => e.stopPropagation()}>
+        <div style={{ display:"flex", gap:6, justifyContent:"flex-end" }}>
+          <button onClick={() => onEdit(r)} className="btn-ghost" style={{ padding:"5px 12px", fontSize:12 }}>{t("common.edit")}</button>
+          <button onClick={() => onDeactivate(r)} className="btn-danger" style={{ padding:"5px 12px", fontSize:12 }}>{t("parents.deactivateBtn")}</button>
+        </div>
+      </td>
+    </tr>
+  );
+}
+
+// ── Filter Bar ────────────────────────────────────────────────────────────────
+
+function FilterBar({ q, setQ, filterStatus, setFilterStatus, onReset, totalFiltered, total, t }) {
+  const hasFilters = q.trim() || filterStatus;
+  return (
+    <div style={{ background:"var(--bg-card)", border:"1px solid var(--border)", borderRadius:"var(--r-lg)", padding:"14px 20px", marginBottom:16, display:"flex", flexWrap:"wrap", gap:10, alignItems:"center", boxShadow:"var(--shadow-sm)" }}>
+      <div className="search-wrap" style={{ flex:"1 1 220px", minWidth:180 }}>
+        <svg className="search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-faint)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input className="search-input" placeholder={t("parents.searchPlaceholder")} value={q} onChange={e=>setQ(e.target.value)} style={{ width:"100%" }} />
+      </div>
+      <select value={filterStatus} onChange={e=>setFilterStatus(e.target.value)} className="t-select" style={{ flex:"0 0 150px" }}>
+        <option value="">All Statuses</option>
+        <option value="approved">Approved</option>
+        <option value="pending">Pending</option>
+      </select>
+      {hasFilters && <button onClick={onReset} className="btn-ghost" style={{ padding:"8px 14px", fontSize:12.5, flexShrink:0, color:"var(--rose)", borderColor:"rgba(184,53,53,.25)" }}>✕ Clear</button>}
+      <div style={{ marginLeft:"auto", fontSize:12, color:"var(--text-faint)", flexShrink:0, whiteSpace:"nowrap" }}>
+        {hasFilters ? <><span style={{ color:"var(--text-dim)", fontWeight:600 }}>{totalFiltered}</span> of {total}</> : <><span style={{ color:"var(--text-dim)", fontWeight:600 }}>{total}</span> total</>}
+      </div>
     </div>
   );
 }
 
-// ── Parent card ───────────────────────────────────────────────────────────────
-function ParentCard({ r, onClick, onEdit, onDeactivate, t }) {
-  const initial = r.firstname?.[0] ?? "?";
+// ── Pagination ────────────────────────────────────────────────────────────────
+
+function Pagination({ page, totalPages, pageSize, setPage, setPageSize, totalFiltered }) {
+  if (totalPages <= 1 && totalFiltered <= PAGE_SIZE_OPTIONS[0]) return null;
+  const pages = [];
+  const delta = 2;
+  for (let i = 0; i < totalPages; i++) {
+    if (i===0||i===totalPages-1||(i>=page-delta&&i<=page+delta)) pages.push(i);
+  }
+  const withEllipsis = [];
+  let prev = -1;
+  for (const p of pages) {
+    if (prev !== -1 && p-prev > 1) withEllipsis.push("...");
+    withEllipsis.push(p); prev = p;
+  }
+  const btnStyle = (active) => ({
+    minWidth:34, height:34, borderRadius:8, border:"1px solid var(--border-md)",
+    background:active?"var(--accent)":"var(--surface)", color:active?"#fff":"var(--text-muted)",
+    fontFamily:"'Instrument Sans',sans-serif", fontSize:13, fontWeight:active?700:400,
+    cursor:active?"default":"pointer", display:"flex", alignItems:"center", justifyContent:"center",
+    transition:"background .14s, color .14s",
+  });
   return (
-    <div className="person-card" style={{ "--card-top":C_COLOR }} onClick={()=>onClick(r)}>
-      <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", marginBottom:16 }}>
-        <PhotoAvatar photo={r.photo} initial={initial} size={48} radius={14} color={C_COLOR} bg={C_BG} />
-        <div style={{ display:"flex", gap:6 }} onClick={e=>e.stopPropagation()}>
-          <button onClick={()=>onEdit(r)} className="btn-ghost" style={{ padding:"5px 12px", fontSize:12 }}>{t("common.edit")}</button>
-          <button onClick={()=>onDeactivate(r)} className="btn-danger" style={{ padding:"5px 12px", fontSize:12 }}>{t("parents.deactivateBtn")}</button>
-        </div>
+    <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", flexWrap:"wrap", gap:12, marginTop:20, paddingTop:16, borderTop:"1px solid var(--border)" }}>
+      <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+        <span style={{ fontSize:12, color:"var(--text-faint)" }}>Per page:</span>
+        {PAGE_SIZE_OPTIONS.map(s=><button key={s} onClick={()=>{ setPageSize(s); setPage(0); }} style={{ ...btnStyle(pageSize===s), padding:"0 12px" }}>{s}</button>)}
       </div>
-      <div style={{ marginBottom:12 }}>
-        <div style={{ fontWeight:600, fontSize:15, color:"var(--text)" }}>{r.firstname} {r.lastname}</div>
-        {r.address && <div style={{ fontSize:12.5, color:"var(--text-faint)", marginTop:3 }}>📍 {r.address}</div>}
+      <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+        <button onClick={()=>setPage(p=>Math.max(0,p-1))} disabled={page===0} style={{ ...btnStyle(false), opacity:page===0?.35:1, padding:"0 10px" }}>‹</button>
+        {withEllipsis.map((p,i)=>
+          p==="..."?<span key={`e${i}`} style={{ color:"var(--text-faint)", fontSize:13, padding:"0 2px" }}>…</span>
+          :<button key={p} onClick={()=>setPage(p)} style={btnStyle(page===p)}>{p+1}</button>
+        )}
+        <button onClick={()=>setPage(p=>Math.min(totalPages-1,p+1))} disabled={page>=totalPages-1} style={{ ...btnStyle(false), opacity:page>=totalPages-1?.35:1, padding:"0 10px" }}>›</button>
       </div>
-      <div style={{ paddingTop:12, borderTop:"1px solid var(--border)", display:"flex", flexDirection:"column", gap:5 }}>
-        {r.email && <div style={{ fontSize:12.5, color:"var(--text-muted)", overflow:"hidden", textOverflow:"ellipsis" }}>✉ {r.email}</div>}
-        {r.phone && <div style={{ fontSize:12.5, color:"var(--text-muted)" }}>📞 {r.phone}</div>}
-      </div>
-      <div style={{ position:"absolute", top:14, right:14, width:7, height:7, borderRadius:"50%", background:r.isApprove?"var(--green)":"var(--amber)", boxShadow:r.isApprove?"0 0 0 2px var(--green-dim)":"0 0 0 2px var(--amber-dim)" }} />
+      <span style={{ fontSize:12, color:"var(--text-faint)" }}>Page {page+1} of {totalPages}</span>
     </div>
   );
 }
 
 // ── Detail tab: Children ──────────────────────────────────────────────────────
+
 function ChildrenTab({ parent, toast }) {
-  const [children, setChildren]             = useState(null);
-  const [loadingKids, setLoadingKids]       = useState(true);
-  const [linking, setLinking]               = useState(false);
+  const [children, setChildren]               = useState(null);
+  const [loadingKids, setLoadingKids]         = useState(true);
+  const [linking, setLinking]                 = useState(false);
   const [selectedStudent, setSelectedStudent] = useState("");
-  const [allStudents, setAllStudents]       = useState([]);
-  const [studentSearch, setStudentSearch]   = useState("");
-  const [showDropdown, setShowDropdown]     = useState(false);
-  const [expanded, setExpanded]             = useState(null);
-  const [childData, setChildData]           = useState({});
+  const [allStudents, setAllStudents]         = useState([]);
+  const [studentSearch, setStudentSearch]     = useState("");
+  const [showDropdown, setShowDropdown]       = useState(false);
+  const [expanded, setExpanded]               = useState(null);
+  const [childData, setChildData]             = useState({});
 
   const loadChildren = useCallback(() => {
     setLoadingKids(true);
@@ -321,11 +401,7 @@ function ChildrenTab({ parent, toast }) {
     }}>{label}</button>
   );
 
-  if (loadingKids) return (
-    <div style={{ display:"flex", justifyContent:"center", padding:40 }}>
-      <div className="spinner" style={{ width:22, height:22 }} />
-    </div>
-  );
+  if (loadingKids) return <div style={{ display:"flex", justifyContent:"center", padding:40 }}><div className="spinner" style={{ width:22, height:22 }}/></div>;
 
   return (
     <div style={{ display:"flex", flexDirection:"column", gap:20 }}>
@@ -337,9 +413,7 @@ function ChildrenTab({ parent, toast }) {
             <label className="field-label">Student</label>
             {selectedStudent ? (
               <div style={{ display:"flex", alignItems:"center", gap:10, padding:"9px 12px", borderRadius:"var(--r-md)", border:"1.5px solid var(--accent)", background:"var(--bg-card)" }}>
-                <div style={{ width:28, height:28, borderRadius:8, background:"var(--violet-dim)", color:"var(--violet)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:12, fontWeight:700, flexShrink:0 }}>
-                  {(selectedStudent.firstname?.[0]??"S").toUpperCase()}
-                </div>
+                <div style={{ width:28, height:28, borderRadius:8, background:"var(--violet-dim)", color:"var(--violet)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:12, fontWeight:700, flexShrink:0 }}>{(selectedStudent.firstname?.[0]??"S").toUpperCase()}</div>
                 <div style={{ flex:1, minWidth:0 }}>
                   <div style={{ fontSize:13.5, fontWeight:600, color:"var(--text)" }}>{selectedStudent.firstname} {selectedStudent.lastname}</div>
                   {selectedStudent.registrationNumber && <div style={{ fontSize:11.5, color:"var(--text-faint)" }}>{selectedStudent.registrationNumber}</div>}
@@ -356,19 +430,14 @@ function ChildrenTab({ parent, toast }) {
                 {showDropdown && (
                   <div style={{ position:"absolute", top:"calc(100% + 4px)", left:0, right:0, zIndex:50, background:"var(--bg-modal)", border:"1px solid var(--border-md)", borderRadius:"var(--r-md)", boxShadow:"var(--shadow-lg)", maxHeight:220, overflowY:"auto" }}>
                     {filteredStudents.length===0 ? (
-                      <div style={{ padding:"14px 16px", fontSize:13, color:"var(--text-faint)", textAlign:"center" }}>
-                        {allStudents.length===0?"Loading students…":"No unlinked students found"}
-                      </div>
+                      <div style={{ padding:"14px 16px", fontSize:13, color:"var(--text-faint)", textAlign:"center" }}>{allStudents.length===0?"Loading students…":"No unlinked students found"}</div>
                     ) : filteredStudents.map(s=>(
-                      <div key={s.id}
-                        onMouseDown={()=>{ setSelectedStudent(s); setStudentSearch(""); setShowDropdown(false); }}
+                      <div key={s.id} onMouseDown={()=>{ setSelectedStudent(s); setStudentSearch(""); setShowDropdown(false); }}
                         style={{ display:"flex", alignItems:"center", gap:10, padding:"10px 14px", cursor:"pointer", transition:"background .12s" }}
                         onMouseEnter={e=>(e.currentTarget.style.background="var(--surface-hover)")}
                         onMouseLeave={e=>(e.currentTarget.style.background="transparent")}
                       >
-                        <div style={{ width:30, height:30, borderRadius:8, background:"var(--violet-dim)", color:"var(--violet)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:13, fontWeight:700, flexShrink:0 }}>
-                          {(s.firstname?.[0]??"S").toUpperCase()}
-                        </div>
+                        <div style={{ width:30, height:30, borderRadius:8, background:"var(--violet-dim)", color:"var(--violet)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:13, fontWeight:700, flexShrink:0 }}>{(s.firstname?.[0]??"S").toUpperCase()}</div>
                         <div style={{ flex:1, minWidth:0 }}>
                           <div style={{ fontSize:13.5, fontWeight:500, color:"var(--text)" }}>{s.firstname} {s.lastname}</div>
                           {s.registrationNumber && <div style={{ fontSize:11.5, color:"var(--text-faint)" }}>{s.registrationNumber}</div>}
@@ -381,7 +450,7 @@ function ChildrenTab({ parent, toast }) {
             )}
           </div>
           <button onClick={handleLink} disabled={linking||!selectedStudent} className="btn-primary" style={{ padding:"11px 20px", flexShrink:0 }}>
-            {linking ? <><span className="spinner" style={{ width:13, height:13 }} /> Linking…</> : "Link Student"}
+            {linking ? <><span className="spinner" style={{ width:13, height:13 }}/> Linking…</> : "Link Student"}
           </button>
         </div>
       </div>
@@ -420,8 +489,7 @@ function ChildrenTab({ parent, toast }) {
                       </div>
                     </div>
                   </div>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-faint)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"
-                    style={{ transform:isExp?"rotate(180deg)":"rotate(0)", transition:"transform .2s", flexShrink:0 }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-faint)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ transform:isExp?"rotate(180deg)":"rotate(0)", transition:"transform .2s", flexShrink:0 }}>
                     <polyline points="6 9 12 15 18 9"/>
                   </svg>
                 </div>
@@ -602,13 +670,14 @@ function BulletinTabContent({ cd, trimestre }) {
 }
 
 function LoadingRow() {
-  return <div style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:10, padding:"24px 0", color:"var(--text-faint)", fontSize:13 }}><div className="spinner" style={{ width:16, height:16 }} /> Loading…</div>;
+  return <div style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:10, padding:"24px 0", color:"var(--text-faint)", fontSize:13 }}><div className="spinner" style={{ width:16, height:16 }}/> Loading…</div>;
 }
 function EmptyRow({ label }) {
   return <div style={{ padding:"24px 0", textAlign:"center", fontSize:13, color:"var(--text-faint)" }}>{label}</div>;
 }
 
 // ── Detail tabs nav ───────────────────────────────────────────────────────────
+
 function DetailTabs({ active, onChange }) {
   const tabs=[{key:"info",label:"👤 Info"},{key:"children",label:"👨‍👩‍👧 Children"}];
   return (
@@ -627,6 +696,7 @@ function DetailTabs({ active, onChange }) {
 }
 
 // ── Main page ─────────────────────────────────────────────────────────────────
+
 export default function ParentsPage() {
   const { t } = useLanguage();
   const toast = useToast();
@@ -638,12 +708,22 @@ export default function ParentsPage() {
   const [saving, setSaving]           = useState(false);
   const [deleting, setDeleting]       = useState(false);
   const [photoLoading, setPhotoLoading] = useState(false);
-  const [q, setQ]                     = useState("");
-  const [currentPage, setCurrentPage] = useState(0);
   const [detailTab, setDetailTab]     = useState("info");
 
   const [pendingPhoto, setPendingPhoto] = useState(null);
   const [deletePhoto, setDeletePhoto]   = useState(false);
+
+  // Filters
+  const [q, setQ]                     = useState("");
+  const [filterStatus, setFilterStatus] = useState("");
+
+  // Sort
+  const [sortBy, setSortBy]   = useState("lastname");
+  const [sortDir, setSortDir] = useState("asc");
+
+  // Pagination
+  const [page, setPage]         = useState(0);
+  const [pageSize, setPageSize] = useState(25);
 
   const { form, set, setForm } = usePersonForm();
   const [address, setAddress]  = useState("");
@@ -652,24 +732,47 @@ export default function ParentsPage() {
 
   const load = () => {
     setLoading(true);
-    getParents().then(setData).catch(e=>toast(e.message,"error")).finally(()=>setLoading(false));
+    getParents().then(d => setData(Array.isArray(d) ? d : d?.content ?? [])).catch(e=>toast(e.message,"error")).finally(()=>setLoading(false));
   };
   useEffect(load, []);
+  useEffect(()=>setPage(0), [q, filterStatus, sortBy, sortDir]);
+
+  const handleSort = (key) => {
+    if (sortBy === key) setSortDir(d => d === "asc" ? "desc" : "asc");
+    else { setSortBy(key); setSortDir("asc"); }
+  };
 
   const filtered = useMemo(()=>{
-    const arr=Array.isArray(data)?data:[];
-    if (!q.trim()) return arr;
-    const lq=q.toLowerCase();
-    return arr.filter(r=>`${r.firstname} ${r.lastname}`.toLowerCase().includes(lq)||r.email?.toLowerCase().includes(lq)||r.phone?.toLowerCase().includes(lq));
-  }, [data, q]);
+    let arr = Array.isArray(data) ? data : [];
+    if (q.trim()) {
+      const lq = q.toLowerCase();
+      arr = arr.filter(r =>
+        `${r.firstname} ${r.lastname}`.toLowerCase().includes(lq) ||
+        r.email?.toLowerCase().includes(lq) ||
+        r.phone?.toLowerCase().includes(lq) ||
+        r.address?.toLowerCase().includes(lq)
+      );
+    }
+    if (filterStatus === "approved") arr = arr.filter(r => r.isApprove);
+    if (filterStatus === "pending")  arr = arr.filter(r => !r.isApprove);
 
-  useEffect(()=>{ setCurrentPage(0); }, [q]);
+    arr = [...arr].sort((a, b) => {
+      let av = a[sortBy] ?? "";
+      let bv = b[sortBy] ?? "";
+      if (typeof av === "string") av = av.toLowerCase();
+      if (typeof bv === "string") bv = bv.toLowerCase();
+      if (av < bv) return sortDir === "asc" ? -1 : 1;
+      if (av > bv) return sortDir === "asc" ? 1 : -1;
+      return 0;
+    });
 
-  const paginated = useMemo(()=>{
-    const start=currentPage*PAGE_SIZE;
-    return filtered.slice(start,start+PAGE_SIZE);
-  }, [filtered, currentPage]);
+    return arr;
+  }, [data, q, filterStatus, sortBy, sortDir]);
 
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const paginated  = filtered.slice(page * pageSize, (page + 1) * pageSize);
+
+  const resetFilters = () => { setQ(""); setFilterStatus(""); setPage(0); };
   const goList = () => { setView("list"); setSelected(null); setDetailTab("info"); setPendingPhoto(null); setDeletePhoto(false); };
 
   const handlePhotoForUser = async (userId, isNew) => {
@@ -732,30 +835,52 @@ export default function ParentsPage() {
           sub={loading?t("common.loading"):`${filtered.length} ${t("parents.title").toLowerCase()}`} />
         <button onClick={()=>setView("create")} className="btn-primary" style={{ marginBottom:32 }}>{t("parents.addBtn")}</button>
       </div>
-      <div className="search-wrap" style={{ maxWidth:300, marginBottom:24 }}>
-        <svg className="search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-faint)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-        <input className="search-input" placeholder={t("parents.searchPlaceholder")} value={q} onChange={e=>setQ(e.target.value)} />
-      </div>
+
+      <FilterBar q={q} setQ={setQ} filterStatus={filterStatus} setFilterStatus={setFilterStatus} onReset={resetFilters} totalFiltered={filtered.length} total={Array.isArray(data)?data.length:0} t={t} />
+
       {loading ? (
-        <div className="empty-state"><div className="spinner" style={{ width:22, height:22 }} /><p>{t("common.loading")}</p></div>
-      ) : filtered.length===0 ? (
+        <div className="empty-state"><div className="spinner" style={{ width:22, height:22 }}/><p>{t("common.loading")}</p></div>
+      ) : filtered.length === 0 ? (
         <div className="empty-state">
           <span style={{ fontSize:36 }}>👨‍👩‍👧</span>
-          <p>{q?`${t("common.noResults")} "${q}"`:t("parents.empty")}</p>
+          <p>{q||filterStatus ? "No parents match your filters." : t("parents.empty")}</p>
+          {(q||filterStatus) && <button onClick={resetFilters} className="btn-ghost" style={{ marginTop:8 }}>Clear filters</button>}
         </div>
       ) : (
-        <>
-          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(270px, 1fr))", gap:16 }}>
-            {paginated.map((r,i)=>(
-              <ParentCard key={r.id??i} r={r} t={t}
-                onClick={r=>{ setSelected(r); setDetailTab("info"); setView("detail"); }}
-                onEdit={openEdit}
-                onDeactivate={target=>setDeleteTarget(target)} />
-            ))}
+        <div style={{ background:"var(--bg-card)", border:"1px solid var(--border)", borderRadius:"var(--r-xl)", boxShadow:"var(--shadow-sm)", overflow:"hidden" }}>
+          <div style={{ overflowX:"auto" }}>
+            <table style={{ width:"100%", borderCollapse:"collapse", tableLayout:"auto" }}>
+              <thead>
+                <tr>
+                  <ThCell label="#"                       sortKey={null}         sortBy={sortBy} sortDir={sortDir} onSort={handleSort} style={{ width:44, textAlign:"center" }} />
+                  <ThCell label="Parent"                  sortKey="lastname"     sortBy={sortBy} sortDir={sortDir} onSort={handleSort} />
+                  <ThCell label={t("fields.phone")}       sortKey="phone"        sortBy={sortBy} sortDir={sortDir} onSort={handleSort} />
+                  <ThCell label={t("parents.address")}    sortKey="address"      sortBy={sortBy} sortDir={sortDir} onSort={handleSort} />
+                  <ThCell label="Status"                  sortKey="isApprove"    sortBy={sortBy} sortDir={sortDir} onSort={handleSort} />
+                  <ThCell label=""                        sortKey={null}         sortBy={sortBy} sortDir={sortDir} onSort={handleSort} style={{ width:160, textAlign:"right" }} />
+                </tr>
+              </thead>
+              <tbody>
+                {paginated.map((r, i) => (
+                  <ParentRow
+                    key={r.id ?? i}
+                    r={r}
+                    index={page * pageSize + i}
+                    t={t}
+                    onClick={r => { setSelected(r); setDetailTab("info"); setView("detail"); }}
+                    onEdit={openEdit}
+                    onDeactivate={target => setDeleteTarget(target)}
+                  />
+                ))}
+              </tbody>
+            </table>
           </div>
-          <Pagination page={currentPage} total={filtered.length} pageSize={PAGE_SIZE} onChange={setCurrentPage} />
-        </>
+          <div style={{ padding:"0 20px 20px" }}>
+            <Pagination page={page} totalPages={totalPages} pageSize={pageSize} setPage={setPage} setPageSize={setPageSize} totalFiltered={filtered.length} />
+          </div>
+        </div>
       )}
+
       {deleteTarget && (
         <ConfirmDialog
           title={t("parents.deactivateTitle", { name:`${deleteTarget.firstname} ${deleteTarget.lastname}` })}
@@ -774,13 +899,7 @@ export default function ParentsPage() {
         left={
           <FormPanel onSubmit={handleCreate}>
             <Field label="Profile Photo">
-              <PhotoUploadField
-                photo={pendingPhoto ? URL.createObjectURL(pendingPhoto) : null}
-                initial={(form.firstname?.[0]??"?").toUpperCase()}
-                onFileSelected={setPendingPhoto}
-                onDelete={()=>setPendingPhoto(null)}
-                loading={photoLoading}
-              />
+              <PhotoUploadField photo={pendingPhoto ? URL.createObjectURL(pendingPhoto) : null} initial={(form.firstname?.[0]??"?").toUpperCase()} onFileSelected={setPendingPhoto} onDelete={()=>setPendingPhoto(null)} loading={photoLoading} />
             </Field>
             <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:16 }}>
               <Field label={t("fields.firstName")}><Input placeholder={t("fields.firstNamePlaceholder")} value={form.firstname} onChange={set("firstname")} required /></Field>
@@ -799,12 +918,7 @@ export default function ParentsPage() {
           </FormPanel>
         }
         right={
-          <SidePanel
-            title={t("parents.sideNote")}
-            initial={(form.firstname?.[0]??"?").toUpperCase()}
-            photo={pendingPhoto ? URL.createObjectURL(pendingPhoto) : null}
-            accentColor={C_COLOR} accentBg={C_BG}
-            sectionLabel={t("common.notes")}
+          <SidePanel title={t("parents.sideNote")} initial={(form.firstname?.[0]??"?").toUpperCase()} photo={pendingPhoto ? URL.createObjectURL(pendingPhoto) : null} accentColor={C_COLOR} accentBg={C_BG} sectionLabel={t("common.notes")}
             items={[
               { icon:"🏠", text:t("parents.sideNote1") },
               { icon:"📞", text:t("parents.sideNote2") },
@@ -820,19 +934,12 @@ export default function ParentsPage() {
   if (view === "edit" && selected) return (
     <div className="page-enter" style={{ padding:"36px 44px" }}>
       <BackBtn label={t("parents.detailBack")} onClick={goList} />
-      <PageTitle crumb={`${t("parents.crumb")} · ${t("parents.title")}`} title={t("parents.editTitle")}
-        sub={t("parents.editSub", { name:`${selected.firstname} ${selected.lastname}` })} />
+      <PageTitle crumb={`${t("parents.crumb")} · ${t("parents.title")}`} title={t("parents.editTitle")} sub={t("parents.editSub", { name:`${selected.firstname} ${selected.lastname}` })} />
       <TwoCol
         left={
           <FormPanel onSubmit={handleEdit}>
             <Field label="Profile Photo">
-              <PhotoUploadField
-                photo={deletePhoto ? null : (pendingPhoto ? URL.createObjectURL(pendingPhoto) : selected.photo ?? null)}
-                initial={(selected.firstname?.[0]??"?").toUpperCase()}
-                onFileSelected={f=>{ setPendingPhoto(f); setDeletePhoto(false); }}
-                onDelete={()=>{ setPendingPhoto(null); setDeletePhoto(true); }}
-                loading={photoLoading}
-              />
+              <PhotoUploadField photo={deletePhoto ? null : (pendingPhoto ? URL.createObjectURL(pendingPhoto) : selected.photo ?? null)} initial={(selected.firstname?.[0]??"?").toUpperCase()} onFileSelected={f=>{ setPendingPhoto(f); setDeletePhoto(false); }} onDelete={()=>{ setPendingPhoto(null); setDeletePhoto(true); }} loading={photoLoading} />
             </Field>
             <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:16 }}>
               <Field label={t("fields.firstName")}><Input value={editForm.firstname} onChange={setEdit("firstname")} required /></Field>
@@ -851,12 +958,7 @@ export default function ParentsPage() {
           </FormPanel>
         }
         right={
-          <SidePanel
-            title={t("parents.editSub", { name:`${selected.firstname} ${selected.lastname}` })}
-            initial={(selected.firstname?.[0]??"?").toUpperCase()}
-            photo={deletePhoto ? null : (pendingPhoto ? URL.createObjectURL(pendingPhoto) : selected.photo ?? null)}
-            accentColor={C_COLOR} accentBg={C_BG}
-            sectionLabel={t("common.notes")}
+          <SidePanel title={t("parents.editSub", { name:`${selected.firstname} ${selected.lastname}` })} initial={(selected.firstname?.[0]??"?").toUpperCase()} photo={deletePhoto ? null : (pendingPhoto ? URL.createObjectURL(pendingPhoto) : selected.photo ?? null)} accentColor={C_COLOR} accentBg={C_BG} sectionLabel={t("common.notes")}
             items={[
               { icon:"💡", text:t("parents.editNote1") },
               { icon:"📧", text:t("parents.editNote2") },
@@ -880,17 +982,12 @@ export default function ParentsPage() {
           <div style={{ padding:"0 36px 28px", marginTop:-36 }}>
             <div style={{ display:"flex", alignItems:"flex-end", justifyContent:"space-between", flexWrap:"wrap", gap:16 }}>
               <div style={{ display:"flex", alignItems:"flex-end", gap:20 }}>
-                <PhotoAvatar
-                  photo={v.photo}
-                  initial={(v.firstname?.[0]??"P").toUpperCase()}
-                  size={80} radius={22}
-                  style={{ border:"3px solid var(--bg-card)", boxShadow:`0 0 0 2px ${C_COLOR}40` }}
-                />
+                <PhotoAvatar photo={v.photo} initial={(v.firstname?.[0]??"P").toUpperCase()} size={80} radius={22} style={{ border:"3px solid var(--bg-card)", boxShadow:`0 0 0 2px ${C_COLOR}40` }} />
                 <div style={{ paddingBottom:4 }}>
                   <h2 style={{ margin:0, fontSize:22, fontFamily:"'Instrument Serif',serif", color:"var(--text)", letterSpacing:"-.025em" }}>{v.firstname} {v.lastname}</h2>
                   <div style={{ display:"flex", gap:8, marginTop:7 }}>
                     <span style={{ display:"inline-flex", alignItems:"center", gap:5, padding:"3px 10px", borderRadius:999, fontSize:12, fontWeight:600, background:v.isApprove?"var(--green-dim)":"var(--amber-dim)", color:v.isApprove?"var(--green)":"var(--amber)", border:`1px solid ${v.isApprove?"rgba(42,117,64,.25)":"rgba(168,100,30,.25)"}` }}>
-                      <span style={{ width:6, height:6, borderRadius:"50%", background:v.isApprove?"var(--green)":"var(--amber)" }} />
+                      <span style={{ width:6, height:6, borderRadius:"50%", background:v.isApprove?"var(--green)":"var(--amber)" }}/>
                       {v.isApprove?t("common.approved"):t("common.pending")}
                     </span>
                   </div>
@@ -903,7 +1000,9 @@ export default function ParentsPage() {
             </div>
           </div>
         </div>
+
         <DetailTabs active={detailTab} onChange={setDetailTab} />
+
         {detailTab==="info" && (
           <div style={{ display:"grid", gridTemplateColumns:"repeat(3, 1fr)", gap:14 }}>
             <StatBox icon="✉️" label={t("parents.fields.email")}   value={v.email} />
@@ -915,6 +1014,7 @@ export default function ParentsPage() {
           </div>
         )}
         {detailTab==="children" && <ChildrenTab parent={v} toast={toast} />}
+
         {deleteTarget && (
           <ConfirmDialog
             title={t("parents.deactivateTitle", { name:`${deleteTarget.firstname} ${deleteTarget.lastname}` })}
@@ -924,5 +1024,6 @@ export default function ParentsPage() {
       </div>
     );
   }
+
   return null;
 }

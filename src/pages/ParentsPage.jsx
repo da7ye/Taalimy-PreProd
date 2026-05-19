@@ -197,12 +197,9 @@ function ParentRow({ r, index, onClick, onEdit, onDeactivate, t }) {
         borderBottom:"1px solid var(--border)",
       }}
     >
-      {/* # */}
       <td style={{ padding:"12px 16px", width:44, color:"var(--text-faint)", fontSize:12, fontWeight:500, fontFamily:"'JetBrains Mono',monospace", textAlign:"center" }}>
         {index + 1}
       </td>
-
-      {/* Avatar + Name */}
       <td style={{ padding:"10px 16px" }}>
         <div style={{ display:"flex", alignItems:"center", gap:12 }}>
           <PhotoAvatar photo={r.photo} initial={initial} size={36} radius={10} color={C_COLOR} bg={C_BG} />
@@ -212,18 +209,12 @@ function ParentRow({ r, index, onClick, onEdit, onDeactivate, t }) {
           </div>
         </div>
       </td>
-
-      {/* Phone */}
       <td style={{ padding:"12px 16px", fontSize:13, color:"var(--text-muted)", whiteSpace:"nowrap" }}>
         {r.phone ?? <span style={{ color:"var(--text-faint)" }}>—</span>}
       </td>
-
-      {/* Address */}
       <td style={{ padding:"12px 16px", fontSize:13, color:"var(--text-muted)", maxWidth:200, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
         {r.address ?? <span style={{ color:"var(--text-faint)" }}>—</span>}
       </td>
-
-      {/* Status */}
       <td style={{ padding:"12px 16px" }}>
         <span style={{
           display:"inline-flex", alignItems:"center", gap:5,
@@ -237,8 +228,6 @@ function ParentRow({ r, index, onClick, onEdit, onDeactivate, t }) {
           {r.isApprove ? t("common.approved") : t("common.pending")}
         </span>
       </td>
-
-      {/* Actions */}
       <td style={{ padding:"10px 16px", textAlign:"right" }} onClick={e => e.stopPropagation()}>
         <div style={{ display:"flex", gap:6, justifyContent:"flex-end" }}>
           <button onClick={() => onEdit(r)} className="btn-ghost" style={{ padding:"5px 12px", fontSize:12 }}>{t("common.edit")}</button>
@@ -275,7 +264,9 @@ function FilterBar({ q, setQ, filterStatus, setFilterStatus, onReset, totalFilte
 // ── Pagination ────────────────────────────────────────────────────────────────
 
 function Pagination({ page, totalPages, pageSize, setPage, setPageSize, totalFiltered }) {
-  if (totalPages <= 1 && totalFiltered <= PAGE_SIZE_OPTIONS[0]) return null;
+  // Always render so users can change page size even on a single page
+  if (totalFiltered === 0) return null;
+
   const pages = [];
   const delta = 2;
   for (let i = 0; i < totalPages; i++) {
@@ -287,28 +278,68 @@ function Pagination({ page, totalPages, pageSize, setPage, setPageSize, totalFil
     if (prev !== -1 && p-prev > 1) withEllipsis.push("...");
     withEllipsis.push(p); prev = p;
   }
-  const btnStyle = (active) => ({
-    minWidth:34, height:34, borderRadius:8, border:"1px solid var(--border-md)",
-    background:active?"var(--accent)":"var(--surface)", color:active?"#fff":"var(--text-muted)",
-    fontFamily:"'Instrument Sans',sans-serif", fontSize:13, fontWeight:active?700:400,
-    cursor:active?"default":"pointer", display:"flex", alignItems:"center", justifyContent:"center",
-    transition:"background .14s, color .14s",
+
+  const btnStyle = (active, disabled = false) => ({
+    minWidth:34, height:34, borderRadius:8,
+    border:`1px solid ${active ? C_COLOR : "var(--border-md)"}`,
+    background: active ? C_COLOR : "var(--surface)",
+    color: active ? "#fff" : "var(--text-muted)",
+    fontFamily:"'Instrument Sans',sans-serif", fontSize:13,
+    fontWeight: active ? 700 : 400,
+    cursor: disabled || active ? "default" : "pointer",
+    display:"flex", alignItems:"center", justifyContent:"center",
+    transition:"background .14s, color .14s, border-color .14s",
+    opacity: disabled ? 0.35 : 1,
   });
+
+  const start = page * pageSize + 1;
+  const end   = Math.min((page + 1) * pageSize, totalFiltered);
+
   return (
-    <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", flexWrap:"wrap", gap:12, marginTop:20, paddingTop:16, borderTop:"1px solid var(--border)" }}>
-      <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-        <span style={{ fontSize:12, color:"var(--text-faint)" }}>Per page:</span>
-        {PAGE_SIZE_OPTIONS.map(s=><button key={s} onClick={()=>{ setPageSize(s); setPage(0); }} style={{ ...btnStyle(pageSize===s), padding:"0 12px" }}>{s}</button>)}
+    <div style={{
+      display:"flex", alignItems:"center", justifyContent:"space-between",
+      flexWrap:"wrap", gap:12,
+      padding:"14px 20px",
+      borderTop:"1px solid var(--border)",
+      background:"var(--surface, rgba(0,0,0,.02))",
+    }}>
+      {/* Left: rows-per-page + range info */}
+      <div style={{ display:"flex", alignItems:"center", gap:12 }}>
+        <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+          <span style={{ fontSize:12, color:"var(--text-faint)", whiteSpace:"nowrap" }}>Rows per page:</span>
+          <div style={{ display:"flex", gap:4 }}>
+            {PAGE_SIZE_OPTIONS.map(s => (
+              <button key={s} onClick={()=>{ setPageSize(s); setPage(0); }} style={{ ...btnStyle(pageSize===s), minWidth:38, padding:"0 10px", fontSize:12 }}>{s}</button>
+            ))}
+          </div>
+        </div>
+        <span style={{ fontSize:12, color:"var(--text-faint)", whiteSpace:"nowrap" }}>
+          <span style={{ color:"var(--text-dim)", fontWeight:600 }}>{start}–{end}</span>
+          {" "}of{" "}
+          <span style={{ color:"var(--text-dim)", fontWeight:600 }}>{totalFiltered}</span>
+        </span>
       </div>
-      <div style={{ display:"flex", alignItems:"center", gap:6 }}>
-        <button onClick={()=>setPage(p=>Math.max(0,p-1))} disabled={page===0} style={{ ...btnStyle(false), opacity:page===0?.35:1, padding:"0 10px" }}>‹</button>
-        {withEllipsis.map((p,i)=>
-          p==="..."?<span key={`e${i}`} style={{ color:"var(--text-faint)", fontSize:13, padding:"0 2px" }}>…</span>
-          :<button key={p} onClick={()=>setPage(p)} style={btnStyle(page===p)}>{p+1}</button>
-        )}
-        <button onClick={()=>setPage(p=>Math.min(totalPages-1,p+1))} disabled={page>=totalPages-1} style={{ ...btnStyle(false), opacity:page>=totalPages-1?.35:1, padding:"0 10px" }}>›</button>
-      </div>
-      <span style={{ fontSize:12, color:"var(--text-faint)" }}>Page {page+1} of {totalPages}</span>
+
+      {/* Right: page buttons (hidden when only 1 page) */}
+      {totalPages > 1 && (
+        <div style={{ display:"flex", alignItems:"center", gap:4 }}>
+          <button onClick={()=>setPage(0)} disabled={page===0} title="First page"
+            style={{ ...btnStyle(false, page===0), minWidth:34, padding:"0 8px", fontSize:15 }}>«</button>
+          <button onClick={()=>setPage(p=>Math.max(0,p-1))} disabled={page===0} title="Previous page"
+            style={{ ...btnStyle(false, page===0), minWidth:34, padding:"0 8px", fontSize:15 }}>‹</button>
+
+          {withEllipsis.map((p,i) =>
+            p==="..."
+              ? <span key={`e${i}`} style={{ color:"var(--text-faint)", fontSize:13, padding:"0 4px", lineHeight:"34px" }}>…</span>
+              : <button key={p} onClick={()=>setPage(p)} style={{ ...btnStyle(page===p), minWidth:34, padding:"0 6px" }}>{p+1}</button>
+          )}
+
+          <button onClick={()=>setPage(p=>Math.min(totalPages-1,p+1))} disabled={page>=totalPages-1} title="Next page"
+            style={{ ...btnStyle(false, page>=totalPages-1), minWidth:34, padding:"0 8px", fontSize:15 }}>›</button>
+          <button onClick={()=>setPage(totalPages-1)} disabled={page>=totalPages-1} title="Last page"
+            style={{ ...btnStyle(false, page>=totalPages-1), minWidth:34, padding:"0 8px", fontSize:15 }}>»</button>
+        </div>
+      )}
     </div>
   );
 }
@@ -713,15 +744,12 @@ export default function ParentsPage() {
   const [pendingPhoto, setPendingPhoto] = useState(null);
   const [deletePhoto, setDeletePhoto]   = useState(false);
 
-  // Filters
   const [q, setQ]                     = useState("");
   const [filterStatus, setFilterStatus] = useState("");
 
-  // Sort
   const [sortBy, setSortBy]   = useState("lastname");
   const [sortDir, setSortDir] = useState("asc");
 
-  // Pagination
   const [page, setPage]         = useState(0);
   const [pageSize, setPageSize] = useState(25);
 
@@ -875,9 +903,13 @@ export default function ParentsPage() {
               </tbody>
             </table>
           </div>
-          <div style={{ padding:"0 20px 20px" }}>
-            <Pagination page={page} totalPages={totalPages} pageSize={pageSize} setPage={setPage} setPageSize={setPageSize} totalFiltered={filtered.length} />
-          </div>
+
+          {/* Pagination — outside the scrollable area so it spans full card width */}
+          <Pagination
+            page={page} totalPages={totalPages}
+            pageSize={pageSize} setPage={setPage} setPageSize={setPageSize}
+            totalFiltered={filtered.length}
+          />
         </div>
       )}
 

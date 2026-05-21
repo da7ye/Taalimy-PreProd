@@ -1,8 +1,10 @@
 import { useEffect, useState, useMemo } from "react";
 import {
-  getStudents, getClasseNames, getMatiereNames,
+  getStudents, getClasseNames, getMatiereNames, getTeacherNames, getTrimestreNames,
   getNotesByStudent, getNotesByStudentAndTrimestre,
   createNote, updateNote, deleteNote, getBulletin, getBulletinPdf, getClasseStats,
+  getNoteSheet, submitNoteSheet,
+  getClassesByTeacher, getMatieresByTeacherAndClasse,
 } from "../api";
 import { Field, Input, Select, SubmitBtn } from "../components/FormComponents";
 import { useToast } from "../components/Toast";
@@ -202,6 +204,142 @@ function BulletinView({ bulletin, onDownload, downloading, t }) {
   );
 }
 
+function BulkSheetTable({ sheet, rows, setRows, onSubmit, submitting, t }) {
+  const filled = rows.filter(r => r.valeur !== "" && r.valeur != null).length;
+  const total  = rows.length;
+  const pct    = total ? Math.round((filled / total) * 100) : 0;
+
+  const updateRow = (studentId, key, value) => {
+    setRows(prev => prev.map(r => r.studentId === studentId ? { ...r, [key]: value } : r));
+  };
+
+  const validateGrade = (v) => {
+    if (v === "" || v == null) return true;
+    const n = parseFloat(v);
+    return !isNaN(n) && n >= 0 && n <= 20;
+  };
+
+  const hasInvalid = rows.some(r => r.valeur !== "" && r.valeur != null && !validateGrade(r.valeur));
+
+  return (
+    <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "var(--r-xl)", boxShadow: "var(--shadow-sm)", overflow: "hidden" }}>
+      {/* Header strip */}
+      <div style={{ padding: "20px 28px", borderBottom: "1px solid var(--border)", background: `linear-gradient(135deg, ${C_COLOR}14 0%, transparent 70%)` }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
+          <div>
+            <div style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".08em", color: "var(--text-faint)", marginBottom: 6 }}>{t("notes.bulkSheetTitle")}</div>
+            <h3 style={{ margin: 0, fontSize: 18, fontFamily: "'Instrument Serif', serif", color: "var(--text)" }}>
+              {sheet.matiereName} · {sheet.className}
+            </h3>
+            <div style={{ fontSize: 13, color: "var(--text-muted)", marginTop: 4 }}>
+              {sheet.trimestreNom} · <strong style={{ color: "var(--text-dim)" }}>{t(`notes.types.${sheet.typeDevoir}`) ?? sheet.typeDevoir}</strong>
+            </div>
+          </div>
+          <div style={{ minWidth: 220 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 6 }}>
+              <span style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".08em", color: "var(--text-faint)" }}>{t("notes.progress")}</span>
+              <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text)" }}>
+                <span style={{ color: C_COLOR }}>{filled}</span> / {total}
+              </span>
+            </div>
+            <div style={{ height: 6, borderRadius: 999, background: "var(--surface)", overflow: "hidden" }}>
+              <div style={{ height: "100%", width: `${pct}%`, background: C_COLOR, borderRadius: 999, transition: "width .25s ease" }} />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Table */}
+      <div style={{ overflowX: "auto", maxHeight: 560 }}>
+        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+          <thead>
+            <tr style={{ background: "var(--surface)", position: "sticky", top: 0, zIndex: 1 }}>
+              <th style={{ padding: "12px 16px", textAlign: "center", fontSize: 10.5, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".07em", color: "var(--text-faint)", borderBottom: "2px solid var(--border)", width: 44 }}>#</th>
+              <th style={{ padding: "12px 16px", textAlign: "left",   fontSize: 10.5, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".07em", color: "var(--text-faint)", borderBottom: "2px solid var(--border)" }}>{t("notes.tableHeaders.student")}</th>
+              <th style={{ padding: "12px 16px", textAlign: "left",   fontSize: 10.5, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".07em", color: "var(--text-faint)", borderBottom: "2px solid var(--border)", width: 160 }}>{t("notes.fields.regNumber")}</th>
+              <th style={{ padding: "12px 16px", textAlign: "center", fontSize: 10.5, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".07em", color: "var(--text-faint)", borderBottom: "2px solid var(--border)", width: 130 }}>{t("notes.grade")} /20</th>
+              <th style={{ padding: "12px 16px", textAlign: "left",   fontSize: 10.5, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".07em", color: "var(--text-faint)", borderBottom: "2px solid var(--border)" }}>{t("notes.appreciation")}</th>
+              <th style={{ padding: "12px 16px", textAlign: "center", fontSize: 10.5, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".07em", color: "var(--text-faint)", borderBottom: "2px solid var(--border)", width: 90 }}>{t("notes.statusCol")}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((r, i) => {
+              const invalid = r.valeur !== "" && r.valeur != null && !validateGrade(r.valeur);
+              return (
+                <tr key={r.studentId} style={{ borderBottom: "1px solid var(--border)", background: i % 2 === 0 ? "transparent" : "var(--surface)" }}>
+                  <td style={{ padding: "10px 16px", textAlign: "center", color: "var(--text-faint)", fontSize: 12, fontFamily: "'JetBrains Mono', monospace" }}>{i + 1}</td>
+                  <td style={{ padding: "10px 16px", fontWeight: 600, color: "var(--text)" }}>{r.studentName}</td>
+                  <td style={{ padding: "10px 16px", color: "var(--text-muted)", fontFamily: "'JetBrains Mono', monospace", fontSize: 12 }}>{r.registrationNumber ?? "—"}</td>
+                  <td style={{ padding: "8px 12px", textAlign: "center" }}>
+                    <input
+                      type="number" step="0.01" min={0} max={20}
+                      value={r.valeur ?? ""}
+                      onChange={e => updateRow(r.studentId, "valeur", e.target.value)}
+                      placeholder="—"
+                      style={{
+                        width: 80, padding: "7px 10px", borderRadius: 8,
+                        border: `1.5px solid ${invalid ? "var(--rose)" : "var(--border-md)"}`,
+                        background: invalid ? "var(--rose-dim)" : "var(--bg-input)",
+                        color: "var(--text)", fontFamily: "'JetBrains Mono', monospace",
+                        fontSize: 13, fontWeight: 600, textAlign: "center", outline: "none",
+                        transition: "border-color .14s, background .14s",
+                      }}
+                    />
+                  </td>
+                  <td style={{ padding: "8px 12px" }}>
+                    <input
+                      type="text"
+                      value={r.appreciation ?? ""}
+                      onChange={e => updateRow(r.studentId, "appreciation", e.target.value)}
+                      placeholder={t("notes.appreciationPlaceholder")}
+                      style={{
+                        width: "100%", padding: "7px 10px", borderRadius: 8,
+                        border: "1.5px solid var(--border-md)", background: "var(--bg-input)",
+                        color: "var(--text)", fontFamily: "'Instrument Sans', sans-serif",
+                        fontSize: 13, outline: "none",
+                      }}
+                    />
+                  </td>
+                  <td style={{ padding: "10px 12px", textAlign: "center" }}>
+                    {r.dejaNote
+                      ? <span style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "3px 9px", borderRadius: 999, background: "var(--green-dim)", color: "var(--green)", fontSize: 11, fontWeight: 600, border: "1px solid rgba(42,117,64,.2)" }}>
+                          <span style={{ width: 5, height: 5, borderRadius: "50%", background: "var(--green)" }} />
+                          {t("notes.savedStatus")}
+                        </span>
+                      : r.valeur !== "" && r.valeur != null
+                        ? <span style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "3px 9px", borderRadius: 999, background: "var(--amber-dim)", color: "var(--amber)", fontSize: 11, fontWeight: 600, border: "1px solid rgba(168,100,30,.2)" }}>
+                            <span style={{ width: 5, height: 5, borderRadius: "50%", background: "var(--amber)" }} />
+                            {t("notes.draftStatus")}
+                          </span>
+                        : <span style={{ color: "var(--text-faint)", fontSize: 12 }}>—</span>
+                    }
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Footer action bar */}
+      <div style={{ padding: "16px 24px", borderTop: "1px solid var(--border)", background: "var(--surface)", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
+        <div style={{ fontSize: 12.5, color: "var(--text-muted)" }}>
+          {hasInvalid
+            ? <span style={{ color: "var(--rose)", fontWeight: 600 }}>⚠️ {t("notes.invalidGrades")}</span>
+            : <>{t("notes.bulkHint")}</>
+          }
+        </div>
+        <button onClick={onSubmit} disabled={submitting || hasInvalid || filled === 0} className="btn-primary" style={{ padding: "10px 24px" }}>
+          {submitting
+            ? <><span className="spinner" style={{ width: 13, height: 13 }} /> {t("notes.submitting")}</>
+            : <>💾 {t("notes.submitAll", { n: filled })}</>
+          }
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function NotesPage() {
   const { t } = useLanguage();
   const toast = useToast();
@@ -212,6 +350,7 @@ export default function NotesPage() {
   const [students,   setStudents]   = useState([]);
   const [classes,    setClasses]    = useState([]);
   const [matieres,   setMatieres]   = useState([]);
+  const [trimestres, setTrimestres] = useState([]);
   const [metaLoading, setMetaLoading] = useState(true);
 
   const [studentNotes,        setStudentNotes]        = useState(null);
@@ -234,6 +373,23 @@ export default function NotesPage() {
   const [stats,            setStats]            = useState(null);
   const [statsLoading,     setStatsLoading]     = useState(false);
 
+  // ── Bulk entry state ──
+  const [teachers,           setTeachers]           = useState([]);
+  const [bulkTeacherId,      setBulkTeacherId]      = useState("");
+  const [bulkClasses,        setBulkClasses]        = useState([]);
+  const [bulkClassesLoading, setBulkClassesLoading] = useState(false);
+  const [bulkClasseId,       setBulkClasseId]       = useState("");
+  const [bulkMatieres,       setBulkMatieres]       = useState([]);
+  const [bulkMatieresLoading,setBulkMatieresLoading]= useState(false);
+  const [bulkMatiereId,      setBulkMatiereId]      = useState("");
+  const [bulkTrimestreId,    setBulkTrimestreId]    = useState("");
+  const [bulkType,           setBulkType]           = useState("DEVOIR_1");
+  const [bulkSheet,          setBulkSheet]          = useState(null);
+  const [bulkRows,           setBulkRows]           = useState([]);
+  const [bulkLoading,        setBulkLoading]        = useState(false);
+  const [bulkSubmitting,     setBulkSubmitting]     = useState(false);
+  const [bulkConfirm,        setBulkConfirm]        = useState(false);
+
   const [selected,     setSelected]     = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [saving,       setSaving]       = useState(false);
@@ -247,11 +403,13 @@ export default function NotesPage() {
 
   useEffect(() => {
     setMetaLoading(true);
-    Promise.allSettled([getStudents(), getClasseNames(), getMatiereNames()])
-      .then(([s, c, m]) => {
+    Promise.allSettled([getStudents(), getClasseNames(), getMatiereNames(), getTeacherNames(), getTrimestreNames()])
+      .then(([s, c, m, tch, tr]) => {
         if (s.status === "fulfilled") setStudents(Array.isArray(s.value) ? s.value : s.value?.content ?? []);
         if (c.status === "fulfilled") setClasses(Array.isArray(c.value) ? c.value : c.value?.content ?? []);
         if (m.status === "fulfilled") setMatieres(Array.isArray(m.value) ? m.value : []);
+        if (tch.status === "fulfilled") setTeachers(Array.isArray(tch.value) ? tch.value : []);
+        if (tr.status === "fulfilled") setTrimestres(Array.isArray(tr.value) ? tr.value : []);
       }).finally(() => setMetaLoading(false));
   }, []);
 
@@ -334,6 +492,85 @@ export default function NotesPage() {
     catch (e) { toast(e.message, "error"); } finally { setStatsLoading(false); }
   };
 
+  // ── Bulk entry handlers ──
+  useEffect(() => {
+    setBulkClasseId(""); setBulkClasses([]); setBulkMatieres([]); setBulkMatiereId("");
+    setBulkSheet(null); setBulkRows([]);
+    if (!bulkTeacherId) return;
+    setBulkClassesLoading(true);
+    getClassesByTeacher(bulkTeacherId)
+      .then(d => setBulkClasses(Array.isArray(d) ? d : []))
+      .catch(e => toast(e.message, "error"))
+      .finally(() => setBulkClassesLoading(false));
+  }, [bulkTeacherId]);
+
+  useEffect(() => {
+    setBulkMatiereId(""); setBulkMatieres([]);
+    setBulkSheet(null); setBulkRows([]);
+    if (!bulkTeacherId || !bulkClasseId) return;
+    setBulkMatieresLoading(true);
+    getMatieresByTeacherAndClasse(bulkTeacherId, bulkClasseId)
+      .then(d => setBulkMatieres(Array.isArray(d) ? d : []))
+      .catch(e => toast(e.message, "error"))
+      .finally(() => setBulkMatieresLoading(false));
+  }, [bulkTeacherId, bulkClasseId]);
+
+  // Clear sheet when any filter changes
+  useEffect(() => { setBulkSheet(null); setBulkRows([]); }, [bulkMatiereId, bulkTrimestreId, bulkType]);
+
+  const fetchBulkSheet = async () => {
+    if (!bulkTeacherId || !bulkClasseId || !bulkMatiereId || !bulkTrimestreId || !bulkType) {
+      toast(t("notes.fillAllFields"), "error"); return;
+    }
+    setBulkLoading(true); setBulkSheet(null); setBulkRows([]);
+    try {
+      const data = await getNoteSheet(bulkTeacherId, {
+        trimestreId: parseInt(bulkTrimestreId),
+        typeDevoir: bulkType,
+        matiereId: parseInt(bulkMatiereId),
+        classeId: parseInt(bulkClasseId),
+      });
+      setBulkSheet(data);
+      const studentsArr = Array.isArray(data?.students) ? data.students : [];
+      setBulkRows(studentsArr.map(s => ({
+        studentId: s.studentId,
+        studentName: s.studentName,
+        registrationNumber: s.registrationNumber,
+        valeur: s.valeur ?? "",
+        appreciation: s.appreciation ?? "",
+        dejaNote: !!s.dejaNote,
+      })));
+    } catch (e) { toast(e.message, "error"); }
+    finally { setBulkLoading(false); }
+  };
+
+  const submitBulkSheet = async () => {
+    setBulkConfirm(false); setBulkSubmitting(true);
+    try {
+      const notes = bulkRows
+        .filter(r => r.valeur !== "" && r.valeur != null)
+        .map(r => ({
+          studentId: r.studentId,
+          studentName: r.studentName,
+          registrationNumber: r.registrationNumber,
+          valeur: parseFloat(r.valeur),
+          appreciation: r.appreciation || undefined,
+        }));
+      if (notes.length === 0) { toast(t("notes.noGradesEntered"), "error"); return; }
+      await submitNoteSheet(bulkTeacherId, {
+        trimestreId: parseInt(bulkTrimestreId),
+        typeDevoir: bulkType,
+        matiereId: parseInt(bulkMatiereId),
+        classeId: parseInt(bulkClasseId),
+        notes,
+      });
+      toast(t("notes.bulkSaved", { n: notes.length }));
+      // Refresh the sheet so dejaNote flags update
+      await fetchBulkSheet();
+    } catch (e) { toast(e.message, "error"); }
+    finally { setBulkSubmitting(false); }
+  };
+
   const typeOptions = TYPE_OPTIONS.map(tp => (
     <option key={tp} value={tp}>{t(`notes.types.${tp}`)}</option>
   ));
@@ -366,8 +603,11 @@ export default function NotesPage() {
                 {matieres.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
               </Select>
             </Field>
-            <Field label={t("notes.trimestreId")} hint={t("notes.trimestreHint")}>
-              <Input type="number" min={1} placeholder={t("notes.trimestrePlaceholder")} value={form.trimestreId} onChange={set("trimestreId")} required />
+            <Field label={t("notes.trimestre")}>
+              <Select value={form.trimestreId} onChange={set("trimestreId")} required>
+                <option value="">{t("notes.selectTrimestre")}</option>
+                {trimestres.map(tr => <option key={tr.id} value={tr.id}>{tr.nom}</option>)}
+              </Select>
             </Field>
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
@@ -487,8 +727,9 @@ export default function NotesPage() {
         <button onClick={() => setView("create")} className="btn-primary" style={{ marginBottom: 32 }}>{t("notes.addBtn")}</button>
       </div>
 
-      <div style={{ display: "flex", gap: 8, marginBottom: 28 }}>
+      <div style={{ display: "flex", gap: 8, marginBottom: 28, flexWrap: "wrap" }}>
         <Tab label={t("notes.tabNotes")}    active={tab === "notes"}    onClick={() => setTab("notes")} />
+        <Tab label={t("notes.tabBulk")}     active={tab === "bulk"}     onClick={() => setTab("bulk")} />
         <Tab label={t("notes.tabBulletin")} active={tab === "bulletin"} onClick={() => setTab("bulletin")} />
         <Tab label={t("notes.tabStats")}    active={tab === "stats"}    onClick={() => setTab("stats")} />
       </div>
@@ -508,7 +749,10 @@ export default function NotesPage() {
             </div>
             <div style={{ flex: "1 1 180px" }}>
               <label className="field-label">{t("notes.trimestreOptional")}</label>
-              <input className="t-input" type="number" min={1} placeholder={t("notes.trimestrePlaceholder")} value={filterTrimestreId} onChange={e => setFilterTrimestreId(e.target.value)} />
+              <select className="t-select" value={filterTrimestreId} onChange={e => setFilterTrimestreId(e.target.value)}>
+                <option value="">{t("notes.allTrimestres")}</option>
+                {trimestres.map(tr => <option key={tr.id} value={tr.id}>{tr.nom}</option>)}
+              </select>
             </div>
             <button onClick={fetchStudentNotes} disabled={!filterStudentId || studentNotesLoading} className="btn-primary" style={{ padding: "10px 22px", alignSelf: "flex-end" }}>
               {studentNotesLoading ? <><span className="spinner" style={{ width: 13, height: 13 }} /> {t("common.loading")}</> : t("notes.loadNotes")}
@@ -542,6 +786,123 @@ export default function NotesPage() {
         </>
       )}
 
+      {/* ══ BULK ENTRY TAB ══ */}
+      {!metaLoading && tab === "bulk" && (
+        <>
+          {/* Filter card with cascading selectors */}
+          <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "var(--r-lg)", padding: "20px 24px", marginBottom: 24, boxShadow: "var(--shadow-sm)" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
+              <div style={{ width: 32, height: 32, borderRadius: 9, background: C_BG, color: C_COLOR, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16 }}>📋</div>
+              <div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text)" }}>{t("notes.bulkFilterTitle")}</div>
+                <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>{t("notes.bulkFilterSub")}</div>
+              </div>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))", gap: 14, alignItems: "flex-end" }}>
+              <div>
+                <label className="field-label">{t("notes.teacher")}</label>
+                <select className="t-select" value={bulkTeacherId} onChange={e => setBulkTeacherId(e.target.value)}>
+                  <option value="">{t("notes.selectTeacher")}</option>
+                  {teachers.map(tch => <option key={tch.id} value={tch.id}>{tch.speciality ? `#${tch.id} · ${tch.speciality}` : `#${tch.id}`}{tch.phone ? ` · ${tch.phone}` : ""}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="field-label">{t("notes.class")}</label>
+                <select className="t-select" value={bulkClasseId} onChange={e => setBulkClasseId(e.target.value)} disabled={!bulkTeacherId || bulkClassesLoading}>
+                  <option value="">
+                    {!bulkTeacherId       ? t("notes.pickTeacherFirst")
+                     : bulkClassesLoading ? t("common.loading")
+                     : bulkClasses.length === 0 ? t("notes.noAssignedClasses")
+                     : t("notes.selectClass")}
+                  </option>
+                  {bulkClasses.map(c => <option key={c.id} value={c.id}>{c.name}{c.levelName ? ` — ${c.levelName}` : ""}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="field-label">{t("notes.subject")}</label>
+                <select className="t-select" value={bulkMatiereId} onChange={e => setBulkMatiereId(e.target.value)} disabled={!bulkClasseId || bulkMatieresLoading}>
+                  <option value="">
+                    {!bulkClasseId          ? t("notes.pickClassFirst")
+                     : bulkMatieresLoading  ? t("common.loading")
+                     : bulkMatieres.length === 0 ? t("notes.noAssignedSubjects")
+                     : t("notes.selectSubject")}
+                  </option>
+                  {bulkMatieres.map(m => <option key={m.id} value={m.id}>{m.name}{m.coefficient ? ` (×${m.coefficient})` : ""}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="field-label">{t("notes.trimestre")}</label>
+                <select className="t-select" value={bulkTrimestreId} onChange={e => setBulkTrimestreId(e.target.value)}>
+                  <option value="">{t("notes.selectTrimestre")}</option>
+                  {trimestres.map(tr => <option key={tr.id} value={tr.id}>{tr.nom}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="field-label">{t("notes.type")}</label>
+                <select className="t-select" value={bulkType} onChange={e => setBulkType(e.target.value)}>
+                  {typeOptions}
+                </select>
+              </div>
+              <button
+                onClick={fetchBulkSheet}
+                disabled={!bulkTeacherId || !bulkClasseId || !bulkMatiereId || !bulkTrimestreId || bulkLoading}
+                className="btn-primary"
+                style={{ padding: "10px 22px", alignSelf: "flex-end", height: 41 }}
+              >
+                {bulkLoading
+                  ? <><span className="spinner" style={{ width: 13, height: 13 }} /> {t("common.loading")}</>
+                  : <>📥 {t("notes.loadSheet")}</>
+                }
+              </button>
+            </div>
+            {bulkSheet && (
+              <div style={{ marginTop: 14, paddingTop: 14, borderTop: "1px dashed var(--border)", display: "flex", gap: 16, flexWrap: "wrap", fontSize: 12.5, color: "var(--text-muted)" }}>
+                <span>👥 <strong style={{ color: "var(--text-dim)" }}>{bulkSheet.totalStudents ?? 0}</strong> {t("notes.studentsInClass")}</span>
+                <span>✅ <strong style={{ color: "var(--text-dim)" }}>{bulkSheet.notesSaisies ?? 0}</strong> {t("notes.alreadyGraded")}</span>
+              </div>
+            )}
+          </div>
+
+          {/* Sheet table */}
+          {bulkLoading ? (
+            <div className="empty-state"><div className="spinner" style={{ width: 22, height: 22 }} /><p>{t("notes.loadingSheet")}</p></div>
+          ) : bulkSheet === null ? (
+            <div className="empty-state">
+              <span style={{ fontSize: 40 }}>📝</span>
+              <p>{t("notes.bulkEmpty")}</p>
+            </div>
+          ) : bulkRows.length === 0 ? (
+            <div className="empty-state">
+              <span style={{ fontSize: 36 }}>📭</span>
+              <p>{t("notes.bulkNoStudents")}</p>
+            </div>
+          ) : (
+            <BulkSheetTable
+              sheet={bulkSheet}
+              rows={bulkRows}
+              setRows={setBulkRows}
+              onSubmit={() => setBulkConfirm(true)}
+              submitting={bulkSubmitting}
+              t={t}
+            />
+          )}
+
+          {bulkConfirm && (
+            <ConfirmDialog
+              variant="primary"
+              title={t("notes.bulkConfirmTitle")}
+              message={t("notes.bulkConfirmMsg", { n: bulkRows.filter(r => r.valeur !== "" && r.valeur != null).length })}
+              confirmLabel={t("notes.bulkConfirmBtn")}
+              loadingLabel={t("notes.submitting")}
+              cancelLabel={t("common.cancel")}
+              onConfirm={submitBulkSheet}
+              onCancel={() => setBulkConfirm(false)}
+              loading={bulkSubmitting}
+            />
+          )}
+        </>
+      )}
+
       {/* ══ BULLETIN TAB ══ */}
       {!metaLoading && tab === "bulletin" && (
         <>
@@ -554,8 +915,11 @@ export default function NotesPage() {
               </select>
             </div>
             <div style={{ flex: "1 1 180px" }}>
-              <label className="field-label">{t("notes.trimestreId")}</label>
-              <input className="t-input" type="number" min={1} placeholder={t("notes.trimestrePlaceholder")} value={bulletinTrimestreId} onChange={e => setBulletinTrimestreId(e.target.value)} />
+              <label className="field-label">{t("notes.trimestre")}</label>
+              <select className="t-select" value={bulletinTrimestreId} onChange={e => setBulletinTrimestreId(e.target.value)}>
+                <option value="">{t("notes.selectTrimestre")}</option>
+                {trimestres.map(tr => <option key={tr.id} value={tr.id}>{tr.nom}</option>)}
+              </select>
             </div>
             <button onClick={fetchBulletin} disabled={!bulletinStudentId || !bulletinTrimestreId || bulletinLoading} className="btn-primary" style={{ padding: "10px 22px", alignSelf: "flex-end" }}>
               {bulletinLoading ? <><span className="spinner" style={{ width: 13, height: 13 }} /> {t("common.loading")}</> : t("notes.viewBulletin")}
@@ -587,8 +951,11 @@ export default function NotesPage() {
               </select>
             </div>
             <div style={{ flex: "1 1 160px" }}>
-              <label className="field-label">{t("notes.trimestreId")}</label>
-              <input className="t-input" type="number" min={1} placeholder={t("notes.trimestrePlaceholder")} value={statsTrimestreId} onChange={e => setStatsTrimestreId(e.target.value)} />
+              <label className="field-label">{t("notes.trimestre")}</label>
+              <select className="t-select" value={statsTrimestreId} onChange={e => setStatsTrimestreId(e.target.value)}>
+                <option value="">{t("notes.selectTrimestre")}</option>
+                {trimestres.map(tr => <option key={tr.id} value={tr.id}>{tr.nom}</option>)}
+              </select>
             </div>
             <div style={{ flex: "1 1 140px" }}>
               <label className="field-label">{t("notes.type")}</label>

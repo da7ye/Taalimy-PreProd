@@ -1,7 +1,7 @@
 // export const BASE_URL = "http://144.91.85.23:8086/api/v1";
 export const BASE_URL = "/api/v1";
 
-const MINIO_ORIGIN = "http://144.91.85.23:9000";
+const MINIO_ORIGIN = "http://144.91.85.23:8086";
 const IS_PROD = window.location.hostname !== "localhost";
 
 function fixPhotos(data) {
@@ -75,6 +75,7 @@ export const getLevelNames   = () => request("/levels/names");
 export const getClasseNames  = () => request("/classes/names");
 export const getMatiereNames = () => request("/matieres/names");
 export const getTeacherNames = () => request("/teachers/names");
+export const getTrimestreNames = () => request("/trimestres/names");
 
 // Timetables
 export const getTimetables         = ()      => request("/timetables");
@@ -131,6 +132,12 @@ export const getBulletinPdf                = async (studentId, trId) => {
   const buffer = await res.arrayBuffer();
   return new Blob([buffer], { type: "application/pdf" });
 };
+
+// Teacher bulk note sheet
+export const getNoteSheet = (teacherId, data) =>
+  request(`/api/teacher/notes/sheet?teacherId=${teacherId}`, { method: "POST", body: JSON.stringify(data) });
+export const submitNoteSheet = (teacherId, data) =>
+  request(`/api/teacher/notes/submit?teacherId=${teacherId}`, { method: "POST", body: JSON.stringify(data) });
 
 // Parent → Children
 export const getChildren        = (pid)            => request(`/parents/${pid}/children`);

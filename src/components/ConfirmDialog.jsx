@@ -1,6 +1,50 @@
 import { createPortal } from "react-dom";
 
-export default function ConfirmDialog({ message, onConfirm, onCancel, loading, title = "Confirm Delete" }) {
+/**
+ * variant: "danger" (default) | "primary"
+ *   - danger  → rose trash icon, red Delete button, "Deleting…" loading text
+ *   - primary → accent check icon, accent Confirm button, "Saving…" loading text
+ *
+ * Any of these labels can also be overridden via props:
+ *   confirmLabel, cancelLabel, loadingLabel, icon
+ */
+export default function ConfirmDialog({
+  message,
+  onConfirm,
+  onCancel,
+  loading,
+  title,
+  variant = "danger",
+  confirmLabel,
+  cancelLabel = "Cancel",
+  loadingLabel,
+  icon,
+}) {
+  const isDanger = variant === "danger";
+
+  const defaultTitle        = isDanger ? "Confirm Delete"  : "Confirm";
+  const defaultConfirmLabel = isDanger ? "Delete"          : "Confirm";
+  const defaultLoadingLabel = isDanger ? "Deleting…"       : "Saving…";
+
+  const iconBg     = isDanger ? "var(--rose-dim)"           : "var(--accent-dim)";
+  const iconBorder = isDanger ? "rgba(184,53,53,.2)"        : "var(--accent-glow)";
+  const iconColor  = isDanger ? "var(--rose)"               : "var(--accent)";
+
+  const confirmBtnClass = isDanger ? "btn-danger" : "btn-primary";
+
+  const defaultIcon = isDanger ? (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
+      stroke={iconColor} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="3 6 5 6 21 6"/>
+      <path d="M19 6l-1 14H6L5 6M10 11v6M14 11v6M9 6V4h6v2"/>
+    </svg>
+  ) : (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
+      stroke={iconColor} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="20 6 9 17 4 12"/>
+    </svg>
+  );
+
   const dialog = (
     <div className="modal-backdrop anim-fade" onClick={onCancel}>
       <div
@@ -18,35 +62,31 @@ export default function ConfirmDialog({ message, onConfirm, onCancel, loading, t
         {/* Icon */}
         <div style={{
           width: 50, height: 50, borderRadius: 14,
-          background: "var(--rose-dim)",
-          border: "1px solid rgba(184,53,53,.2)",
+          background: iconBg,
+          border: `1px solid ${iconBorder}`,
           display: "flex", alignItems: "center", justifyContent: "center",
           marginBottom: 18,
         }}>
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
-            stroke="var(--rose)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="3 6 5 6 21 6"/>
-            <path d="M19 6l-1 14H6L5 6M10 11v6M14 11v6M9 6V4h6v2"/>
-          </svg>
+          {icon ?? defaultIcon}
         </div>
 
         <h3 style={{
           margin: "0 0 8px", fontSize: 16, fontWeight: 600,
           color: "var(--text)", letterSpacing: "-.02em",
           fontFamily: "'Instrument Serif', serif",
-        }}>{title}</h3>
+        }}>{title ?? defaultTitle}</h3>
         <p style={{
           margin: "0 0 24px", fontSize: 14, color: "var(--text-muted)", lineHeight: 1.6,
         }}>{message || "Are you sure? This action cannot be undone."}</p>
 
         <div style={{ display: "flex", gap: 10 }}>
           <button onClick={onCancel} className="btn-ghost" style={{ flex: 1, padding: "10px" }}>
-            Cancel
+            {cancelLabel}
           </button>
-          <button onClick={onConfirm} disabled={loading} className="btn-danger" style={{ flex: 1, padding: "10px" }}>
+          <button onClick={onConfirm} disabled={loading} className={confirmBtnClass} style={{ flex: 1, padding: "10px" }}>
             {loading
-              ? <><span className="spinner" style={{ width: 13, height: 13 }} /> Deleting…</>
-              : "Delete"}
+              ? <><span className="spinner" style={{ width: 13, height: 13 }} /> {loadingLabel ?? defaultLoadingLabel}</>
+              : (confirmLabel ?? defaultConfirmLabel)}
           </button>
         </div>
       </div>

@@ -1,7 +1,7 @@
-// export const BASE_URL = "http://144.91.85.23:8086/api/v1";
-export const BASE_URL = "/api/v1";
+export const BASE_URL = "http://144.91.85.23:8085/api/v1";
+// export const BASE_URL = "/api/v1";
 
-const MINIO_ORIGIN = "http://144.91.85.23:8086";
+const MINIO_ORIGIN = "http://144.91.85.23:8085";
 const IS_PROD = window.location.hostname !== "localhost";
 
 function fixPhotos(data) {
@@ -126,6 +126,11 @@ export const getNotesByStudentAndTrimestre = (studentId, trId)    => request(`/a
 export const getClasseStats                = (classeId, matiereId, trId, typeDevoir) =>
   request(`/api/notes/stats/classe/${classeId}/matiere/${matiereId}/trimestre/${trId}?typeDevoir=${typeDevoir}`);
 export const getBulletin                   = (studentId, trId)    => request(`/api/notes/bulletin/student/${studentId}/trimestre/${trId}`);
+export const approveNote                   = (id, approuve)       => request(`/api/notes/${id}/approuve?approuve=${approuve}`,                                   { method: "PATCH" });
+export const bulkApproveNotes              = (data)                => request(`/api/notes/approuve/bulk`,                                                        { method: "PATCH",  body: JSON.stringify(data) });
+export const getPendingNotes                        = ()                              => request("/api/notes/staff/pending");
+export const getPendingNotesByClasse                = (classeId)                       => request(`/api/notes/staff/pending/classe/${classeId}`);
+export const getPendingNotesByClasseAndTrimestre    = (classeId, trimestreId)          => request(`/api/notes/staff/pending/classe/${classeId}/trimestre/${trimestreId}`);
 export const getBulletinPdf                = async (studentId, trId) => {
   const res = await fetch(`${BASE_URL}/api/bulletins/student/${studentId}/trimestre/${trId}/pdf/download`);
   if (!res.ok) { const err = await res.text(); throw new Error(err || `HTTP ${res.status}`); }
@@ -145,6 +150,13 @@ export const addStudentToParent = (pid, sid)       => request(`/parents/${pid}/a
 export const getChildTimetable  = (pid, sid)       => request(`/parents/${pid}/children/${sid}/timetable`);
 export const getChildNotes      = (pid, sid, trId) => request(`/parents/${pid}/children/${sid}/notes?trimestreId=${trId}`);
 export const getChildBulletin   = (pid, sid, trId) => request(`/parents/${pid}/children/${sid}/bulletin?trimestreId=${trId}`);
+
+// Partners
+export const getPartnerWallets        = () => request("/api/partner-payments/wallets");
+export const submitPartnerPayment     = (data) => request("/api/partner-payments/submit", { method: "POST", body: JSON.stringify(data) });
+export const getPendingPartnerPayments = () => request("/api/partner-payments/pending");
+export const getPartnerPaymentHistory  = (subscriptionId) => request(`/api/partner-payments/history/${subscriptionId}`);
+export const getPartnerPaymentBalance  = (subscriptionId, mois, annee) => request(`/api/partner-payments/balance/${subscriptionId}?mois=${mois}&annee=${annee}`);
 
 export const uploadUserPhoto = async (userId, file) => {
   const formData = new FormData();

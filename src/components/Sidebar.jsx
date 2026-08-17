@@ -24,6 +24,7 @@ function IconAlert()   { return <Icon d="M12 22a10 10 0 110-20 10 10 0 010 20zM1
 function IconCheck()   { return <Icon d="M22 11.08V12a10 10 0 11-5.93-9.14" d2="M22 4L12 14.01l-3-3"/>; }
 function IconPayment() { return <Icon d="M21 4H3a2 2 0 00-2 2v12a2 2 0 002 2h18a2 2 0 002-2V6a2 2 0 00-2-2z" d2="M1 10h22"/>; }
 function IconNote()    { return <Icon d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" d2="M14 2v6h6M16 13H8M16 17H8M10 9H8"/>; }
+function IconHandshake(){ return <Icon d="M11 17l-3-3-6 6" d2="M2 13l6-6 4 4 8-8 3.5 3.5L14 16l-3-3" d3="M18 8l3 3-3 3"/>; }
 
 function IconGlobe() {
   return (
@@ -197,7 +198,10 @@ export default function Sidebar({ active, setPage, theme, setTheme, onLogout }) 
       { id: "notes",       label: t("nav.grades"),      icon: IconNote },
     ]},
     { section: t("sections.attendance"), items: [{ id: "absences", label: t("nav.absences"), icon: IconAlert }] },
-    { section: t("sections.finance"),    items: [{ id: "payments", label: t("nav.payments"), icon: IconPayment }] },
+    { section: t("sections.finance"),    items: [
+      { id: "payments",        label: t("nav.payments"), icon: IconPayment },
+      { id: "partnerPayments", label: "Partner Payments", icon: IconHandshake },
+    ]},
     { section: t("sections.admin"),      items: [{ id: "approve",  label: t("nav.approveUsers"), icon: IconCheck }] },
   ];
 

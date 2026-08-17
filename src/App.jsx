@@ -18,6 +18,8 @@ import AssignmentsPage from "./pages/AssignmentsPage";
 import AbsencePage from "./pages/AbsencePage";
 import PaymentsPage from "./pages/Paymentspage";
 import NotesPage from "./pages/NotesPage";
+import PartnerPaymentsPage from "./pages/PartnerPaymentsPage";
+
 
 export const ThemeContext = React.createContext("light");
 
@@ -180,8 +182,10 @@ export default function App() {
     assignments: <AssignmentsPage />,
     timetable:   <TimetablePage />,
     payments:    <PaymentsPage />,
+    partnerPayments: <PartnerPaymentsPage />,
     notes:       <NotesPage />,
     approve:     <ApprovePage />,
+
   };
 
   return (

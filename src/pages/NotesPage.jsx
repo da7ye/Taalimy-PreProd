@@ -3,7 +3,8 @@ import {
   getStudents, getClasseNames, getMatiereNames, getTeacherNames, getTrimestreNames,
   getNotesByStudent, getNotesByStudentAndTrimestre,
   createNote, updateNote, deleteNote, getBulletin, getBulletinPdf, getClasseStats,
-  getNoteSheet, submitNoteSheet,
+  getNoteSheet, submitNoteSheet, approveNote, bulkApproveNotes,
+  getPendingNotes, getPendingNotesByClasse, getPendingNotesByClasseAndTrimestre,
   getClassesByTeacher, getMatieresByTeacherAndClasse,
 } from "../api";
 import { Field, Input, Select, SubmitBtn } from "../components/FormComponents";
@@ -99,6 +100,16 @@ function GradeBadge({ value }) {
   );
 }
 
+function ApprovalBadge({ approuve }) {
+  return approuve
+    ? <span style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "3px 9px", borderRadius: 999, background: "var(--green-dim)", color: "var(--green)", fontSize: 11, fontWeight: 600, border: "1px solid rgba(42,117,64,.2)" }}>
+        <span style={{ width: 5, height: 5, borderRadius: "50%", background: "var(--green)" }} /> Approved
+      </span>
+    : <span style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "3px 9px", borderRadius: 999, background: "var(--amber-dim)", color: "var(--amber)", fontSize: 11, fontWeight: 600, border: "1px solid rgba(168,100,30,.2)" }}>
+        <span style={{ width: 5, height: 5, borderRadius: "50%", background: "var(--amber)" }} /> Pending
+      </span>;
+}
+
 function Tab({ label, active, onClick }) {
   return (
     <button onClick={onClick} style={{
@@ -111,7 +122,7 @@ function Tab({ label, active, onClick }) {
   );
 }
 
-function NoteCard({ r, onClick, onEdit, onDelete, t }) {
+function NoteCard({ r, onClick, onEdit, onDelete, onToggleApprove, approving, t }) {
   const typeLabel = t(`notes.types.${r.typeDevoir}`) || r.typeDevoir;
   return (
     <div className="person-card" style={{ "--card-top": C_COLOR }} onClick={() => onClick(r)}>
@@ -125,6 +136,7 @@ function NoteCard({ r, onClick, onEdit, onDelete, t }) {
       <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 12 }}>
         {r.matiereName && <span style={{ padding: "2px 9px", borderRadius: 999, background: C_BG, color: C_COLOR, fontSize: 11.5, fontWeight: 600, border: `1px solid ${C_COLOR}22` }}>{r.matiereName}</span>}
         {r.typeDevoir && <span style={{ padding: "2px 9px", borderRadius: 999, background: "var(--purple-dim)", color: "var(--purple)", fontSize: 11.5, fontWeight: 600, border: "1px solid var(--purple-dim)" }}>{typeLabel}</span>}
+        <ApprovalBadge approuve={r.approuve} />
       </div>
       <div style={{ paddingTop: 12, borderTop: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
         <div style={{ fontSize: 12.5, color: "var(--text-muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
@@ -132,6 +144,14 @@ function NoteCard({ r, onClick, onEdit, onDelete, t }) {
           {r.trimestreNom && <span style={{ marginLeft: 8 }}>📅 {r.trimestreNom}</span>}
         </div>
         <div style={{ display: "flex", gap: 6, flexShrink: 0 }} onClick={e => e.stopPropagation()}>
+          <button
+            onClick={() => onToggleApprove(r)}
+            disabled={approving}
+            className={r.approuve ? "btn-ghost" : "btn-primary"}
+            style={{ padding: "5px 10px", fontSize: 12 }}
+          >
+            {approving ? "…" : r.approuve ? (t("notes.unapprove") || "Unapprove") : (t("notes.approve") || "Approve")}
+          </button>
           <button onClick={() => onEdit(r)} className="btn-ghost" style={{ padding: "5px 10px", fontSize: 12 }}>{t("common.edit")}</button>
           <button onClick={() => onDelete(r)} className="btn-danger" style={{ padding: "5px 10px", fontSize: 12 }}>{t("common.delete")}</button>
         </div>
@@ -204,7 +224,7 @@ function BulletinView({ bulletin, onDownload, downloading, t }) {
   );
 }
 
-function BulkSheetTable({ sheet, rows, setRows, onSubmit, submitting, t }) {
+function BulkSheetTable({ sheet, rows, setRows, onSubmit, submitting, onApproveAll, onUnapproveAll, bulkApproving, t }) {
   const filled = rows.filter(r => r.valeur !== "" && r.valeur != null).length;
   const total  = rows.length;
   const pct    = total ? Math.round((filled / total) * 100) : 0;
@@ -260,6 +280,7 @@ function BulkSheetTable({ sheet, rows, setRows, onSubmit, submitting, t }) {
               <th style={{ padding: "12px 16px", textAlign: "center", fontSize: 10.5, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".07em", color: "var(--text-faint)", borderBottom: "2px solid var(--border)", width: 130 }}>{t("notes.grade")} /20</th>
               <th style={{ padding: "12px 16px", textAlign: "left",   fontSize: 10.5, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".07em", color: "var(--text-faint)", borderBottom: "2px solid var(--border)" }}>{t("notes.appreciation")}</th>
               <th style={{ padding: "12px 16px", textAlign: "center", fontSize: 10.5, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".07em", color: "var(--text-faint)", borderBottom: "2px solid var(--border)", width: 90 }}>{t("notes.statusCol")}</th>
+              <th style={{ padding: "12px 16px", textAlign: "center", fontSize: 10.5, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".07em", color: "var(--text-faint)", borderBottom: "2px solid var(--border)", width: 110 }}>{t("notes.approvalCol") || "Approval"}</th>
             </tr>
           </thead>
           <tbody>
@@ -314,6 +335,9 @@ function BulkSheetTable({ sheet, rows, setRows, onSubmit, submitting, t }) {
                         : <span style={{ color: "var(--text-faint)", fontSize: 12 }}>—</span>
                     }
                   </td>
+                  <td style={{ padding: "10px 12px", textAlign: "center" }}>
+                    {r.dejaNote ? <ApprovalBadge approuve={!!r.approuve} /> : <span style={{ color: "var(--text-faint)", fontSize: 12 }}>—</span>}
+                  </td>
                 </tr>
               );
             })}
@@ -329,12 +353,30 @@ function BulkSheetTable({ sheet, rows, setRows, onSubmit, submitting, t }) {
             : <>{t("notes.bulkHint")}</>
           }
         </div>
-        <button onClick={onSubmit} disabled={submitting || hasInvalid || filled === 0} className="btn-primary" style={{ padding: "10px 24px" }}>
-          {submitting
-            ? <><span className="spinner" style={{ width: 13, height: 13 }} /> {t("notes.submitting")}</>
-            : <>💾 {t("notes.submitAll", { n: filled })}</>
-          }
-        </button>
+        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+          <button
+            onClick={onUnapproveAll}
+            disabled={bulkApproving || submitting}
+            className="btn-ghost"
+            style={{ padding: "10px 18px" }}
+          >
+            {bulkApproving ? <><span className="spinner" style={{ width: 13, height: 13 }} /> …</> : <>↩ {t("notes.unapproveAll") || "Unapprove all"}</>}
+          </button>
+          <button
+            onClick={onApproveAll}
+            disabled={bulkApproving || submitting}
+            className="btn-primary"
+            style={{ padding: "10px 18px" }}
+          >
+            {bulkApproving ? <><span className="spinner" style={{ width: 13, height: 13 }} /> …</> : <>✅ {t("notes.approveAll") || "Approve all"}</>}
+          </button>
+          <button onClick={onSubmit} disabled={submitting || hasInvalid || filled === 0} className="btn-primary" style={{ padding: "10px 24px" }}>
+            {submitting
+              ? <><span className="spinner" style={{ width: 13, height: 13 }} /> {t("notes.submitting")}</>
+              : <>💾 {t("notes.submitAll", { n: filled })}</>
+            }
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -394,6 +436,18 @@ export default function NotesPage() {
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [saving,       setSaving]       = useState(false);
   const [deleting,     setDeleting]     = useState(false);
+  const [approvingIds, setApprovingIds] = useState(() => new Set());
+  const [bulkApproving, setBulkApproving] = useState(false);
+  const [bulkApproveConfirm, setBulkApproveConfirm] = useState(null); // "approve" | "unapprove" | null
+
+  // ── Pending approvals state ──
+  const [pendingClasseId,    setPendingClasseId]    = useState("");
+  const [pendingTrimestreId, setPendingTrimestreId] = useState("");
+  const [pendingNotes,       setPendingNotes]       = useState(null);
+  const [pendingLoading,     setPendingLoading]     = useState(false);
+  const [pendingApprovingIds,setPendingApprovingIds]= useState(() => new Set());
+  const [approvingAllPending,setApprovingAllPending]= useState(false);
+  const [approveAllConfirm,  setApproveAllConfirm]  = useState(false);
 
   const emptyForm = { valeur: "", appreciation: "", dateNote: "", typeDevoir: "", studentId: "", matiereId: "", classeId: "", trimestreId: "" };
   const [form,     setForm]     = useState(emptyForm);
@@ -464,6 +518,103 @@ export default function NotesPage() {
     setDeleting(true);
     try { await deleteNote(deleteTarget.id); setDeleteTarget(null); toast(t("notes.deleted")); if (view !== "list") goList(); fetchStudentNotes(); }
     catch (err) { toast(err.message, "error"); } finally { setDeleting(false); }
+  };
+
+  const patchNoteEverywhere = (id, patch) => {
+    setStudentNotes(prev => Array.isArray(prev) ? prev.map(n => n.id === id ? { ...n, ...patch } : n) : prev);
+    setSelected(prev => prev && prev.id === id ? { ...prev, ...patch } : prev);
+  };
+
+  const handleToggleApprove = async (note) => {
+    const nextApprouve = !note.approuve;
+    setApprovingIds(prev => new Set(prev).add(note.id));
+    try {
+      const updated = await approveNote(note.id, nextApprouve);
+      patchNoteEverywhere(note.id, { approuve: updated?.approuve ?? nextApprouve });
+      toast(nextApprouve ? (t("notes.approved") || "Note approved") : (t("notes.unapproved") || "Note unapproved"));
+    } catch (err) {
+      toast(err.message, "error");
+    } finally {
+      setApprovingIds(prev => { const n = new Set(prev); n.delete(note.id); return n; });
+    }
+  };
+
+  // ── Pending approvals ──
+  useEffect(() => { setPendingTrimestreId(""); setPendingNotes(null); }, [pendingClasseId]);
+  useEffect(() => { setPendingNotes(null); }, [pendingTrimestreId]);
+
+  const fetchPendingNotes = async () => {
+    setPendingLoading(true); setPendingNotes(null);
+    try {
+      let data;
+      if (pendingClasseId && pendingTrimestreId) data = await getPendingNotesByClasseAndTrimestre(pendingClasseId, pendingTrimestreId);
+      else if (pendingClasseId) data = await getPendingNotesByClasse(pendingClasseId);
+      else data = await getPendingNotes();
+      setPendingNotes(Array.isArray(data) ? data : []);
+    } catch (e) { toast(e.message, "error"); setPendingNotes([]); }
+    finally { setPendingLoading(false); }
+  };
+
+  const approvePendingNote = async (note) => {
+    setPendingApprovingIds(prev => new Set(prev).add(note.id));
+    try {
+      await approveNote(note.id, true);
+      setPendingNotes(prev => Array.isArray(prev) ? prev.filter(n => n.id !== note.id) : prev);
+      toast(t("notes.approved") || "Note approved");
+    } catch (e) {
+      toast(e.message, "error");
+    } finally {
+      setPendingApprovingIds(prev => { const n = new Set(prev); n.delete(note.id); return n; });
+    }
+  };
+
+  const approveAllPending = async () => {
+    setApproveAllConfirm(false);
+    if (!pendingNotes || pendingNotes.length === 0) return;
+    setApprovingAllPending(true);
+
+    // Pending notes only carry names (className/matiereName/trimestreNom), but the
+    // bulk endpoint needs numeric ids — resolve them from the already-loaded lookup lists.
+    const classIdByName    = new Map(classes.map(c => [c.name, c.id]));
+    const matiereIdByName  = new Map(matieres.map(m => [m.name, m.id]));
+    const trimestreIdByNom = new Map(trimestres.map(tr => [tr.nom, tr.id]));
+
+    const groups  = new Map(); // "classeId|matiereId|trimestreId|typeDevoir" -> { classeId, matiereId, trimestreId, typeDevoir, ids: Set }
+    const singles = [];        // notes we can't resolve to a full id set — fall back to single-approve
+
+    for (const n of pendingNotes) {
+      const classeId     = classIdByName.get(n.className);
+      const matiereId    = matiereIdByName.get(n.matiereName);
+      const trimestreId  = trimestreIdByNom.get(n.trimestreNom);
+      if (classeId == null || matiereId == null || trimestreId == null || !n.typeDevoir) {
+        singles.push(n);
+        continue;
+      }
+      const key = `${classeId}|${matiereId}|${trimestreId}|${n.typeDevoir}`;
+      if (!groups.has(key)) groups.set(key, { classeId, matiereId, trimestreId, typeDevoir: n.typeDevoir, ids: new Set() });
+      groups.get(key).ids.add(n.id);
+    }
+
+    const failedIds = new Set();
+
+    // One bulk call per distinct (class, subject, trimestre, type) combination.
+    await Promise.all(Array.from(groups.values()).map(async g => {
+      try {
+        await bulkApproveNotes({ approuve: true, classeId: g.classeId, matiereId: g.matiereId, trimestreId: g.trimestreId, typeDevoir: g.typeDevoir });
+      } catch (e) {
+        g.ids.forEach(id => failedIds.add(id));
+      }
+    }));
+
+    // Anything we couldn't group (missing id lookup) still gets approved individually.
+    const singleResults = await Promise.allSettled(singles.map(n => approveNote(n.id, true)));
+    singleResults.forEach((res, i) => { if (res.status === "rejected") failedIds.add(singles[i].id); });
+
+    setPendingNotes(prev => Array.isArray(prev) ? prev.filter(n => failedIds.has(n.id)) : prev);
+    setApprovingAllPending(false);
+    const okCount = pendingNotes.length - failedIds.size;
+    if (failedIds.size === 0) toast(t("notes.bulkApproved", { n: okCount }) || `${okCount} notes approved`);
+    else toast(`${okCount} approved, ${failedIds.size} failed`, "error");
   };
 
   const fetchBulletin = async () => {
@@ -539,6 +690,7 @@ export default function NotesPage() {
         valeur: s.valeur ?? "",
         appreciation: s.appreciation ?? "",
         dejaNote: !!s.dejaNote,
+        approuve: !!s.approuve,
       })));
     } catch (e) { toast(e.message, "error"); }
     finally { setBulkLoading(false); }
@@ -569,6 +721,36 @@ export default function NotesPage() {
       await fetchBulkSheet();
     } catch (e) { toast(e.message, "error"); }
     finally { setBulkSubmitting(false); }
+  };
+
+  const runBulkApprove = async (approuve) => {
+    setBulkApproveConfirm(null);
+    if (!bulkClasseId || !bulkMatiereId || !bulkTrimestreId || !bulkType) {
+      toast(t("notes.fillAllFields"), "error"); return;
+    }
+    setBulkApproving(true);
+    try {
+      const updatedList = await bulkApproveNotes({
+        approuve,
+        classeId: parseInt(bulkClasseId),
+        matiereId: parseInt(bulkMatiereId),
+        trimestreId: parseInt(bulkTrimestreId),
+        typeDevoir: bulkType,
+      });
+      const byStudent = new Map((Array.isArray(updatedList) ? updatedList : []).map(n => [n.studentId ?? n.id, n]));
+      // Match on studentId when present; fall back to note id lookup via registrationNumber as safety net.
+      setBulkRows(prev => prev.map(r => {
+        const match = (Array.isArray(updatedList) ? updatedList : []).find(n => n.registrationNumber === r.registrationNumber && n.studentName === r.studentName);
+        return match ? { ...r, approuve: match.approuve, dejaNote: true } : r;
+      }));
+      toast(approuve
+        ? (t("notes.bulkApproved", { n: updatedList?.length ?? 0 }) || `${updatedList?.length ?? 0} notes approved`)
+        : (t("notes.bulkUnapproved", { n: updatedList?.length ?? 0 }) || `${updatedList?.length ?? 0} notes unapproved`));
+    } catch (e) {
+      toast(e.message, "error");
+    } finally {
+      setBulkApproving(false);
+    }
   };
 
   const typeOptions = TYPE_OPTIONS.map(tp => (
@@ -694,10 +876,19 @@ export default function NotesPage() {
                   <div style={{ display: "flex", gap: 8, marginTop: 7, flexWrap: "wrap" }}>
                     {v.typeDevoir && <span style={{ padding: "3px 11px", borderRadius: 999, background: "var(--purple-dim)", color: "var(--purple)", fontSize: 12, fontWeight: 600, border: "1px solid var(--purple-dim)" }}>{t(`notes.types.${v.typeDevoir}`) ?? v.typeDevoir}</span>}
                     <GradeBadge value={v.valeur} />
+                    <ApprovalBadge approuve={v.approuve} />
                   </div>
                 </div>
               </div>
               <div style={{ display: "flex", gap: 10 }}>
+                <button
+                  onClick={() => handleToggleApprove(v)}
+                  disabled={approvingIds.has(v.id)}
+                  className={v.approuve ? "btn-ghost" : "btn-primary"}
+                  style={{ padding: "10px 20px" }}
+                >
+                  {approvingIds.has(v.id) ? "…" : v.approuve ? `↩ ${t("notes.unapprove") || "Unapprove"}` : `✅ ${t("notes.approve") || "Approve"}`}
+                </button>
                 <button onClick={() => openEdit(v)} className="btn-ghost" style={{ padding: "10px 20px" }}>✏️ {t("common.edit")}</button>
                 <button onClick={() => setDeleteTarget(v)} className="btn-danger" style={{ padding: "10px 20px" }}>🗑 {t("common.delete")}</button>
               </div>
@@ -713,6 +904,7 @@ export default function NotesPage() {
           <StatBox icon="📝" label={t("notes.fields.appreciation")} value={v.appreciation} />
           {v.dateNote && <StatBox icon="🗓" label={t("notes.fields.date")} value={v.dateNote} />}
           <StatBox icon="🪪" label={t("notes.fields.regNumber")}    value={v.registrationNumber} />
+          <StatBox icon={v.approuve ? "✅" : "⏳"} label={t("notes.statusCol") || "Status"} value={v.approuve ? (t("notes.approved") || "Approved") : (t("notes.pendingApproval") || "Pending approval")} />
         </div>
         {deleteTarget && <ConfirmDialog title={t("notes.deleteTitle")} message={t("notes.deleteDetailMsg", { name: deleteTarget.studentName })} onConfirm={handleDelete} onCancel={() => setDeleteTarget(null)} loading={deleting} />}
       </div>
@@ -729,6 +921,7 @@ export default function NotesPage() {
 
       <div style={{ display: "flex", gap: 8, marginBottom: 28, flexWrap: "wrap" }}>
         <Tab label={t("notes.tabNotes")}    active={tab === "notes"}    onClick={() => setTab("notes")} />
+        <Tab label={t("notes.tabPending") || "Pending Approvals"} active={tab === "pending"} onClick={() => setTab("pending")} />
         <Tab label={t("notes.tabBulk")}     active={tab === "bulk"}     onClick={() => setTab("bulk")} />
         <Tab label={t("notes.tabBulletin")} active={tab === "bulletin"} onClick={() => setTab("bulletin")} />
         <Tab label={t("notes.tabStats")}    active={tab === "stats"}    onClick={() => setTab("stats")} />
@@ -780,8 +973,112 @@ export default function NotesPage() {
             <div className="empty-state"><span style={{ fontSize: 36 }}>📭</span><p>{q ? t("notes.noResults", { q }) : t("notes.noNotes")}</p></div>
           ) : (
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 16 }}>
-              {filtered.map((r, i) => <NoteCard key={r.id ?? i} r={r} t={t} onClick={r => { setSelected(r); setView("detail"); }} onEdit={openEdit} onDelete={target => setDeleteTarget(target)} />)}
+              {filtered.map((r, i) => (
+                <NoteCard
+                  key={r.id ?? i}
+                  r={r}
+                  t={t}
+                  approving={approvingIds.has(r.id)}
+                  onToggleApprove={handleToggleApprove}
+                  onClick={r => { setSelected(r); setView("detail"); }}
+                  onEdit={openEdit}
+                  onDelete={target => setDeleteTarget(target)}
+                />
+              ))}
             </div>
+          )}
+        </>
+      )}
+
+      {/* ══ PENDING APPROVALS TAB ══ */}
+      {!metaLoading && tab === "pending" && (
+        <>
+          <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "var(--r-lg)", padding: "20px 24px", marginBottom: 24, display: "flex", gap: 16, flexWrap: "wrap", alignItems: "flex-end" }}>
+            <div style={{ flex: "1 1 200px" }}>
+              <label className="field-label">{t("notes.class")} <span style={{ color: "var(--text-faint)", fontWeight: 400 }}>({t("common.optional") || "optional"})</span></label>
+              <select className="t-select" value={pendingClasseId} onChange={e => setPendingClasseId(e.target.value)}>
+                <option value="">{t("notes.allClasses") || "All classes"}</option>
+                {classes.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
+            </div>
+            <div style={{ flex: "1 1 180px" }}>
+              <label className="field-label">{t("notes.trimestreOptional")}</label>
+              <select className="t-select" value={pendingTrimestreId} onChange={e => setPendingTrimestreId(e.target.value)} disabled={!pendingClasseId}>
+                <option value="">{!pendingClasseId ? (t("notes.pickClassFirst") || "Pick a class first") : t("notes.allTrimestres")}</option>
+                {trimestres.map(tr => <option key={tr.id} value={tr.id}>{tr.nom}</option>)}
+              </select>
+            </div>
+            <button onClick={fetchPendingNotes} disabled={pendingLoading} className="btn-primary" style={{ padding: "10px 22px", alignSelf: "flex-end" }}>
+              {pendingLoading ? <><span className="spinner" style={{ width: 13, height: 13 }} /> {t("common.loading")}</> : <>🔍 {t("notes.loadPending") || "Load pending notes"}</>}
+            </button>
+          </div>
+
+          {pendingNotes === null ? (
+            !pendingLoading && <div className="empty-state"><span style={{ fontSize: 40 }}>⏳</span><p>{t("notes.pendingEmpty") || "Choose a scope and load pending notes."}</p></div>
+          ) : pendingLoading ? null : pendingNotes.length === 0 ? (
+            <div className="empty-state"><span style={{ fontSize: 36 }}>🎉</span><p>{t("notes.pendingNone") || "No pending notes here — everything is approved."}</p></div>
+          ) : (
+            <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "var(--r-xl)", boxShadow: "var(--shadow-sm)", overflow: "hidden" }}>
+              <div style={{ padding: "16px 24px", borderBottom: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
+                <div style={{ fontSize: 13.5, color: "var(--text-muted)" }}>
+                  <strong style={{ color: "var(--text)" }}>{pendingNotes.length}</strong> {t("notes.pendingCount") || "notes awaiting approval"}
+                </div>
+                <button onClick={() => setApproveAllConfirm(true)} disabled={approvingAllPending} className="btn-primary" style={{ padding: "9px 18px" }}>
+                  {approvingAllPending
+                    ? <><span className="spinner" style={{ width: 13, height: 13 }} /> {t("notes.submitting")}</>
+                    : <>✅ {t("notes.approveAllPending", { n: pendingNotes.length }) || `Approve all (${pendingNotes.length})`}</>
+                  }
+                </button>
+              </div>
+              <div style={{ overflowX: "auto" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+                  <thead>
+                    <tr style={{ background: "var(--surface)" }}>
+                      {[t("notes.tableHeaders.student") || "Student", t("notes.fields.regNumber"), t("notes.subject"), t("notes.class"), t("notes.trimestre"), t("notes.type"), t("notes.grade"), ""].map((h, i) => (
+                        <th key={i} style={{ padding: "10px 14px", textAlign: i === 0 ? "left" : "center", fontSize: 10.5, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".07em", color: "var(--text-faint)", borderBottom: "1px solid var(--border)", whiteSpace: "nowrap" }}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {pendingNotes.map((n, i) => (
+                      <tr key={n.id ?? i} style={{ borderBottom: "1px solid var(--border)", background: i % 2 === 0 ? "transparent" : "var(--surface)" }}>
+                        <td style={{ padding: "11px 14px", fontWeight: 600, color: "var(--text)" }}>{n.studentName ?? "—"}</td>
+                        <td style={{ padding: "11px 14px", textAlign: "center", color: "var(--text-muted)", fontFamily: "'JetBrains Mono', monospace", fontSize: 12 }}>{n.registrationNumber ?? "—"}</td>
+                        <td style={{ padding: "11px 14px", textAlign: "center" }}>{n.matiereName ?? "—"}</td>
+                        <td style={{ padding: "11px 14px", textAlign: "center" }}>{n.className ?? "—"}</td>
+                        <td style={{ padding: "11px 14px", textAlign: "center" }}>{n.trimestreNom ?? "—"}</td>
+                        <td style={{ padding: "11px 14px", textAlign: "center" }}>{t(`notes.types.${n.typeDevoir}`) ?? n.typeDevoir}</td>
+                        <td style={{ padding: "11px 14px", textAlign: "center" }}><GradeBadge value={n.valeur} /></td>
+                        <td style={{ padding: "8px 14px", textAlign: "center" }}>
+                          <button
+                            onClick={() => approvePendingNote(n)}
+                            disabled={pendingApprovingIds.has(n.id) || approvingAllPending}
+                            className="btn-primary"
+                            style={{ padding: "6px 14px", fontSize: 12 }}
+                          >
+                            {pendingApprovingIds.has(n.id) ? "…" : `✅ ${t("notes.approve") || "Approve"}`}
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {approveAllConfirm && (
+            <ConfirmDialog
+              variant="primary"
+              title={t("notes.approveAllPendingTitle") || "Approve all pending notes?"}
+              message={t("notes.approveAllPendingMsg", { n: pendingNotes?.length ?? 0 }) || `This will approve all ${pendingNotes?.length ?? 0} notes currently shown.`}
+              confirmLabel={t("notes.approveAll") || "Approve all"}
+              loadingLabel={t("notes.submitting")}
+              cancelLabel={t("common.cancel")}
+              onConfirm={approveAllPending}
+              onCancel={() => setApproveAllConfirm(false)}
+              loading={approvingAllPending}
+            />
           )}
         </>
       )}
@@ -883,7 +1180,26 @@ export default function NotesPage() {
               setRows={setBulkRows}
               onSubmit={() => setBulkConfirm(true)}
               submitting={bulkSubmitting}
+              bulkApproving={bulkApproving}
+              onApproveAll={() => setBulkApproveConfirm("approve")}
+              onUnapproveAll={() => setBulkApproveConfirm("unapprove")}
               t={t}
+            />
+          )}
+
+          {bulkApproveConfirm && (
+            <ConfirmDialog
+              variant="primary"
+              title={bulkApproveConfirm === "approve" ? (t("notes.bulkApproveTitle") || "Approve all notes?") : (t("notes.bulkUnapproveTitle") || "Unapprove all notes?")}
+              message={bulkApproveConfirm === "approve"
+                ? (t("notes.bulkApproveMsg") || `This will approve every note for ${bulkSheet?.matiereName ?? ""} · ${bulkSheet?.className ?? ""} in this trimestre and type.`)
+                : (t("notes.bulkUnapproveMsg") || `This will unapprove every note for ${bulkSheet?.matiereName ?? ""} · ${bulkSheet?.className ?? ""} in this trimestre and type.`)}
+              confirmLabel={bulkApproveConfirm === "approve" ? (t("notes.approveAll") || "Approve all") : (t("notes.unapproveAll") || "Unapprove all")}
+              loadingLabel={t("notes.submitting")}
+              cancelLabel={t("common.cancel")}
+              onConfirm={() => runBulkApprove(bulkApproveConfirm === "approve")}
+              onCancel={() => setBulkApproveConfirm(null)}
+              loading={bulkApproving}
             />
           )}
 

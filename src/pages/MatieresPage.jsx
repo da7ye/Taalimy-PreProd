@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from "react";
-import { getMatieres, createMatiere, updateMatiere } from "../api";
+import { getMatieres, createMatiere, updateMatiere, deleteMatiere } from "../api";
 import { Field, Input, SubmitBtn } from "../components/FormComponents";
 import { useToast } from "../components/Toast";
 import ConfirmDialog from "../components/ConfirmDialog";
@@ -107,6 +107,7 @@ export default function MatieresPage() {
   const [selected, setSelected] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [saving, setSaving]     = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [q, setQ]               = useState("");
   const [form, setForm]         = useState({ name: "", description: "", coefficient: "" });
   const [editForm, setEditForm] = useState({});
@@ -124,6 +125,18 @@ export default function MatieresPage() {
   }, [data, q]);
 
   const goList = () => { setView("list"); setSelected(null); };
+
+  const handleDelete = async () => {
+    setDeleting(true);
+    try {
+      await deleteMatiere(deleteTarget.id);
+      toast(t("matieres.deleted"));
+      setDeleteTarget(null);
+      load();
+      if (view !== "list") goList();
+    } catch (err) { toast(err.message, "error"); }
+    finally { setDeleting(false); }
+  };
 
   const handleCreate = async e => {
     e.preventDefault(); setSaving(true);
@@ -155,7 +168,7 @@ export default function MatieresPage() {
       : <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: 16 }}>
           {filtered.map((r, i) => <SubjectCard key={r.id ?? i} r={r} t={t} onClick={r => { setSelected(r); setView("detail"); }} onEdit={openEdit} onDelete={target => setDeleteTarget(target)} />)}
         </div>}
-      {deleteTarget && <ConfirmDialog title={t("matieres.deleteTitle", { name: deleteTarget.name })} message={t("matieres.deleteMsg")} onConfirm={() => { toast(t("matieres.deleteNotAvailable"), "error"); setDeleteTarget(null); }} onCancel={() => setDeleteTarget(null)} />}
+      {deleteTarget && <ConfirmDialog title={t("matieres.deleteTitle", { name: deleteTarget.name })} message={t("matieres.deleteMsg")} onConfirm={handleDelete} onCancel={() => setDeleteTarget(null)} loading={deleting} />}
     </div>
   );
 
@@ -243,7 +256,7 @@ export default function MatieresPage() {
           <StatBox icon="🆔" label={t("matieres.fields.id")}          value={v.id} />
           {v.description && <StatBox icon="📝" label={t("matieres.fields.description")} value={v.description} wide />}
         </div>
-        {deleteTarget && <ConfirmDialog title={t("matieres.deleteTitle", { name: deleteTarget.name })} message={t("matieres.deleteMsg")} onConfirm={() => { toast(t("matieres.deleteNotAvailable"), "error"); setDeleteTarget(null); }} onCancel={() => setDeleteTarget(null)} />}
+        {deleteTarget && <ConfirmDialog title={t("matieres.deleteTitle", { name: deleteTarget.name })} message={t("matieres.deleteMsg")} onConfirm={handleDelete} onCancel={() => setDeleteTarget(null)} loading={deleting} />}
       </div>
     );
   }

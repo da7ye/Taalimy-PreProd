@@ -263,11 +263,6 @@ function StudentRow({ r, index, onClick, onEdit, onDelete, t }) {
         }
       </td>
 
-      {/* Phone */}
-      <td style={{ padding: "12px 16px", fontSize: 13, color: "var(--text-muted)", whiteSpace: "nowrap" }}>
-        {r.phone ?? <span style={{ color: "var(--text-faint)" }}>—</span>}
-      </td>
-
       {/* Status */}
       <td style={{ padding: "12px 16px" }}>
         <span style={{
@@ -546,8 +541,7 @@ export default function StudentsPage() {
       arr = arr.filter(r =>
         `${r.firstname} ${r.lastname}`.toLowerCase().includes(lq) ||
         r.email?.toLowerCase().includes(lq) ||
-        r.registrationNumber?.toLowerCase().includes(lq) ||
-        r.phone?.toLowerCase().includes(lq)
+        r.registrationNumber?.toLowerCase().includes(lq)
       );
     }
     if (filterClass) {
@@ -612,7 +606,14 @@ export default function StudentsPage() {
 
   // ── Edit ───────────────────────────────────────────────────────────────────
   const openEdit = r => {
-    setEditForm({ id: r.id, firstname: r.firstname ?? "", lastname: r.lastname ?? "", email: r.email ?? "", phone: r.phone ?? "", nni: r.nni ?? "", registrationNumber: r.registrationNumber ?? "", classeId: r.classeId ?? r.classe?.id ?? "" });
+    // The API doesn't always return classeId directly on the student — fall back to
+    // resolving it from classeName against the loaded classes list so the dropdown
+    // preselects the student's current class instead of showing the placeholder.
+    const currentClasseId =
+      r.classeId ?? r.classe?.id ??
+      classes.find(c => c.name === (r.classeName ?? r.classe?.name))?.id ??
+      "";
+    setEditForm({ id: r.id, firstname: r.firstname ?? "", lastname: r.lastname ?? "", email: r.email ?? "", nni: r.nni ?? "", registrationNumber: r.registrationNumber ?? "", classeId: currentClasseId });
     setPendingPhoto(null); setDeletePhoto(false);
     setSelected(r); setView("edit");
   };
@@ -679,7 +680,6 @@ export default function StudentsPage() {
                   <ThCell label="Student"             sortKey="firstname"            sortBy={sortBy} sortDir={sortDir} onSort={handleSort} />
                   <ThCell label="Reg. Number"         sortKey="registrationNumber"   sortBy={sortBy} sortDir={sortDir} onSort={handleSort} />
                   <ThCell label={t("students.class")} sortKey="classeName"           sortBy={sortBy} sortDir={sortDir} onSort={handleSort} />
-                  <ThCell label={t("fields.phone")}   sortKey="phone"                sortBy={sortBy} sortDir={sortDir} onSort={handleSort} />
                   <ThCell label="Status"              sortKey="isApprove"            sortBy={sortBy} sortDir={sortDir} onSort={handleSort} />
                   <ThCell label=""                    sortKey={null}                 sortBy={sortBy} sortDir={sortDir} onSort={handleSort} style={{ width: 140, textAlign: "right" }} />
                 </tr>
@@ -740,10 +740,7 @@ export default function StudentsPage() {
             <Field label={t("fields.lastName")}><Input placeholder={t("fields.lastNamePlaceholder")} value={form.lastname} onChange={set("lastname")} required /></Field>
           </div>
           <Field label={t("fields.email")}><Input type="email" placeholder={t("fields.emailPlaceholder")} value={form.email} onChange={set("email")} required /></Field>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-            <Field label={t("fields.phone")}><Input placeholder={t("fields.phonePlaceholder")} value={form.phone} onChange={set("phone")} required minLength={8} /></Field>
-            <Field label={t("fields.nni")}><Input placeholder={t("fields.nniPlaceholder")} value={form.nni} onChange={set("nni")} required minLength={8} /></Field>
-          </div>
+          <Field label={t("fields.nni")}><Input placeholder={t("fields.nniPlaceholder")} value={form.nni} onChange={set("nni")} required minLength={8} /></Field>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
             <Field label={t("students.regNumber")}><Input placeholder={t("students.regPlaceholder")} value={regNum} onChange={e => setRegNum(e.target.value)} /></Field>
             <Field label={t("students.class")}>
@@ -794,12 +791,11 @@ export default function StudentsPage() {
             <Field label={t("fields.lastName")}><Input value={editForm.lastname} onChange={setEdit("lastname")} required /></Field>
           </div>
           <Field label={t("fields.email")}><Input type="email" value={editForm.email} onChange={setEdit("email")} required /></Field>
+          <Field label={t("fields.nni")}><Input value={editForm.nni} onChange={setEdit("nni")} /></Field>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-            <Field label={t("fields.phone")}><Input value={editForm.phone} onChange={setEdit("phone")} /></Field>
-            <Field label={t("fields.nni")}><Input value={editForm.nni} onChange={setEdit("nni")} /></Field>
-          </div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-            <Field label={t("students.fields.regNumber")}><Input value={editForm.registrationNumber} onChange={setEdit("registrationNumber")} /></Field>
+            <Field label={t("students.fields.regNumber")} hint="Registration number cannot be changed">
+              <Input value={editForm.registrationNumber} disabled readOnly style={{ opacity: 0.6, cursor: "not-allowed" }} />
+            </Field>
             <Field label={t("students.class")}>
               <Select value={editForm.classeId} onChange={setEdit("classeId")}>
                 <option value="">— {t("students.class")} —</option>
@@ -866,7 +862,6 @@ export default function StudentsPage() {
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 14 }}>
           <StatBox icon="✉️" label={t("students.fields.email")}     value={v.email} />
-          <StatBox icon="📞" label={t("students.fields.phone")}     value={v.phone} />
           <StatBox icon="🪪" label={t("students.fields.nni")}       value={v.nni} />
           <StatBox icon="🔢" label={t("students.fields.regNumber")} value={v.registrationNumber} />
           <StatBox icon="🏫" label={t("students.fields.class")}     value={cn} />

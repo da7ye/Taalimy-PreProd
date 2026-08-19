@@ -1,7 +1,7 @@
 // export const BASE_URL = "http://144.91.85.23:8085/api/v1";
 export const BASE_URL = "/api/v1";
 
-const MINIO_ORIGIN = "http://144.91.85.23:8085";
+const MINIO_ORIGIN = "http://144.91.85.23:9000";
 const IS_PROD = window.location.hostname !== "localhost";
 
 function fixPhotos(data) {
@@ -68,6 +68,7 @@ export const updateLevel      = (id, d)  => request(`/levels/${id}`,            
 export const deleteClasse     = (id)     => request(`/classes/${id}`,             { method: "DELETE" });
 export const updateClasse     = (id, d)  => request(`/classes/${id}`,             { method: "PUT",    body: JSON.stringify(d) });
 export const updateMatiere    = (id, d)  => request(`/matieres/${id}`,            { method: "PUT",    body: JSON.stringify(d) });
+export const deleteMatiere    = (id)     => request(`/matieres/${id}`,            { method: "DELETE" });
 
 // Names — flat {id, name} arrays for dropdowns
 export const getCampusNames  = () => request("/campuses/names");

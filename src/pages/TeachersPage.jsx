@@ -2,7 +2,7 @@ import { useEffect, useState, useMemo, useRef } from "react";
 import { getTeachers, createTeacher, updateTeacher, deleteTeacher } from "../api";
 import { uploadUserPhoto, updateUserPhoto, deleteUserPhoto } from "../api";
 import { getClassesByTeacher, getMatieresByTeacherAndClasse } from "../api";
-import { Field, Input, SubmitBtn } from "../components/FormComponents";
+import { Field, Input, Select, SubmitBtn } from "../components/FormComponents";
 import { usePersonForm } from "../hooks/usePersonForm";
 import { useToast } from "../components/Toast";
 import ConfirmDialog from "../components/ConfirmDialog";
@@ -315,6 +315,14 @@ function TeacherRow({ r, index, onClick, onEdit, onDelete, t }) {
         {r.phone ?? <span style={{ color:"var(--text-faint)" }}>—</span>}
       </td>
       <td style={{ padding:"12px 16px" }}>
+        {r.nni
+          ? <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 12, padding: "3px 9px", borderRadius: 6, background: "var(--surface)", border: "1px solid var(--border-md)", color: "var(--text-dim)", whiteSpace: "nowrap" }}>
+              {r.nni}
+            </span>
+          : <span style={{ color: "var(--text-faint)", fontSize: 12 }}>—</span>
+        }
+      </td>
+      <td style={{ padding:"12px 16px" }}>
         <span style={{
           display:"inline-flex", alignItems:"center", gap:5,
           padding:"3px 10px", borderRadius:999, fontSize:11.5, fontWeight:600,
@@ -507,7 +515,8 @@ export default function TeachersPage() {
         `${r.firstname} ${r.lastname}`.toLowerCase().includes(lq) ||
         r.email?.toLowerCase().includes(lq) ||
         r.speciality?.toLowerCase().includes(lq) ||
-        r.phone?.toLowerCase().includes(lq)
+        r.phone?.toLowerCase().includes(lq) ||
+        r.nni?.toLowerCase().includes(lq)
       );
     }
     if (filterSpeciality) arr = arr.filter(r=>r.speciality===filterSpeciality);
@@ -553,14 +562,14 @@ export default function TeachersPage() {
       const created = await createTeacher({ registrationRequest:form, speciality });
       const uid = created?.userId ?? created?.id;
       if (uid) await handlePhotoForUser(uid, true);
-      setForm({ firstname:"", lastname:"", email:"", phone:"", nni:"" });
+      setForm({ firstname:"", lastname:"", email:"", phone:"", nni:"", sex:"", dateOfBirth:"", placeOfBirth:"" });
       setSpeciality(""); setPendingPhoto(null);
       toast(t("teachers.registered")); load(); goList();
     } catch(err) { toast(err.message,"error"); } finally { setSaving(false); }
   };
 
   const openEdit = r => {
-    setEditForm({ id:r.id, firstname:r.firstname??"", lastname:r.lastname??"", email:r.email??"", phone:r.phone??"", nni:r.nni??"", speciality:r.speciality??"" });
+    setEditForm({ id:r.id, firstname:r.firstname??"", lastname:r.lastname??"", email:r.email??"", phone:r.phone??"", nni:r.nni??"", sex:r.sex??"", dateOfBrith:r.dateOfBrith??"", placeOfBirth:r.placeOfBirth??"", speciality:r.speciality??"" });
     setPendingPhoto(null); setDeletePhoto(false);
     setSelected(r); setView("edit");
   };
@@ -610,6 +619,7 @@ export default function TeachersPage() {
                   <ThCell label="Teacher"                   sortKey="lastname"      sortBy={sortBy} sortDir={sortDir} onSort={handleSort} />
                   <ThCell label={t("teachers.speciality")}  sortKey="speciality"    sortBy={sortBy} sortDir={sortDir} onSort={handleSort} />
                   <ThCell label={t("fields.phone")}         sortKey="phone"         sortBy={sortBy} sortDir={sortDir} onSort={handleSort} />
+                  <ThCell label="NNI"                       sortKey="nni"           sortBy={sortBy} sortDir={sortDir} onSort={handleSort} />
                   <ThCell label="Status"                    sortKey="isApprove"     sortBy={sortBy} sortDir={sortDir} onSort={handleSort} />
                   <ThCell label=""                          sortKey={null}          sortBy={sortBy} sortDir={sortDir} onSort={handleSort} style={{ width:140, textAlign:"right" }} />
                 </tr>
@@ -662,11 +672,22 @@ export default function TeachersPage() {
             <Field label={t("fields.firstName")}><Input placeholder={t("fields.firstNamePlaceholder")} value={form.firstname} onChange={set("firstname")} required /></Field>
             <Field label={t("fields.lastName")}><Input placeholder={t("fields.lastNamePlaceholder")} value={form.lastname} onChange={set("lastname")} required /></Field>
           </div>
-          <Field label={t("fields.email")}><Input type="email" placeholder={t("fields.emailPlaceholder")} value={form.email} onChange={set("email")} required /></Field>
+          <Field label={t("fields.email")}><Input type="email" placeholder={t("fields.emailPlaceholder")} value={form.email} onChange={set("email")} /></Field>
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:16 }}>
             <Field label={t("fields.phone")}><Input placeholder={t("fields.phonePlaceholder")} value={form.phone} onChange={set("phone")} required minLength={8} /></Field>
             <Field label={t("fields.nni")}><Input placeholder={t("fields.nniPlaceholder")} value={form.nni} onChange={set("nni")} required minLength={8} /></Field>
           </div>
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:16 }}>
+            <Field label="Sex">
+              <Select value={form.sex ?? ""} onChange={set("sex")}>
+                <option value="">— Sex —</option>
+                <option value="MALE">Male</option>
+                <option value="FEMALE">Female</option>
+              </Select>
+            </Field>
+            <Field label="Date of Birth"><Input type="date" value={form.dateOfBirth ?? ""} onChange={set("dateOfBirth")} /></Field>
+          </div>
+          <Field label="Place of Birth"><Input placeholder="e.g. Nouakchott" value={form.placeOfBirth ?? ""} onChange={set("placeOfBirth")} /></Field>
           <Field label={t("teachers.speciality")}><Input placeholder={t("teachers.specialityPlaceholder")} value={speciality} onChange={e=>setSpeciality(e.target.value)} /></Field>
           <div style={{ display:"flex", gap:12, paddingTop:4 }}>
             <button type="button" onClick={goList} className="btn-ghost" style={{ flex:1, padding:"12px" }}>{t("common.cancel")}</button>
@@ -697,11 +718,22 @@ export default function TeachersPage() {
             <Field label={t("fields.firstName")}><Input value={editForm.firstname} onChange={setEdit("firstname")} required /></Field>
             <Field label={t("fields.lastName")}><Input value={editForm.lastname} onChange={setEdit("lastname")} required /></Field>
           </div>
-          <Field label={t("fields.email")}><Input type="email" value={editForm.email} onChange={setEdit("email")} required /></Field>
+          <Field label={t("fields.email")}><Input type="email" value={editForm.email} onChange={setEdit("email")} /></Field>
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:16 }}>
             <Field label={t("fields.phone")}><Input value={editForm.phone} onChange={setEdit("phone")} /></Field>
             <Field label={t("fields.nni")}><Input value={editForm.nni} onChange={setEdit("nni")} /></Field>
           </div>
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:16 }}>
+            <Field label="Sex">
+              <Select value={editForm.sex ?? ""} onChange={setEdit("sex")}>
+                <option value="">— Sex —</option>
+                <option value="MALE">Male</option>
+                <option value="FEMALE">Female</option>
+              </Select>
+            </Field>
+            <Field label="Date of Birth"><Input type="date" value={editForm.dateOfBrith ?? ""} onChange={setEdit("dateOfBrith")} /></Field>
+          </div>
+          <Field label="Place of Birth"><Input placeholder="e.g. Nouakchott" value={editForm.placeOfBirth ?? ""} onChange={setEdit("placeOfBirth")} /></Field>
           <Field label={t("teachers.speciality")}><Input value={editForm.speciality} onChange={setEdit("speciality")} /></Field>
           <div style={{ display:"flex", gap:12, paddingTop:4 }}>
             <button type="button" onClick={goList} className="btn-ghost" style={{ flex:1, padding:"12px" }}>{t("common.cancel")}</button>
@@ -757,6 +789,8 @@ export default function TeachersPage() {
           <StatBox icon="🎓" label={t("teachers.speciality")}    value={v.speciality}  color={C_COLOR} bg={C_BG} />
           <StatBox icon="🆔" label={t("teachers.fields.userId")} value={v.userId}      color={C_COLOR} bg={C_BG} />
           <StatBox icon="🎂" label={t("teachers.fields.dob")}    value={v.dateOfBrith} color={C_COLOR} bg={C_BG} />
+          <StatBox icon="⚧️" label="Sex"                         value={v.sex}         color={C_COLOR} bg={C_BG} />
+          <StatBox icon="📍" label="Place of Birth"              value={v.placeOfBirth} color={C_COLOR} bg={C_BG} />
         </div>
 
         <TeachingSchedule teacherId={v.id} t={t} />

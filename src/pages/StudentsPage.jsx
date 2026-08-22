@@ -255,6 +255,16 @@ function StudentRow({ r, index, onClick, onEdit, onDelete, t }) {
         }
       </td>
 
+      {/* NNI */}
+      <td style={{ padding: "12px 16px" }}>
+        {r.nni
+          ? <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 12, padding: "3px 9px", borderRadius: 6, background: "var(--surface)", border: "1px solid var(--border-md)", color: "var(--text-dim)", whiteSpace: "nowrap" }}>
+              {r.nni}
+            </span>
+          : <span style={{ color: "var(--text-faint)", fontSize: 12 }}>—</span>
+        }
+      </td>
+
       {/* Class */}
       <td style={{ padding: "12px 16px" }}>
         {cn
@@ -512,7 +522,6 @@ export default function StudentsPage() {
   const [pageSize, setPageSize] = useState(20);
 
   const { form, set, setForm }  = usePersonForm();
-  const [regNum, setRegNum]     = useState("");
   const [idClasse, setIdClasse] = useState("");
   const [editForm, setEditForm] = useState({});
   const setEdit = k => e => setEditForm(f => ({ ...f, [k]: e.target.value }));
@@ -541,7 +550,8 @@ export default function StudentsPage() {
       arr = arr.filter(r =>
         `${r.firstname} ${r.lastname}`.toLowerCase().includes(lq) ||
         r.email?.toLowerCase().includes(lq) ||
-        r.registrationNumber?.toLowerCase().includes(lq)
+        r.registrationNumber?.toLowerCase().includes(lq) ||
+        r.nni?.toLowerCase().includes(lq)
       );
     }
     if (filterClass) {
@@ -595,11 +605,11 @@ export default function StudentsPage() {
   const handleCreate = async e => {
     e.preventDefault(); setSaving(true);
     try {
-      const created = await createStudent({ registrationRequest: form, registrationNumber: regNum, idClasse: idClasse ? parseInt(idClasse) : undefined });
+      const created = await createStudent({ registrationRequest: form, idClasse: idClasse ? parseInt(idClasse) : undefined });
       const uid = created?.userId ?? created?.id;
       if (uid) await handlePhotoForUser(uid, true);
-      setForm({ firstname: "", lastname: "", email: "", phone: "", nni: "" });
-      setRegNum(""); setIdClasse(""); setPendingPhoto(null);
+      setForm({ firstname: "", lastname: "", email: "", phone: "", nni: "", sex: "", dateOfBirth: "", placeOfBirth: "" });
+      setIdClasse(""); setPendingPhoto(null);
       toast(t("students.enrolled")); load(); goList();
     } catch(err) { toast(err.message, "error"); } finally { setSaving(false); }
   };
@@ -613,7 +623,7 @@ export default function StudentsPage() {
       r.classeId ?? r.classe?.id ??
       classes.find(c => c.name === (r.classeName ?? r.classe?.name))?.id ??
       "";
-    setEditForm({ id: r.id, firstname: r.firstname ?? "", lastname: r.lastname ?? "", email: r.email ?? "", nni: r.nni ?? "", registrationNumber: r.registrationNumber ?? "", classeId: currentClasseId });
+    setEditForm({ id: r.id, firstname: r.firstname ?? "", lastname: r.lastname ?? "", email: r.email ?? "", nni: r.nni ?? "", sex: r.sex ?? "", dateOfBrith: r.dateOfBrith ?? "", placeOfBirth: r.placeOfBirth ?? "", registrationNumber: r.registrationNumber ?? "", classeId: currentClasseId });
     setPendingPhoto(null); setDeletePhoto(false);
     setSelected(r); setView("edit");
   };
@@ -679,6 +689,7 @@ export default function StudentsPage() {
                   <ThCell label="#"                   sortKey={null}                 sortBy={sortBy} sortDir={sortDir} onSort={handleSort} style={{ width: 44, textAlign: "center" }} />
                   <ThCell label="Student"             sortKey="firstname"            sortBy={sortBy} sortDir={sortDir} onSort={handleSort} />
                   <ThCell label="Reg. Number"         sortKey="registrationNumber"   sortBy={sortBy} sortDir={sortDir} onSort={handleSort} />
+                  <ThCell label="NNI"                 sortKey="nni"                  sortBy={sortBy} sortDir={sortDir} onSort={handleSort} />
                   <ThCell label={t("students.class")} sortKey="classeName"           sortBy={sortBy} sortDir={sortDir} onSort={handleSort} />
                   <ThCell label="Status"              sortKey="isApprove"            sortBy={sortBy} sortDir={sortDir} onSort={handleSort} />
                   <ThCell label=""                    sortKey={null}                 sortBy={sortBy} sortDir={sortDir} onSort={handleSort} style={{ width: 140, textAlign: "right" }} />
@@ -739,17 +750,25 @@ export default function StudentsPage() {
             <Field label={t("fields.firstName")}><Input placeholder={t("fields.firstNamePlaceholder")} value={form.firstname} onChange={set("firstname")} required /></Field>
             <Field label={t("fields.lastName")}><Input placeholder={t("fields.lastNamePlaceholder")} value={form.lastname} onChange={set("lastname")} required /></Field>
           </div>
-          <Field label={t("fields.email")}><Input type="email" placeholder={t("fields.emailPlaceholder")} value={form.email} onChange={set("email")} required /></Field>
+          <Field label={t("fields.email")}><Input type="email" placeholder={t("fields.emailPlaceholder")} value={form.email} onChange={set("email")} /></Field>
           <Field label={t("fields.nni")}><Input placeholder={t("fields.nniPlaceholder")} value={form.nni} onChange={set("nni")} required minLength={8} /></Field>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-            <Field label={t("students.regNumber")}><Input placeholder={t("students.regPlaceholder")} value={regNum} onChange={e => setRegNum(e.target.value)} /></Field>
-            <Field label={t("students.class")}>
-              <Select value={idClasse} onChange={e => setIdClasse(e.target.value)}>
-                <option value="">— {t("students.class")} —</option>
-                {classes.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+            <Field label="Sex">
+              <Select value={form.sex ?? ""} onChange={set("sex")}>
+                <option value="">— Sex —</option>
+                <option value="MALE">Male</option>
+                <option value="FEMALE">Female</option>
               </Select>
             </Field>
+            <Field label="Date of Birth"><Input type="date" value={form.dateOfBirth ?? ""} onChange={set("dateOfBirth")} /></Field>
           </div>
+          <Field label="Place of Birth"><Input placeholder="e.g. Nouakchott" value={form.placeOfBirth ?? ""} onChange={set("placeOfBirth")} /></Field>
+          <Field label={t("students.class")}>
+            <Select value={idClasse} onChange={e => setIdClasse(e.target.value)}>
+              <option value="">— {t("students.class")} —</option>
+              {classes.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+            </Select>
+          </Field>
           <div style={{ display: "flex", gap: 12, paddingTop: 4 }}>
             <button type="button" onClick={goList} className="btn-ghost" style={{ flex: 1, padding: "12px" }}>{t("common.cancel")}</button>
             <div style={{ flex: 2 }}><SubmitBtn loading={saving || photoLoading} label={t("students.enrollBtn")} /></div>
@@ -790,8 +809,19 @@ export default function StudentsPage() {
             <Field label={t("fields.firstName")}><Input value={editForm.firstname} onChange={setEdit("firstname")} required /></Field>
             <Field label={t("fields.lastName")}><Input value={editForm.lastname} onChange={setEdit("lastname")} required /></Field>
           </div>
-          <Field label={t("fields.email")}><Input type="email" value={editForm.email} onChange={setEdit("email")} required /></Field>
+          <Field label={t("fields.email")}><Input type="email" value={editForm.email} onChange={setEdit("email")} /></Field>
           <Field label={t("fields.nni")}><Input value={editForm.nni} onChange={setEdit("nni")} /></Field>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+            <Field label="Sex">
+              <Select value={editForm.sex ?? ""} onChange={setEdit("sex")}>
+                <option value="">— Sex —</option>
+                <option value="MALE">Male</option>
+                <option value="FEMALE">Female</option>
+              </Select>
+            </Field>
+            <Field label="Date of Birth"><Input type="date" value={editForm.dateOfBrith ?? ""} onChange={setEdit("dateOfBrith")} /></Field>
+          </div>
+          <Field label="Place of Birth"><Input placeholder="e.g. Nouakchott" value={editForm.placeOfBirth ?? ""} onChange={setEdit("placeOfBirth")} /></Field>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
             <Field label={t("students.fields.regNumber")} hint="Registration number cannot be changed">
               <Input value={editForm.registrationNumber} disabled readOnly style={{ opacity: 0.6, cursor: "not-allowed" }} />
@@ -866,6 +896,9 @@ export default function StudentsPage() {
           <StatBox icon="🔢" label={t("students.fields.regNumber")} value={v.registrationNumber} />
           <StatBox icon="🏫" label={t("students.fields.class")}     value={cn} />
           <StatBox icon="🎂" label={t("students.fields.dob")}       value={v.dateOfBrith} />
+          <StatBox icon="⚧️" label="Sex"                            value={v.sex} />
+          <StatBox icon="📍" label="Place of Birth"                 value={v.placeOfBirth} />
+          <StatBox icon="🏠" label="Address"                        value={v.address} />
         </div>
         {deleteTarget && (
           <ConfirmDialog

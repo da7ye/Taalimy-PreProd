@@ -2,11 +2,11 @@ import { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import {
   getParents, createParent, updateParent, deactivateParent,
   getStudents,
-  getChildren, addStudentToParent,
+  getChildren, addStudentToParent, unlinkStudentFromParent,
   getChildTimetable, getChildNotes, getChildBulletin,
 } from "../api";
 import { uploadUserPhoto, updateUserPhoto, deleteUserPhoto } from "../api";
-import { Field, Input, SubmitBtn } from "../components/FormComponents";
+import { Field, Input, Select, SubmitBtn } from "../components/FormComponents";
 import { usePersonForm } from "../hooks/usePersonForm";
 import { useToast } from "../components/Toast";
 import ConfirmDialog from "../components/ConfirmDialog";
@@ -212,6 +212,14 @@ function ParentRow({ r, index, onClick, onEdit, onDeactivate, t }) {
       <td style={{ padding:"12px 16px", fontSize:13, color:"var(--text-muted)", whiteSpace:"nowrap" }}>
         {r.phone ?? <span style={{ color:"var(--text-faint)" }}>—</span>}
       </td>
+      <td style={{ padding:"12px 16px" }}>
+        {r.nni
+          ? <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 12, padding: "3px 9px", borderRadius: 6, background: "var(--surface)", border: "1px solid var(--border-md)", color: "var(--text-dim)", whiteSpace: "nowrap" }}>
+              {r.nni}
+            </span>
+          : <span style={{ color: "var(--text-faint)", fontSize: 12 }}>—</span>
+        }
+      </td>
       <td style={{ padding:"12px 16px", fontSize:13, color:"var(--text-muted)", maxWidth:200, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
         {r.address ?? <span style={{ color:"var(--text-faint)" }}>—</span>}
       </td>
@@ -356,6 +364,8 @@ function ChildrenTab({ parent, toast }) {
   const [showDropdown, setShowDropdown]       = useState(false);
   const [expanded, setExpanded]               = useState(null);
   const [childData, setChildData]             = useState({});
+  const [unlinking, setUnlinking]             = useState(false);
+  const [unlinkTarget, setUnlinkTarget]       = useState(null);
 
   const loadChildren = useCallback(() => {
     setLoadingKids(true);
@@ -388,6 +398,19 @@ function ChildrenTab({ parent, toast }) {
       setSelectedStudent(""); setStudentSearch(""); loadChildren();
     } catch(err) { toast(err.message,"error"); }
     finally { setLinking(false); }
+  };
+
+  const handleUnlink = async () => {
+    if (!unlinkTarget) return;
+    setUnlinking(true);
+    try {
+      await unlinkStudentFromParent(parent.id, unlinkTarget.studentId);
+      toast("Student unlinked successfully!");
+      setUnlinkTarget(null);
+      if (expanded === unlinkTarget.studentId) setExpanded(null);
+      loadChildren();
+    } catch(err) { toast(err.message,"error"); }
+    finally { setUnlinking(false); }
   };
 
   const toggleExpand = (sid) => {
@@ -520,9 +543,18 @@ function ChildrenTab({ parent, toast }) {
                       </div>
                     </div>
                   </div>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-faint)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ transform:isExp?"rotate(180deg)":"rotate(0)", transition:"transform .2s", flexShrink:0 }}>
-                    <polyline points="6 9 12 15 18 9"/>
-                  </svg>
+                  <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+                    <button
+                      onClick={e => { e.stopPropagation(); setUnlinkTarget(child); }}
+                      className="btn-danger"
+                      style={{ padding:"5px 12px", fontSize:12 }}
+                    >
+                      Unlink
+                    </button>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-faint)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ transform:isExp?"rotate(180deg)":"rotate(0)", transition:"transform .2s", flexShrink:0 }}>
+                      <polyline points="6 9 12 15 18 9"/>
+                    </svg>
+                  </div>
                 </div>
                 {isExp && (
                   <div style={{ borderTop:"1px solid var(--border)", padding:"16px 18px" }}>
@@ -549,6 +581,14 @@ function ChildrenTab({ parent, toast }) {
             );
           })}
         </div>
+      )}
+
+      {unlinkTarget && (
+        <ConfirmDialog
+          title={`Unlink ${unlinkTarget.fullName}?`}
+          message="This will remove the link between this parent and student. This can be re-linked later."
+          onConfirm={handleUnlink} onCancel={() => setUnlinkTarget(null)} loading={unlinking}
+        />
       )}
     </div>
   );
@@ -778,7 +818,8 @@ export default function ParentsPage() {
         `${r.firstname} ${r.lastname}`.toLowerCase().includes(lq) ||
         r.email?.toLowerCase().includes(lq) ||
         r.phone?.toLowerCase().includes(lq) ||
-        r.address?.toLowerCase().includes(lq)
+        r.address?.toLowerCase().includes(lq) ||
+        r.nni?.toLowerCase().includes(lq)
       );
     }
     if (filterStatus === "approved") arr = arr.filter(r => r.isApprove);
@@ -824,14 +865,14 @@ export default function ParentsPage() {
       const created = await createParent({ registrationRequest:form, address });
       const uid = created?.userId ?? created?.id;
       if (uid) await handlePhotoForUser(uid, true);
-      setForm({ firstname:"", lastname:"", email:"", phone:"", nni:"" });
+      setForm({ firstname:"", lastname:"", email:"", phone:"", nni:"", sex:"", dateOfBirth:"", placeOfBirth:"" });
       setAddress(""); setPendingPhoto(null);
       toast(t("parents.registered")); load(); goList();
     } catch(err) { toast(err.message,"error"); } finally { setSaving(false); }
   };
 
   const openEdit = r => {
-    setEditForm({ id:r.id, firstname:r.firstname??"", lastname:r.lastname??"", email:r.email??"", phone:r.phone??"", nni:r.nni??"", address:r.address??"" });
+    setEditForm({ id:r.id, firstname:r.firstname??"", lastname:r.lastname??"", email:r.email??"", phone:r.phone??"", nni:r.nni??"", sex:r.sex??"", dateOfBrith:r.dateOfBrith??"", placeOfBirth:r.placeOfBirth??"", address:r.address??"" });
     setPendingPhoto(null); setDeletePhoto(false);
     setSelected(r); setView("edit");
   };
@@ -883,6 +924,7 @@ export default function ParentsPage() {
                   <ThCell label="#"                       sortKey={null}         sortBy={sortBy} sortDir={sortDir} onSort={handleSort} style={{ width:44, textAlign:"center" }} />
                   <ThCell label="Parent"                  sortKey="lastname"     sortBy={sortBy} sortDir={sortDir} onSort={handleSort} />
                   <ThCell label={t("fields.phone")}       sortKey="phone"        sortBy={sortBy} sortDir={sortDir} onSort={handleSort} />
+                  <ThCell label="NNI"                     sortKey="nni"          sortBy={sortBy} sortDir={sortDir} onSort={handleSort} />
                   <ThCell label={t("parents.address")}    sortKey="address"      sortBy={sortBy} sortDir={sortDir} onSort={handleSort} />
                   <ThCell label="Status"                  sortKey="isApprove"    sortBy={sortBy} sortDir={sortDir} onSort={handleSort} />
                   <ThCell label=""                        sortKey={null}         sortBy={sortBy} sortDir={sortDir} onSort={handleSort} style={{ width:160, textAlign:"right" }} />
@@ -937,11 +979,22 @@ export default function ParentsPage() {
               <Field label={t("fields.firstName")}><Input placeholder={t("fields.firstNamePlaceholder")} value={form.firstname} onChange={set("firstname")} required /></Field>
               <Field label={t("fields.lastName")}><Input placeholder={t("fields.lastNamePlaceholder")} value={form.lastname} onChange={set("lastname")} required /></Field>
             </div>
-            <Field label={t("fields.email")}><Input type="email" placeholder={t("fields.emailPlaceholder")} value={form.email} onChange={set("email")} required /></Field>
+            <Field label={t("fields.email")}><Input type="email" placeholder={t("fields.emailPlaceholder")} value={form.email} onChange={set("email")} /></Field>
             <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:16 }}>
               <Field label={t("fields.phone")}><Input placeholder={t("fields.phonePlaceholder")} value={form.phone} onChange={set("phone")} required minLength={8} /></Field>
               <Field label={t("fields.nni")}><Input placeholder={t("fields.nniPlaceholder")} value={form.nni} onChange={set("nni")} required minLength={8} /></Field>
             </div>
+            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:16 }}>
+              <Field label="Sex">
+                <Select value={form.sex ?? ""} onChange={set("sex")}>
+                  <option value="">— Sex —</option>
+                  <option value="MALE">Male</option>
+                  <option value="FEMALE">Female</option>
+                </Select>
+              </Field>
+              <Field label="Date of Birth"><Input type="date" value={form.dateOfBirth ?? ""} onChange={set("dateOfBirth")} /></Field>
+            </div>
+            <Field label="Place of Birth"><Input placeholder="e.g. Nouakchott" value={form.placeOfBirth ?? ""} onChange={set("placeOfBirth")} /></Field>
             <Field label={t("parents.address")}><Input placeholder={t("parents.addressPlaceholder")} value={address} onChange={e=>setAddress(e.target.value)} /></Field>
             <div style={{ display:"flex", gap:12, paddingTop:4 }}>
               <button type="button" onClick={goList} className="btn-ghost" style={{ flex:1, padding:"12px" }}>{t("common.cancel")}</button>
@@ -977,11 +1030,22 @@ export default function ParentsPage() {
               <Field label={t("fields.firstName")}><Input value={editForm.firstname} onChange={setEdit("firstname")} required /></Field>
               <Field label={t("fields.lastName")}><Input value={editForm.lastname} onChange={setEdit("lastname")} required /></Field>
             </div>
-            <Field label={t("fields.email")}><Input type="email" value={editForm.email} onChange={setEdit("email")} required /></Field>
+            <Field label={t("fields.email")}><Input type="email" value={editForm.email} onChange={setEdit("email")} /></Field>
             <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:16 }}>
               <Field label={t("fields.phone")}><Input value={editForm.phone} onChange={setEdit("phone")} /></Field>
               <Field label={t("fields.nni")}><Input value={editForm.nni} onChange={setEdit("nni")} /></Field>
             </div>
+            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:16 }}>
+              <Field label="Sex">
+                <Select value={editForm.sex ?? ""} onChange={setEdit("sex")}>
+                  <option value="">— Sex —</option>
+                  <option value="MALE">Male</option>
+                  <option value="FEMALE">Female</option>
+                </Select>
+              </Field>
+              <Field label="Date of Birth"><Input type="date" value={editForm.dateOfBrith ?? ""} onChange={setEdit("dateOfBrith")} /></Field>
+            </div>
+            <Field label="Place of Birth"><Input placeholder="e.g. Nouakchott" value={editForm.placeOfBirth ?? ""} onChange={setEdit("placeOfBirth")} /></Field>
             <Field label={t("parents.address")}><Input value={editForm.address} onChange={setEdit("address")} /></Field>
             <div style={{ display:"flex", gap:12, paddingTop:4 }}>
               <button type="button" onClick={goList} className="btn-ghost" style={{ flex:1, padding:"12px" }}>{t("common.cancel")}</button>
@@ -1042,6 +1106,8 @@ export default function ParentsPage() {
             <StatBox icon="🪪" label={t("parents.fields.nni")}     value={v.nni} />
             <StatBox icon="🏠" label={t("parents.fields.address")} value={v.address} />
             <StatBox icon="🎂" label={t("parents.fields.dob")}     value={v.dateOfBrith} />
+            <StatBox icon="⚧️" label="Sex"                         value={v.sex} />
+            <StatBox icon="📍" label="Place of Birth"              value={v.placeOfBirth} />
             <StatBox icon="🆔" label={t("parents.fields.userId")}  value={v.userId} />
           </div>
         )}

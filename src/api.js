@@ -148,6 +148,7 @@ export const submitNoteSheet = (teacherId, data) =>
 // Parent → Children
 export const getChildren        = (pid)            => request(`/parents/${pid}/children`);
 export const addStudentToParent = (pid, sid)       => request(`/parents/${pid}/add-student/${sid}`, { method: "POST" });
+export const unlinkStudentFromParent = (pid, sid)  => request(`/parents/${pid}/students/${sid}`, { method: "DELETE" });
 export const getChildTimetable  = (pid, sid)       => request(`/parents/${pid}/children/${sid}/timetable`);
 export const getChildNotes      = (pid, sid, trId) => request(`/parents/${pid}/children/${sid}/notes?trimestreId=${trId}`);
 export const getChildBulletin   = (pid, sid, trId) => request(`/parents/${pid}/children/${sid}/bulletin?trimestreId=${trId}`);

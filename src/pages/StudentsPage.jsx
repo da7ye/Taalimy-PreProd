@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo, useRef } from "react";
-import { getStudents, createStudent, updateStudent, deleteStudent, getClasseNames } from "../api";
+import { getStudents, createStudent, updateStudent, deleteStudent, getClasseNames, getStudentReceipt } from "../api";
 import { uploadUserPhoto, updateUserPhoto, deleteUserPhoto } from "../api";
 import { Field, Input, Select, SubmitBtn } from "../components/FormComponents";
 import { usePersonForm } from "../hooks/usePersonForm";
@@ -206,7 +206,7 @@ function SortIcon({ dir }) {
 
 // ─── Table Row ────────────────────────────────────────────────────────────────
 
-function StudentRow({ r, index, onClick, onEdit, onDelete, t }) {
+function StudentRow({ r, index, onClick, onEdit, onDelete, onReceipt, loadingReceipt, t }) {
   const cn = r.classeName ?? r.classe?.name;
   const initial = r.firstname?.[0] ?? "?";
   const [hovered, setHovered] = useState(false);
@@ -291,6 +291,15 @@ function StudentRow({ r, index, onClick, onEdit, onDelete, t }) {
       {/* Actions */}
       <td style={{ padding: "10px 16px", textAlign: "right" }} onClick={e => e.stopPropagation()}>
         <div style={{ display: "flex", gap: 6, justifyContent: "flex-end" }}>
+          <button
+            onClick={() => onReceipt(r.id)}
+            disabled={loadingReceipt === r.id}
+            className="btn-ghost"
+            title="Download inscription receipt"
+            style={{ padding: "5px 10px", fontSize: 12, display: "flex", alignItems: "center", justifyContent: "center" }}
+          >
+            {loadingReceipt === r.id ? <span className="spinner" style={{ width: 11, height: 11 }} /> : "🧾"}
+          </button>
           <button onClick={() => onEdit(r)} className="btn-ghost" style={{ padding: "5px 12px", fontSize: 12 }}>{t("common.edit")}</button>
           <button onClick={() => onDelete(r)} className="btn-danger" style={{ padding: "5px 12px", fontSize: 12 }}>{t("common.delete")}</button>
         </div>
@@ -504,6 +513,7 @@ export default function StudentsPage() {
   const [saving, setSaving]     = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [photoLoading, setPhotoLoading] = useState(false);
+  const [loadingReceipt, setLoadingReceipt] = useState(null);
 
   const [pendingPhoto, setPendingPhoto] = useState(null);
   const [deletePhoto, setDeletePhoto]   = useState(false);
@@ -584,6 +594,26 @@ export default function StudentsPage() {
 
   const resetFilters = () => { setQ(""); setFilterClass(""); setFilterStatus(""); setPage(0); };
   const goList = () => { setView("list"); setSelected(null); setPendingPhoto(null); setDeletePhoto(false); };
+
+  // ── Receipt download ───────────────────────────────────────────────────────
+  const handleReceipt = async (studentId) => {
+    setLoadingReceipt(studentId);
+    try {
+      const blob = await getStudentReceipt(studentId);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `receipt-${studentId}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    } catch (e) {
+      toast(e.message, "error");
+    } finally {
+      setLoadingReceipt(null);
+    }
+  };
 
   // ── Photo helpers ──────────────────────────────────────────────────────────
   const handlePhotoForUser = async (userId, isNew) => {
@@ -705,6 +735,8 @@ export default function StudentsPage() {
                     onClick={r => { setSelected(r); setView("detail"); }}
                     onEdit={openEdit}
                     onDelete={target => setDeleteTarget(target)}
+                    onReceipt={handleReceipt}
+                    loadingReceipt={loadingReceipt}
                   />
                 ))}
               </tbody>
@@ -884,6 +916,9 @@ export default function StudentsPage() {
                 </div>
               </div>
               <div style={{ display: "flex", gap: 10 }}>
+                <button onClick={() => handleReceipt(v.id)} disabled={loadingReceipt === v.id} className="btn-ghost" style={{ padding: "10px 20px" }}>
+                  {loadingReceipt === v.id ? <><span className="spinner" style={{ width: 13, height: 13 }} /> {t("common.loading")}</> : "🧾 Receipt"}
+                </button>
                 <button onClick={() => openEdit(v)} className="btn-ghost" style={{ padding: "10px 20px" }}>✏️ {t("common.edit")}</button>
                 <button onClick={() => setDeleteTarget(v)} className="btn-danger" style={{ padding: "10px 20px" }}>🗑 {t("common.delete")}</button>
               </div>

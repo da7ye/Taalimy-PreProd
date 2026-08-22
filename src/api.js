@@ -70,6 +70,16 @@ export const updateClasse     = (id, d)  => request(`/classes/${id}`,           
 export const updateMatiere    = (id, d)  => request(`/matieres/${id}`,            { method: "PUT",    body: JSON.stringify(d) });
 export const deleteMatiere    = (id)     => request(`/matieres/${id}`,            { method: "DELETE" });
 
+export const getStudentReceipt = async (studentId) => {
+  const res = await fetch(`${BASE_URL}/students/${studentId}/receipt`);
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(err || `HTTP ${res.status}`);
+  }
+  const buffer = await res.arrayBuffer();
+  return new Blob([buffer], { type: "application/pdf" });
+};
+
 // Names — flat {id, name} arrays for dropdowns
 export const getCampusNames  = () => request("/campuses/names");
 export const getLevelNames   = () => request("/levels/names");

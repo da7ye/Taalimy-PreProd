@@ -54,7 +54,7 @@ function StatusBadge({ status, t }) {
   );
 }
 
-function MonthCalendar({ payments, t }) {
+function MonthCalendar({ payments, onReceipt, loadingReceipt, t }) {
   const payMap = useMemo(() => {
     const m = {};
     (payments || []).forEach(p => { m[p.month] = p; });
@@ -83,7 +83,19 @@ function MonthCalendar({ payments, t }) {
                 <div style={{ fontSize: 14, fontWeight: 600, color: paid ? C_COLOR : "var(--rose)", fontFamily: "'Instrument Serif', serif" }}>
                   {p.amount?.toLocaleString()} <span style={{ fontSize: 11, fontWeight: 400 }}>MRU</span>
                 </div>
-                <StatusBadge status={p.statut} t={t} />
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 6, marginTop: 4 }}>
+                  <StatusBadge status={p.statut} t={t} />
+                  {paid && (
+                    <button
+                      onClick={() => onReceipt(p.id)}
+                      disabled={loadingReceipt === p.id}
+                      title={t("payments.receipt")}
+                      style={{ border: "none", background: "transparent", cursor: "pointer", color: C_COLOR, fontSize: 13, padding: 2, display: "flex", alignItems: "center" }}
+                    >
+                      {loadingReceipt === p.id ? <span className="spinner" style={{ width: 10, height: 10 }} /> : "⬇️"}
+                    </button>
+                  )}
+                </div>
               </>
             ) : (
               <div style={{ fontSize: 12, color: "var(--text-faint)" }}>{t("payments.noRecord")}</div>
@@ -162,8 +174,17 @@ export default function PaymentsPage() {
 
   const handleReceipt = async paymentId => {
     setLoadingReceipt(paymentId);
-    try { const blob = await getPaymentReceipt(paymentId); const url = URL.createObjectURL(blob); window.open(url, "_blank"); setTimeout(() => URL.revokeObjectURL(url), 60_000); }
-    catch (e) { toast(e.message, "error"); } finally { setLoadingReceipt(null); }
+    try {
+      const blob = await getPaymentReceipt(paymentId);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `receipt-${paymentId}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    } catch (e) { toast(e.message, "error"); } finally { setLoadingReceipt(null); }
   };
 
   const filteredPayments = useMemo(() => {
@@ -320,7 +341,7 @@ export default function PaymentsPage() {
                   </div>
 
                   {viewMode === "calendar" ? (
-                    <MonthCalendar payments={payments} t={t} />
+                    <MonthCalendar payments={payments} onReceipt={handleReceipt} loadingReceipt={loadingReceipt} t={t} />
                   ) : (
                     <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                       {filteredPayments.length === 0 ? (

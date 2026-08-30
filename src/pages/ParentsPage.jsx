@@ -3,7 +3,7 @@ import {
   getParents, createParent, updateParent, deactivateParent,
   getStudents,
   getChildren, addStudentToParent, unlinkStudentFromParent,
-  getChildTimetable, getChildNotes, getChildBulletin,
+  getChildTimetable, getChildNotes, getChildBulletin, getChildAbsences,
 } from "../api";
 import { uploadUserPhoto, updateUserPhoto, deleteUserPhoto } from "../api";
 import { Field, Input, Select, SubmitBtn } from "../components/FormComponents";
@@ -15,7 +15,7 @@ import { useLanguage } from "../LanguageContext";
 // ── Constants ─────────────────────────────────────────────────────────────────
 const C_COLOR        = "var(--amber)";
 const C_BG           = "var(--amber-dim)";
-const PAGE_SIZE_OPTIONS = [25, 50, 100];
+const PAGE_SIZE_OPTIONS = [10, 50, 100];
 
 // ── Photo helpers ─────────────────────────────────────────────────────────────
 
@@ -436,6 +436,7 @@ function ChildrenTab({ parent, toast }) {
     if (tab==="timetable") getOrLoad(sid,"timetable",()=>getChildTimetable(parent.id,sid));
     if (tab==="notes")     getOrLoad(sid,`notes_${trimestre}`,()=>getChildNotes(parent.id,sid,trimestre));
     if (tab==="bulletin")  getOrLoad(sid,`bulletin_${trimestre}`,()=>getChildBulletin(parent.id,sid,trimestre));
+    if (tab==="absences")  getOrLoad(sid,"absences",()=>getChildAbsences(parent.id,sid));
   };
 
   const fetchWithTrimestre = (sid, tab, trimestre) => {
@@ -562,6 +563,7 @@ function ChildrenTab({ parent, toast }) {
                       {tabBtn(sid,"timetable","🗓 Timetable",curTab)}
                       {tabBtn(sid,"notes","📝 Notes",curTab)}
                       {tabBtn(sid,"bulletin","📊 Bulletin",curTab)}
+                      {tabBtn(sid,"absences","🚫 Absences",curTab)}
                       {(curTab==="notes"||curTab==="bulletin") && (
                         <div style={{ display:"flex", alignItems:"center", gap:6, marginLeft:"auto" }}>
                           <label style={{ fontSize:11.5, color:"var(--text-faint)", fontWeight:600 }}>Trimestre</label>
@@ -575,6 +577,7 @@ function ChildrenTab({ parent, toast }) {
                     {curTab==="timetable" && <TimetableTabContent cd={cd} sid={sid} onLoad={()=>getOrLoad(sid,"timetable",()=>getChildTimetable(parent.id,sid))} />}
                     {curTab==="notes"     && <NotesTabContent cd={cd} trimestre={trimestre} />}
                     {curTab==="bulletin"  && <BulletinTabContent cd={cd} trimestre={trimestre} />}
+                    {curTab==="absences"  && <AbsencesTabContent cd={cd} sid={sid} onLoad={()=>getOrLoad(sid,"absences",()=>getChildAbsences(parent.id,sid))} />}
                   </div>
                 )}
               </div>
@@ -736,6 +739,40 @@ function BulletinTabContent({ cd, trimestre }) {
           </table>
         </div>
       )}
+    </div>
+  );
+}
+
+function AbsencesTabContent({ cd, sid, onLoad }) {
+  useEffect(()=>{ if (!cd?.absences) onLoad(); }, []);
+  const loading = cd?.loading_absences;
+  const rows    = cd?.absences;
+  if (loading) return <LoadingRow />;
+  if (!rows?.length) return <EmptyRow label="No absences recorded. 🎉" />;
+  return (
+    <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(220px, 1fr))", gap:10 }}>
+      {rows.map((a,i)=>{
+        const ds = DAY_STYLE[a.timetableDayOfWeek] || { color:"var(--text-muted)", bg:"var(--surface)", border:"var(--border)" };
+        return (
+          <div key={a.id??i} className="card" style={{ padding:"14px 16px" }}>
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:10 }}>
+              <span style={{ padding:"3px 10px", borderRadius:999, background:ds.bg, color:ds.color, border:`1px solid ${ds.border}`, fontSize:11, fontWeight:700, fontFamily:"'JetBrains Mono',monospace" }}>
+                {a.timetableDayOfWeek}{a.timetableStartTime ? ` · ${a.timetableStartTime}` : ""}
+              </span>
+              <span style={{ fontSize:11, color:"var(--text-faint,#aaa)" }}>{a.date ?? "—"}</span>
+            </div>
+            <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+              <div style={{ width:32, height:32, borderRadius:9, flexShrink:0, background:"#fee2e2", border:"1px solid rgba(153,27,27,.18)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:14 }}>🚫</div>
+              <div>
+                <div style={{ fontSize:12.5, fontWeight:600, color:"var(--text-dim)", fontFamily:"'JetBrains Mono',monospace" }}>
+                  {a.studentRegistrationNumber ?? "—"}
+                </div>
+                {a.reason && <div style={{ fontSize:11.5, color:"var(--text-faint,#aaa)", marginTop:2 }}>{a.reason}</div>}
+              </div>
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -1108,7 +1145,7 @@ export default function ParentsPage() {
             <StatBox icon="🎂" label={t("parents.fields.dob")}     value={v.dateOfBrith} />
             <StatBox icon="⚧️" label="Sex"                         value={v.sex} />
             <StatBox icon="📍" label="Place of Birth"              value={v.placeOfBirth} />
-            <StatBox icon="🆔" label={t("parents.fields.userId")}  value={v.userId} />
+            
           </div>
         )}
         {detailTab==="children" && <ChildrenTab parent={v} toast={toast} />}

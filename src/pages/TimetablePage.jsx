@@ -5,12 +5,25 @@ import { getTimetables, createTimetable, updateTimetable, deleteTimetable, getCl
 import Modal from "../components/Modal";
 import ConfirmDialog from "../components/ConfirmDialog";
 import { Field, Input, Select, SubmitBtn } from "../components/FormComponents";
+import SearchableSelect from "../components/SearchableSelect";
 import { useToast } from "../components/Toast";
 import DetailPanel, { DetailSection, DetailRow } from "../components/DetailPanel";
 import { useLanguage } from "../LanguageContext";
 
 const COLOR = "from-[#6c63ff] to-[#3ecfcf]";
 const DAYS = ["MONDAY","TUESDAY","WEDNESDAY","THURSDAY","FRIDAY","SATURDAY","SUNDAY"];
+// Fixed 2-hour session slots — keeps every timetable entry aligned to the
+// school's standard grid instead of free-typed start/end times.
+const TIME_SLOTS = [
+  { start: "08:00", end: "10:00" },
+  { start: "10:00", end: "12:00" },
+  { start: "12:00", end: "14:00" },
+  { start: "14:00", end: "16:00" },
+  { start: "16:00", end: "18:00" },
+  { start: "18:00", end: "20:00" },
+  { start: "20:00", end: "22:00" },
+];
+const slotKey = (start, end) => `${start}-${end}`;
 const DAY_STYLE = {
   MONDAY:    { color:"var(--violet)", bg:"var(--violet-dim)", border:"rgba(79,67,192,.2)" },
   TUESDAY:   { color:"var(--teal)",   bg:"var(--teal-dim)",   border:"rgba(14,126,104,.2)" },
@@ -67,7 +80,10 @@ export default function TimetablePage() {
   }, [filtered]);
 
   const handleCreate = async e => {
-    e.preventDefault(); setSaving(true);
+    e.preventDefault();
+    if (!form.startTime || !form.endTime) return toast(t("timetable.fields.time"), "error");
+    if (!form.teacherAssignmentId) return toast(t("timetable.fields.assignment"), "error");
+    setSaving(true);
     try { await createTimetable({ ...form, teacherAssignmentId: parseInt(form.teacherAssignmentId)||undefined }); setModal(false); setForm(EMPTY); toast(t("timetable.created")); load(); }
     catch (err) { toast(err.message,"error"); } finally { setSaving(false); }
   };
@@ -177,14 +193,14 @@ export default function TimetablePage() {
                         </div>
                         <div style={{ fontWeight:600, fontSize:14, color:"var(--text)", marginBottom:3 }}>{r.matiereName??"—"}</div>
                         <div style={{ fontSize:12.5, color:"var(--text-muted)", marginBottom:12 }}>{r.classeName??"—"}</div>
-                        <div style={{ paddingTop:10, borderTop:"1px solid var(--border)", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
-                          <div style={{ display:"flex", alignItems:"center", gap:7 }}>
-                            <div style={{ width:22, height:22, borderRadius:6, background:"var(--violet-dim)", color:"var(--violet)", fontFamily:"'Instrument Serif',serif", fontSize:10, display:"flex", alignItems:"center", justifyContent:"center" }}>
+                        <div style={{ paddingTop:10, borderTop:"1px solid var(--border)", display:"flex", alignItems:"center", gap:8 }}>
+                          <div style={{ display:"flex", alignItems:"center", gap:7, flex:1, minWidth:0 }}>
+                            <div style={{ width:22, height:22, borderRadius:6, background:"var(--violet-dim)", color:"var(--violet)", fontFamily:"'Instrument Serif',serif", fontSize:10, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
                               {(r.teacherName?.[0]??"T").toUpperCase()}
                             </div>
-                            <span style={{ fontSize:12, color:"var(--text-muted)", maxWidth:100, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{r.teacherName??"—"}</span>
+                            <span style={{ fontSize:12, color:"var(--text-muted)", minWidth:0, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{r.teacherName??"—"}</span>
                           </div>
-                          <div style={{ display:"flex", gap:5 }} onClick={e => e.stopPropagation()}>
+                          <div style={{ display:"flex", gap:5, flexShrink:0 }} onClick={e => e.stopPropagation()}>
                             <button onClick={() => openEdit(r)} className="btn-ghost" style={{ fontSize:11, padding:"3px 9px" }}>{t("common.edit")}</button>
                             <button onClick={() => { setViewTarget(null); setDeleteTarget(r); }} className="btn-danger" style={{ fontSize:11, padding:"3px 9px" }}>{t("common.delete")}</button>
                           </div>
@@ -205,16 +221,34 @@ export default function TimetablePage() {
             <Field label={t("timetable.fields.day")}>
               <Select value={form.dayOfWeek} onChange={set("dayOfWeek")} required>{daySelectOptions}</Select>
             </Field>
-            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
-              <Field label={t("timetable.fields.startTime")}><Input type="time" value={form.startTime} onChange={set("startTime")} required /></Field>
-              <Field label={t("timetable.fields.endTime")}><Input type="time" value={form.endTime} onChange={set("endTime")} required /></Field>
-            </div>
+            <Field label={t("timetable.fields.time")}>
+              <Select
+                value={form.startTime && form.endTime ? slotKey(form.startTime, form.endTime) : ""}
+                onChange={e => {
+                  const [start, end] = e.target.value.split("-");
+                  setForm(f => ({ ...f, startTime: start ?? "", endTime: end ?? "" }));
+                }}
+                required
+              >
+                <option value="">— {t("timetable.fields.time")} —</option>
+                {TIME_SLOTS.map(s => (
+                  <option key={slotKey(s.start, s.end)} value={slotKey(s.start, s.end)}>
+                    {s.start.slice(0,2)}h–{s.end.slice(0,2)}h
+                  </option>
+                ))}
+              </Select>
+            </Field>
             <Field label={t("timetable.fields.room")}><Input placeholder={t("timetable.roomPlaceholder")} value={form.room} onChange={set("room")} /></Field>
             <Field label={t("timetable.fields.assignment")}>
-              <Select value={form.teacherAssignmentId} onChange={set("teacherAssignmentId")} required>
-                <option value="">— {t("timetable.fields.assignment")} —</option>
-                {assignments.map(a => <option key={a.id} value={a.id}>{a.teacherName} · {a.matiereName} · {a.classeName}</option>)}
-              </Select>
+              <SearchableSelect
+                options={assignments}
+                value={form.teacherAssignmentId}
+                onChange={v => setForm(f => ({ ...f, teacherAssignmentId: v }))}
+                getValue={a => a.id}
+                getLabel={a => `${a.teacherName} · ${a.matiereName} · ${a.classeName}`}
+                placeholder="Search by teacher, subject or class…"
+                emptyLabel={`— ${t("timetable.fields.assignment")} —`}
+              />
             </Field>
             <SubmitBtn loading={saving} label={t("timetable.createBtn")} />
           </form>
@@ -227,16 +261,34 @@ export default function TimetablePage() {
             <Field label={t("timetable.fields.day")}>
               <Select value={editForm.dayOfWeek} onChange={setEdit("dayOfWeek")} required>{daySelectOptions}</Select>
             </Field>
-            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
-              <Field label={t("timetable.fields.startTime")}><Input type="time" value={editForm.startTime} onChange={setEdit("startTime")} required /></Field>
-              <Field label={t("timetable.fields.endTime")}><Input type="time" value={editForm.endTime} onChange={setEdit("endTime")} required /></Field>
-            </div>
+            <Field label={t("timetable.fields.time")}>
+              <Select
+                value={editForm.startTime && editForm.endTime ? slotKey(editForm.startTime, editForm.endTime) : ""}
+                onChange={e => {
+                  const [start, end] = e.target.value.split("-");
+                  setEditForm(f => ({ ...f, startTime: start ?? "", endTime: end ?? "" }));
+                }}
+                required
+              >
+                <option value="">— {t("timetable.fields.time")} —</option>
+                {TIME_SLOTS.map(s => (
+                  <option key={slotKey(s.start, s.end)} value={slotKey(s.start, s.end)}>
+                    {s.start.slice(0,2)}h–{s.end.slice(0,2)}h
+                  </option>
+                ))}
+              </Select>
+            </Field>
             <Field label={t("timetable.fields.room")}><Input value={editForm.room} onChange={setEdit("room")} /></Field>
             <Field label={t("timetable.fields.assignment")}>
-              <Select value={editForm.teacherAssignmentId} onChange={setEdit("teacherAssignmentId")} required>
-                <option value="">— {t("timetable.fields.assignment")} —</option>
-                {assignments.map(a => <option key={a.id} value={a.id}>{a.teacherName} · {a.matiereName} · {a.classeName}</option>)}
-              </Select>
+              <SearchableSelect
+                options={assignments}
+                value={editForm.teacherAssignmentId}
+                onChange={v => setEditForm(f => ({ ...f, teacherAssignmentId: v }))}
+                getValue={a => a.id}
+                getLabel={a => `${a.teacherName} · ${a.matiereName} · ${a.classeName}`}
+                placeholder="Search by teacher, subject or class…"
+                emptyLabel={`— ${t("timetable.fields.assignment")} —`}
+              />
             </Field>
             <SubmitBtn loading={saving} label={t("timetable.saveBtn")} />
           </form>

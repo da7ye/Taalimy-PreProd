@@ -1,5 +1,5 @@
-// export const BASE_URL = "http://144.91.85.23:8085/api/v1";
-export const BASE_URL = "/api/v1";
+export const BASE_URL = "http://144.91.85.23:8085/api/v1";
+// export const BASE_URL = "/api/v1";
 
 const MINIO_ORIGIN = "http://144.91.85.23:9000";
 const IS_PROD = window.location.hostname !== "localhost";
@@ -162,6 +162,10 @@ export const unlinkStudentFromParent = (pid, sid)  => request(`/parents/${pid}/s
 export const getChildTimetable  = (pid, sid)       => request(`/parents/${pid}/children/${sid}/timetable`);
 export const getChildNotes      = (pid, sid, trId) => request(`/parents/${pid}/children/${sid}/notes?trimestreId=${trId}`);
 export const getChildBulletin   = (pid, sid, trId) => request(`/parents/${pid}/children/${sid}/bulletin?trimestreId=${trId}`);
+
+// Parent → Absences
+export const getChildAbsences  = (pid, sid) => request(`/parents/${pid}/children/${sid}/absences`);
+export const getParentAbsences = (pid)      => request(`/parents/${pid}/absences`);
 
 // Partners
 export const getPartnerWallets        = () => request("/api/partner-payments/wallets");

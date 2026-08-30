@@ -10,7 +10,7 @@ import { useLanguage } from "../LanguageContext";
 
 const C_COLOR = "var(--accent)";
 const C_BG    = "var(--violet-dim)";
-const PAGE_SIZE_OPTIONS = [25, 50, 100];
+const PAGE_SIZE_OPTIONS = [10, 50, 100];
 
 // ─── Teaching Schedule ────────────────────────────────────────────────────────
 
@@ -787,7 +787,6 @@ export default function TeachersPage() {
           <StatBox icon="📞" label={t("teachers.fields.phone")}  value={v.phone}       color={C_COLOR} bg={C_BG} />
           <StatBox icon="🪪" label={t("teachers.fields.nni")}    value={v.nni}         color={C_COLOR} bg={C_BG} />
           <StatBox icon="🎓" label={t("teachers.speciality")}    value={v.speciality}  color={C_COLOR} bg={C_BG} />
-          <StatBox icon="🆔" label={t("teachers.fields.userId")} value={v.userId}      color={C_COLOR} bg={C_BG} />
           <StatBox icon="🎂" label={t("teachers.fields.dob")}    value={v.dateOfBrith} color={C_COLOR} bg={C_BG} />
           <StatBox icon="⚧️" label="Sex"                         value={v.sex}         color={C_COLOR} bg={C_BG} />
           <StatBox icon="📍" label="Place of Birth"              value={v.placeOfBirth} color={C_COLOR} bg={C_BG} />

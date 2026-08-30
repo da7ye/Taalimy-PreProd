@@ -9,7 +9,7 @@ import { useLanguage } from "../LanguageContext";
 
 const C_COLOR = "var(--teal)";
 const C_BG    = "var(--teal-dim)";
-const PAGE_SIZE_OPTIONS = [25, 50, 100];
+const PAGE_SIZE_OPTIONS = [10, 50, 100];
 
 // ─── Photo helpers ────────────────────────────────────────────────────────────
 
@@ -671,7 +671,7 @@ export default function StudentsPage() {
   // ── Delete ─────────────────────────────────────────────────────────────────
   const handleDelete = async () => {
     setDeleting(true);
-    try { await deleteStudent(deleteTarget.userId ?? deleteTarget.id); setDeleteTarget(null); toast(t("students.deleted")); load(); if (view !== "list") goList(); }
+    try { await deleteStudent(deleteTarget.id); setDeleteTarget(null); toast(t("students.deleted")); load(); if (view !== "list") goList(); }
     catch(err) { toast(err.message, "error"); } finally { setDeleting(false); }
   };
 

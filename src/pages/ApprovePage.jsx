@@ -8,7 +8,7 @@ export default function ApprovePage() {
   const toast = useToast();
   const [users, setUsers]         = useState([]);
   const [loading, setLoading]     = useState(true);
-  const [approving, setApproving] = useState(null);
+  const [approving, setApproving] = useState(null); // holds the key of the row being approved, or null
   const [q, setQ]                 = useState("");
 
   const load = () => {
@@ -21,15 +21,14 @@ export default function ApprovePage() {
     if (!q.trim()) return users;
     const lower = q.toLowerCase();
     return users.filter(u =>
-      `${u.firstname} ${u.lastname}`.toLowerCase().includes(lower) ||
-      u.phone?.toLowerCase().includes(lower)
+      `${u.firstname} ${u.lastname}`.toLowerCase().includes(lower)
     );
   }, [users, q]);
 
-  const handleApprove = async user => {
-    setApproving(user.phone);
+  const handleApprove = async (user, key) => {
+    setApproving(key);
     try {
-      await approveUser(user.phone);
+      await approveUser(user.id);
       toast(t("approve.approved", { name: `${user.firstname} ${user.lastname}` }));
       load();
     } catch (err) { toast(err.message, "error"); }
@@ -83,8 +82,11 @@ export default function ApprovePage() {
         </div>
       ) : (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 14 }}>
-          {filtered.map((user, i) => (
-            <div key={user.id ?? i} className="card" style={{ padding: "20px 22px" }}>
+          {filtered.map((user, i) => {
+            const key = user.id ?? i;
+            const isApproving = approving === key;
+            return (
+            <div key={key} className="card" style={{ padding: "20px 22px" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 18 }}>
                 <div style={{
                   width: 48, height: 48, borderRadius: 14, flexShrink: 0,
@@ -98,9 +100,6 @@ export default function ApprovePage() {
                   <div style={{ fontWeight: 600, fontSize: 14.5, color: "var(--text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                     {user.firstname} {user.lastname}
                   </div>
-                  <div style={{ fontSize: 12.5, fontFamily: "'JetBrains Mono', monospace", color: "var(--text-muted)", marginTop: 3 }}>
-                    {user.phone ?? "—"}
-                  </div>
                 </div>
                 <span style={{
                   padding: "3px 10px", borderRadius: 999, flexShrink: 0,
@@ -111,18 +110,19 @@ export default function ApprovePage() {
 
               <div style={{ borderTop: "1px solid var(--border)", paddingTop: 16 }}>
                 <button
-                  onClick={() => handleApprove(user)}
-                  disabled={approving === user.phone}
+                  onClick={() => handleApprove(user, key)}
+                  disabled={isApproving}
                   className="btn-primary"
                   style={{ width: "100%", fontSize: 13.5 }}
                 >
-                  {approving === user.phone ? (
+                  {isApproving ? (
                     <><span className="spinner" style={{ width: 13, height: 13 }} /> {t("approve.approving")}</>
                   ) : t("approve.approveBtn")}
                 </button>
               </div>
             </div>
-          ))}
+            );
+          })}
         </div>
       )}
 

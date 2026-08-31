@@ -291,12 +291,16 @@ function StudentRow({ r, index, onClick, onEdit, onDelete, onReceipt, loadingRec
       {/* Actions */}
       <td style={{ padding: "10px 16px", textAlign: "right" }} onClick={e => e.stopPropagation()}>
         <div style={{ display: "flex", gap: 6, justifyContent: "flex-end" }}>
-          <button
+        <button
             onClick={() => onReceipt(r.id)}
-            disabled={loadingReceipt === r.id}
+            disabled={loadingReceipt === r.id || !r.isApprove}
             className="btn-ghost"
-            title="Download inscription receipt"
-            style={{ padding: "5px 10px", fontSize: 12, display: "flex", alignItems: "center", justifyContent: "center" }}
+            title={r.isApprove ? "Download inscription receipt" : "Receipt available once approved"}
+            style={{
+              padding: "5px 10px", fontSize: 12, display: "flex", alignItems: "center", justifyContent: "center",
+              opacity: r.isApprove ? 1 : 0.4,
+              cursor: r.isApprove ? "pointer" : "not-allowed",
+            }}
           >
             {loadingReceipt === r.id ? <span className="spinner" style={{ width: 11, height: 11 }} /> : "🧾"}
           </button>

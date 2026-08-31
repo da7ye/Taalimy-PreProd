@@ -19,7 +19,7 @@ import AbsencePage from "./pages/AbsencePage";
 import PaymentsPage from "./pages/Paymentspage";
 import NotesPage from "./pages/NotesPage";
 import PartnerPaymentsPage from "./pages/PartnerPaymentsPage";
-
+import RemarquesPage from "./pages/Remarquespage";
 
 export const ThemeContext = React.createContext("light");
 
@@ -178,6 +178,7 @@ export default function App() {
     matieres:    <MatieresPage />,
     levels:      <LevelsPage />,
     classes:     <ClassesPage />,
+    remarques: <RemarquesPage />,
     absences:    <AbsencePage />,
     assignments: <AssignmentsPage />,
     timetable:   <TimetablePage />,

@@ -25,6 +25,7 @@ function IconCheck()   { return <Icon d="M22 11.08V12a10 10 0 11-5.93-9.14" d2="
 function IconPayment() { return <Icon d="M21 4H3a2 2 0 00-2 2v12a2 2 0 002 2h18a2 2 0 002-2V6a2 2 0 00-2-2z" d2="M1 10h22"/>; }
 function IconNote()    { return <Icon d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" d2="M14 2v6h6M16 13H8M16 17H8M10 9H8"/>; }
 function IconHandshake(){ return <Icon d="M11 17l-3-3-6 6" d2="M2 13l6-6 4 4 8-8 3.5 3.5L14 16l-3-3" d3="M18 8l3 3-3 3"/>; }
+function IconRemark() { return <Icon d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>; }
 
 function IconGlobe() {
   return (
@@ -189,13 +190,14 @@ export default function Sidebar({ active, setPage, theme, setTheme, onLogout }) 
       { id: "students",  label: t("nav.students"),  icon: IconBook },
       { id: "parents",   label: t("nav.parents"),   icon: IconUsers },
     ]},
-    { section: t("sections.academics"),  items: [
+    { section: t("sections.academics"), items: [
       { id: "matieres",    label: t("nav.subjects"),    icon: IconLayers },
       { id: "levels",      label: t("nav.levels"),      icon: IconTag },
       { id: "classes",     label: t("nav.classes"),     icon: IconSchool },
       { id: "assignments", label: t("nav.assignments"), icon: IconClip },
       { id: "timetable",   label: t("nav.timetable"),   icon: IconCal },
       { id: "notes",       label: t("nav.grades"),      icon: IconNote },
+      { id: "remarques",   label: "Remarks",             icon: IconRemark },
     ]},
     { section: t("sections.attendance"), items: [{ id: "absences", label: t("nav.absences"), icon: IconAlert }] },
     { section: t("sections.finance"),    items: [

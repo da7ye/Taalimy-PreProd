@@ -174,6 +174,16 @@ export const getPendingPartnerPayments = () => request("/api/partner-payments/pe
 export const getPartnerPaymentHistory  = (subscriptionId) => request(`/api/partner-payments/history/${subscriptionId}`);
 export const getPartnerPaymentBalance  = (subscriptionId, mois, annee) => request(`/api/partner-payments/balance/${subscriptionId}?mois=${mois}&annee=${annee}`);
 
+// Remarks
+export const getRemarks        = ()             => request("/remarks");
+export const getPendingRemarks = ()              => request("/remarks/pending");
+export const getStudentRemarks = (studentId)     => request(`/remarks/student/${studentId}`);
+export const getTeacherRemarks = (teacherId)     => request(`/remarks/teacher/${teacherId}`);
+export const getRemark         = (id)            => request(`/remarks/${id}`);
+export const updateRemark      = (id, data)      => request(`/remarks/${id}`,     { method: "PUT",    body: JSON.stringify(data) });
+export const deleteRemark      = (id)            => request(`/remarks/${id}`,     { method: "DELETE" });
+export const sendRemarks       = (remarkIds)     => request("/remarks/send",      { method: "PUT",    body: JSON.stringify({ remarkIds }) });
+
 export const uploadUserPhoto = async (userId, file) => {
   const formData = new FormData();
   formData.append("file", file);

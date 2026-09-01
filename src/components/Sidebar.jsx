@@ -63,14 +63,14 @@ function IconMoon() {
   );
 }
 
+// English support was removed app-wide — only French and Arabic remain.
 const LANGS = [
-  { id: "en", label: "English", native: "English" },
   { id: "fr", label: "Français", native: "Français" },
   { id: "ar", label: "عربي",    native: "عربي" },
 ];
 
 /** Globe button + dropdown that opens above the logo */
-function LangDropdown({ lang, setLang }) {
+function LangDropdown({ lang, setLang, t }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
   const current = LANGS.find(l => l.id === lang);
@@ -88,7 +88,7 @@ function LangDropdown({ lang, setLang }) {
       {/* Trigger button */}
       <button
         onClick={() => setOpen(o => !o)}
-        title="Change language"
+        title={t("sidebar.changeLanguage")}
         style={{
           display: "flex", alignItems: "center", gap: 5,
           padding: "5px 8px", borderRadius: 8,
@@ -197,12 +197,12 @@ export default function Sidebar({ active, setPage, theme, setTheme, onLogout }) 
       { id: "assignments", label: t("nav.assignments"), icon: IconClip },
       { id: "timetable",   label: t("nav.timetable"),   icon: IconCal },
       { id: "notes",       label: t("nav.grades"),      icon: IconNote },
-      { id: "remarques",   label: "Remarks",             icon: IconRemark },
+      { id: "remarques",   label: t("nav.remarks"),     icon: IconRemark },
     ]},
     { section: t("sections.attendance"), items: [{ id: "absences", label: t("nav.absences"), icon: IconAlert }] },
     { section: t("sections.finance"),    items: [
-      { id: "payments",        label: t("nav.payments"), icon: IconPayment },
-      { id: "partnerPayments", label: "Partner Payments", icon: IconHandshake },
+      { id: "payments",        label: t("nav.payments"),        icon: IconPayment },
+      { id: "partnerPayments", label: t("nav.partnerPayments"), icon: IconHandshake },
     ]},
     { section: t("sections.admin"),      items: [{ id: "approve",  label: t("nav.approveUsers"), icon: IconCheck }] },
   ];
@@ -238,12 +238,12 @@ export default function Sidebar({ active, setPage, theme, setTheme, onLogout }) 
                 fontSize: 9.5, fontWeight: 700, letterSpacing: ".12em",
                 textTransform: "uppercase", color: "var(--text-faint)",
                 marginTop: 1,
-              }}>Staff Portal</div>
+              }}>{t("login.staffPortal")}</div>
             </div>
           </div>
 
           {/* Language dropdown */}
-          <LangDropdown lang={lang} setLang={setLang} />
+          <LangDropdown lang={lang} setLang={setLang} t={t} />
         </div>
       </div>
 
@@ -347,13 +347,13 @@ export default function Sidebar({ active, setPage, theme, setTheme, onLogout }) 
             flexShrink: 0,
           }}>S</div>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-dim)" }}>Staff Admin</div>
+            <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-dim)" }}>{t("sidebar.staffAdmin")}</div>
             <div style={{ fontSize: 10.5, color: "var(--text-faint)" }}>{t("user.role")}</div>
           </div>
           {onLogout && (
             <button
               onClick={onLogout}
-              title="Sign out"
+              title={t("sidebar.signOut")}
               style={{
                 width: 28, height: 28, borderRadius: 8, flexShrink: 0,
                 background: "var(--surface)", border: "1px solid var(--border)",

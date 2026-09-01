@@ -3,6 +3,7 @@ import { getNotApprovedUsers, approveUser } from "../api";
 import { useToast } from "../components/Toast";
 import { useLanguage } from "../LanguageContext";
 
+
 export default function ApprovePage() {
   const { t } = useLanguage();
   const toast = useToast();

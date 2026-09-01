@@ -33,7 +33,7 @@ function PhotoAvatar({ photo, initial = "?", size = 48, radius = 14, color = C_C
   );
 }
 
-function PhotoUploadField({ photo, initial, color = C_COLOR, bg = C_BG, onFileSelected, onDelete, loading = false }) {
+function PhotoUploadField({ photo, initial, color = C_COLOR, bg = C_BG, onFileSelected, onDelete, loading = false, t }) {
   const inputRef = useRef(null);
   const [preview, setPreview] = useState(photo || null);
   useEffect(() => { setPreview(photo || null); }, [photo]);
@@ -58,16 +58,16 @@ function PhotoUploadField({ photo, initial, color = C_COLOR, bg = C_BG, onFileSe
           onMouseLeave={e=>!loading&&(e.currentTarget.style.background="var(--surface)")}
         >
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-          {preview ? "Change photo" : "Upload photo"}
+          {preview ? t("common.changePhoto") : t("common.uploadPhoto")}
           <input ref={inputRef} type="file" accept="image/*" style={{ display:"none" }} onChange={handleFile} disabled={loading} />
         </label>
         {preview && (
           <button type="button" onClick={()=>{ setPreview(null); onDelete?.(); }} disabled={loading} style={{ display:"inline-flex", alignItems:"center", gap:6, padding:"6px 14px", borderRadius:"var(--r-md)", background:"var(--rose-dim)", border:"1px solid rgba(184,53,53,.18)", color:"var(--rose)", fontSize:12, fontWeight:500, cursor:loading?"not-allowed":"pointer", fontFamily:"'Instrument Sans',sans-serif" }}>
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
-            Remove photo
+            {t("common.removePhoto")}
           </button>
         )}
-        <span style={{ fontSize:11, color:"var(--text-faint)" }}>JPG, PNG or WebP · max 5 MB</span>
+        <span style={{ fontSize:11, color:"var(--text-faint)" }}>{t("common.photoHint")}</span>
       </div>
     </div>
   );
@@ -257,13 +257,13 @@ function FilterBar({ q, setQ, filterStatus, setFilterStatus, onReset, totalFilte
         <input className="search-input" placeholder={t("parents.searchPlaceholder")} value={q} onChange={e=>setQ(e.target.value)} style={{ width:"100%" }} />
       </div>
       <select value={filterStatus} onChange={e=>setFilterStatus(e.target.value)} className="t-select" style={{ flex:"0 0 150px" }}>
-        <option value="">All Statuses</option>
-        <option value="approved">Approved</option>
-        <option value="pending">Pending</option>
+        <option value="">{t("common.allStatuses")}</option>
+        <option value="approved">{t("common.statusApproved")}</option>
+        <option value="pending">{t("common.statusPending")}</option>
       </select>
-      {hasFilters && <button onClick={onReset} className="btn-ghost" style={{ padding:"8px 14px", fontSize:12.5, flexShrink:0, color:"var(--rose)", borderColor:"rgba(184,53,53,.25)" }}>✕ Clear</button>}
+      {hasFilters && <button onClick={onReset} className="btn-ghost" style={{ padding:"8px 14px", fontSize:12.5, flexShrink:0, color:"var(--rose)", borderColor:"rgba(184,53,53,.25)" }}>✕ {t("common.clearFilters")}</button>}
       <div style={{ marginLeft:"auto", fontSize:12, color:"var(--text-faint)", flexShrink:0, whiteSpace:"nowrap" }}>
-        {hasFilters ? <><span style={{ color:"var(--text-dim)", fontWeight:600 }}>{totalFiltered}</span> of {total}</> : <><span style={{ color:"var(--text-dim)", fontWeight:600 }}>{total}</span> total</>}
+        {hasFilters ? <><span style={{ color:"var(--text-dim)", fontWeight:600 }}>{totalFiltered}</span> {t("common.of")} {total}</> : <><span style={{ color:"var(--text-dim)", fontWeight:600 }}>{total}</span> {t("common.total")}</>}
       </div>
     </div>
   );
@@ -271,7 +271,7 @@ function FilterBar({ q, setQ, filterStatus, setFilterStatus, onReset, totalFilte
 
 // ── Pagination ────────────────────────────────────────────────────────────────
 
-function Pagination({ page, totalPages, pageSize, setPage, setPageSize, totalFiltered }) {
+function Pagination({ page, totalPages, pageSize, setPage, setPageSize, totalFiltered, t }) {
   // Always render so users can change page size even on a single page
   if (totalFiltered === 0) return null;
 
@@ -314,7 +314,7 @@ function Pagination({ page, totalPages, pageSize, setPage, setPageSize, totalFil
       {/* Left: rows-per-page + range info */}
       <div style={{ display:"flex", alignItems:"center", gap:12 }}>
         <div style={{ display:"flex", alignItems:"center", gap:6 }}>
-          <span style={{ fontSize:12, color:"var(--text-faint)", whiteSpace:"nowrap" }}>Rows per page:</span>
+          <span style={{ fontSize:12, color:"var(--text-faint)", whiteSpace:"nowrap" }}>{t("pagination.rowsPerPage")}</span>
           <div style={{ display:"flex", gap:4 }}>
             {PAGE_SIZE_OPTIONS.map(s => (
               <button key={s} onClick={()=>{ setPageSize(s); setPage(0); }} style={{ ...btnStyle(pageSize===s), minWidth:38, padding:"0 10px", fontSize:12 }}>{s}</button>
@@ -323,7 +323,7 @@ function Pagination({ page, totalPages, pageSize, setPage, setPageSize, totalFil
         </div>
         <span style={{ fontSize:12, color:"var(--text-faint)", whiteSpace:"nowrap" }}>
           <span style={{ color:"var(--text-dim)", fontWeight:600 }}>{start}–{end}</span>
-          {" "}of{" "}
+          {" "}{t("common.of")}{" "}
           <span style={{ color:"var(--text-dim)", fontWeight:600 }}>{totalFiltered}</span>
         </span>
       </div>
@@ -331,9 +331,9 @@ function Pagination({ page, totalPages, pageSize, setPage, setPageSize, totalFil
       {/* Right: page buttons (hidden when only 1 page) */}
       {totalPages > 1 && (
         <div style={{ display:"flex", alignItems:"center", gap:4 }}>
-          <button onClick={()=>setPage(0)} disabled={page===0} title="First page"
+          <button onClick={()=>setPage(0)} disabled={page===0} title={t("pagination.firstPage")}
             style={{ ...btnStyle(false, page===0), minWidth:34, padding:"0 8px", fontSize:15 }}>«</button>
-          <button onClick={()=>setPage(p=>Math.max(0,p-1))} disabled={page===0} title="Previous page"
+          <button onClick={()=>setPage(p=>Math.max(0,p-1))} disabled={page===0} title={t("pagination.prevPage")}
             style={{ ...btnStyle(false, page===0), minWidth:34, padding:"0 8px", fontSize:15 }}>‹</button>
 
           {withEllipsis.map((p,i) =>
@@ -342,9 +342,9 @@ function Pagination({ page, totalPages, pageSize, setPage, setPageSize, totalFil
               : <button key={p} onClick={()=>setPage(p)} style={{ ...btnStyle(page===p), minWidth:34, padding:"0 6px" }}>{p+1}</button>
           )}
 
-          <button onClick={()=>setPage(p=>Math.min(totalPages-1,p+1))} disabled={page>=totalPages-1} title="Next page"
+          <button onClick={()=>setPage(p=>Math.min(totalPages-1,p+1))} disabled={page>=totalPages-1} title={t("pagination.nextPage")}
             style={{ ...btnStyle(false, page>=totalPages-1), minWidth:34, padding:"0 8px", fontSize:15 }}>›</button>
-          <button onClick={()=>setPage(totalPages-1)} disabled={page>=totalPages-1} title="Last page"
+          <button onClick={()=>setPage(totalPages-1)} disabled={page>=totalPages-1} title={t("pagination.lastPage")}
             style={{ ...btnStyle(false, page>=totalPages-1), minWidth:34, padding:"0 8px", fontSize:15 }}>»</button>
         </div>
       )}
@@ -354,7 +354,7 @@ function Pagination({ page, totalPages, pageSize, setPage, setPageSize, totalFil
 
 // ── Detail tab: Children ──────────────────────────────────────────────────────
 
-function ChildrenTab({ parent, toast }) {
+function ChildrenTab({ parent, toast, t }) {
   const [children, setChildren]               = useState(null);
   const [loadingKids, setLoadingKids]         = useState(true);
   const [linking, setLinking]                 = useState(false);
@@ -394,7 +394,7 @@ function ChildrenTab({ parent, toast }) {
     setLinking(true);
     try {
       await addStudentToParent(parent.id, selectedStudent.id);
-      toast("Student linked successfully!");
+      toast(t("parents.children.linkedSuccess"));
       setSelectedStudent(""); setStudentSearch(""); loadChildren();
     } catch(err) { toast(err.message,"error"); }
     finally { setLinking(false); }
@@ -405,7 +405,7 @@ function ChildrenTab({ parent, toast }) {
     setUnlinking(true);
     try {
       await unlinkStudentFromParent(parent.id, unlinkTarget.studentId);
-      toast("Student unlinked successfully!");
+      toast(t("parents.children.unlinkedSuccess"));
       setUnlinkTarget(null);
       if (expanded === unlinkTarget.studentId) setExpanded(null);
       loadChildren();
@@ -462,10 +462,10 @@ function ChildrenTab({ parent, toast }) {
     <div style={{ display:"flex", flexDirection:"column", gap:20 }}>
       {/* Link student */}
       <div style={{ background:"var(--surface)", border:"1px solid var(--border)", borderRadius:"var(--r-lg)", padding:"18px 20px" }}>
-        <div className="section-label" style={{ marginBottom:12 }}>🔗 Link a Student</div>
+        <div className="section-label" style={{ marginBottom:12 }}>{t("parents.children.linkTitle")}</div>
         <div style={{ display:"flex", gap:10, alignItems:"flex-end" }}>
           <div style={{ flex:1, position:"relative" }}>
-            <label className="field-label">Student</label>
+            <label className="field-label">{t("parents.children.studentLabel")}</label>
             {selectedStudent ? (
               <div style={{ display:"flex", alignItems:"center", gap:10, padding:"9px 12px", borderRadius:"var(--r-md)", border:"1.5px solid var(--accent)", background:"var(--bg-card)" }}>
                 <div style={{ width:28, height:28, borderRadius:8, background:"var(--violet-dim)", color:"var(--violet)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:12, fontWeight:700, flexShrink:0 }}>{(selectedStudent.firstname?.[0]??"S").toUpperCase()}</div>
@@ -477,7 +477,7 @@ function ChildrenTab({ parent, toast }) {
               </div>
             ) : (
               <div style={{ position:"relative" }}>
-                <input className="t-input" placeholder="Search students…" value={studentSearch}
+                <input className="t-input" placeholder={t("parents.children.searchPlaceholder")} value={studentSearch}
                   onChange={e=>{ setStudentSearch(e.target.value); setShowDropdown(true); }}
                   onFocus={()=>setShowDropdown(true)}
                   onBlur={()=>setTimeout(()=>setShowDropdown(false),180)}
@@ -485,7 +485,7 @@ function ChildrenTab({ parent, toast }) {
                 {showDropdown && (
                   <div style={{ position:"absolute", top:"calc(100% + 4px)", left:0, right:0, zIndex:50, background:"var(--bg-modal)", border:"1px solid var(--border-md)", borderRadius:"var(--r-md)", boxShadow:"var(--shadow-lg)", maxHeight:220, overflowY:"auto" }}>
                     {filteredStudents.length===0 ? (
-                      <div style={{ padding:"14px 16px", fontSize:13, color:"var(--text-faint)", textAlign:"center" }}>{allStudents.length===0?"Loading students…":"No unlinked students found"}</div>
+                      <div style={{ padding:"14px 16px", fontSize:13, color:"var(--text-faint)", textAlign:"center" }}>{allStudents.length===0?t("parents.children.loadingStudents"):t("parents.children.noUnlinkedFound")}</div>
                     ) : filteredStudents.map(s=>(
                       <div key={s.id} onMouseDown={()=>{ setSelectedStudent(s); setStudentSearch(""); setShowDropdown(false); }}
                         style={{ display:"flex", alignItems:"center", gap:10, padding:"10px 14px", cursor:"pointer", transition:"background .12s" }}
@@ -505,7 +505,7 @@ function ChildrenTab({ parent, toast }) {
             )}
           </div>
           <button onClick={handleLink} disabled={linking||!selectedStudent} className="btn-primary" style={{ padding:"11px 20px", flexShrink:0 }}>
-            {linking ? <><span className="spinner" style={{ width:13, height:13 }}/> Linking…</> : "Link Student"}
+            {linking ? <><span className="spinner" style={{ width:13, height:13 }}/> {t("parents.children.linking")}</> : t("parents.children.linkBtn")}
           </button>
         </div>
       </div>
@@ -514,7 +514,7 @@ function ChildrenTab({ parent, toast }) {
       {children?.length===0 ? (
         <div className="empty-state" style={{ padding:"40px 20px" }}>
           <span style={{ fontSize:32 }}>👶</span>
-          <p style={{ margin:0, fontSize:13.5, color:"var(--text-faint)" }}>No children linked yet.</p>
+          <p style={{ margin:0, fontSize:13.5, color:"var(--text-faint)" }}>{t("parents.children.empty")}</p>
         </div>
       ) : (
         <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
@@ -550,7 +550,7 @@ function ChildrenTab({ parent, toast }) {
                       className="btn-danger"
                       style={{ padding:"5px 12px", fontSize:12 }}
                     >
-                      Unlink
+                      {t("parents.children.unlinkBtn")}
                     </button>
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-faint)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ transform:isExp?"rotate(180deg)":"rotate(0)", transition:"transform .2s", flexShrink:0 }}>
                       <polyline points="6 9 12 15 18 9"/>
@@ -560,13 +560,13 @@ function ChildrenTab({ parent, toast }) {
                 {isExp && (
                   <div style={{ borderTop:"1px solid var(--border)", padding:"16px 18px" }}>
                     <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:14, flexWrap:"wrap" }}>
-                      {tabBtn(sid,"timetable","🗓 Timetable",curTab)}
-                      {tabBtn(sid,"notes","📝 Notes",curTab)}
-                      {tabBtn(sid,"bulletin","📊 Bulletin",curTab)}
-                      {tabBtn(sid,"absences","🚫 Absences",curTab)}
+                      {tabBtn(sid,"timetable",t("parents.children.tabTimetable"),curTab)}
+                      {tabBtn(sid,"notes",t("parents.children.tabNotes"),curTab)}
+                      {tabBtn(sid,"bulletin",t("parents.children.tabBulletin"),curTab)}
+                      {tabBtn(sid,"absences",t("parents.children.tabAbsences"),curTab)}
                       {(curTab==="notes"||curTab==="bulletin") && (
                         <div style={{ display:"flex", alignItems:"center", gap:6, marginLeft:"auto" }}>
-                          <label style={{ fontSize:11.5, color:"var(--text-faint)", fontWeight:600 }}>Trimestre</label>
+                          <label style={{ fontSize:11.5, color:"var(--text-faint)", fontWeight:600 }}>{t("parents.children.trimestreLabel")}</label>
                           <input type="number" min="1" max="3" value={trimestre}
                             onChange={e=>{ const v=Number(e.target.value); fetchWithTrimestre(sid,curTab,v); }}
                             style={{ width:52, padding:"5px 8px", borderRadius:7, border:"1.5px solid var(--border-md)", background:"var(--bg-input)", color:"var(--text)", fontSize:13, outline:"none" }}
@@ -574,10 +574,10 @@ function ChildrenTab({ parent, toast }) {
                         </div>
                       )}
                     </div>
-                    {curTab==="timetable" && <TimetableTabContent cd={cd} sid={sid} onLoad={()=>getOrLoad(sid,"timetable",()=>getChildTimetable(parent.id,sid))} />}
-                    {curTab==="notes"     && <NotesTabContent cd={cd} trimestre={trimestre} />}
-                    {curTab==="bulletin"  && <BulletinTabContent cd={cd} trimestre={trimestre} />}
-                    {curTab==="absences"  && <AbsencesTabContent cd={cd} sid={sid} onLoad={()=>getOrLoad(sid,"absences",()=>getChildAbsences(parent.id,sid))} />}
+                    {curTab==="timetable" && <TimetableTabContent cd={cd} sid={sid} onLoad={()=>getOrLoad(sid,"timetable",()=>getChildTimetable(parent.id,sid))} t={t} />}
+                    {curTab==="notes"     && <NotesTabContent cd={cd} trimestre={trimestre} t={t} />}
+                    {curTab==="bulletin"  && <BulletinTabContent cd={cd} trimestre={trimestre} t={t} />}
+                    {curTab==="absences"  && <AbsencesTabContent cd={cd} sid={sid} onLoad={()=>getOrLoad(sid,"absences",()=>getChildAbsences(parent.id,sid))} t={t} />}
                   </div>
                 )}
               </div>
@@ -588,8 +588,8 @@ function ChildrenTab({ parent, toast }) {
 
       {unlinkTarget && (
         <ConfirmDialog
-          title={`Unlink ${unlinkTarget.fullName}?`}
-          message="This will remove the link between this parent and student. This can be re-linked later."
+          title={t("parents.children.unlinkConfirmTitle", { name: unlinkTarget.fullName })}
+          message={t("parents.children.unlinkConfirmMsg")}
           onConfirm={handleUnlink} onCancel={() => setUnlinkTarget(null)} loading={unlinking}
         />
       )}
@@ -608,11 +608,11 @@ const DAY_STYLE = {
   SUNDAY:    { color:"#991b1b", bg:"#fee2e2", border:"rgba(153,27,27,.2)" },
 };
 
-function TimetableTabContent({ cd, sid, onLoad }) {
+function TimetableTabContent({ cd, sid, onLoad, t }) {
   useEffect(()=>{ if (!cd?.timetable) onLoad(); }, []);
-  if (cd?.loading_timetable) return <LoadingRow />;
+  if (cd?.loading_timetable) return <LoadingRow t={t} />;
   const rows = cd?.timetable;
-  if (!rows?.length) return <EmptyRow label="No timetable sessions found." />;
+  if (!rows?.length) return <EmptyRow label={t("parents.children.noTimetable")} />;
   const byDay = {};
   DAYS.forEach(d=>{ byDay[d]=[]; });
   rows.forEach(r=>{ const day=r.dayOfWeek??r.jour?.toUpperCase(); if (day&&byDay[day]) byDay[day].push(r); });
@@ -626,10 +626,10 @@ function TimetableTabContent({ cd, sid, onLoad }) {
           <div key={day}>
             <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:12 }}>
               <span style={{ padding:"3px 14px", borderRadius:999, background:ds.bg, color:ds.color, border:`1px solid ${ds.border}`, fontSize:11, fontWeight:700, letterSpacing:".05em" }}>
-                {day.charAt(0)+day.slice(1).toLowerCase()}
+                {t(`timetable.days.${day}`)}
               </span>
               <div style={{ flex:1, height:1, background:"var(--border,rgba(0,0,0,.08))" }} />
-              <span style={{ fontSize:11, color:"var(--text-faint,#aaa)" }}>{sessions.length} session{sessions.length!==1?"s":""}</span>
+              <span style={{ fontSize:11, color:"var(--text-faint,#aaa)" }}>{t("parents.children.sessionsCount", { n: sessions.length })}</span>
             </div>
             <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(200px, 1fr))", gap:10 }}>
               {sessions.map((r,i)=>{
@@ -659,17 +659,18 @@ function TimetableTabContent({ cd, sid, onLoad }) {
   );
 }
 
-function NotesTabContent({ cd, trimestre }) {
+function NotesTabContent({ cd, trimestre, t }) {
   const key=`notes_${trimestre}`; const rows=cd?.[key]; const loading=cd?.[`loading_${key}`];
-  if (loading) return <LoadingRow />;
-  if (!rows) return <EmptyRow label={`Select trimestre ${trimestre} and wait for notes to load.`} />;
-  if (!rows.length) return <EmptyRow label="No notes found for this trimestre." />;
+  const hdrs = t("parents.children.tableHeaders");
+  if (loading) return <LoadingRow t={t} />;
+  if (!rows) return <EmptyRow label={t("parents.children.selectTrimestreWait", { trimestre })} />;
+  if (!rows.length) return <EmptyRow label={t("parents.children.noNotesTrimestre")} />;
   return (
     <div style={{ overflowX:"auto" }}>
       <table style={{ width:"100%", borderCollapse:"collapse", fontSize:13 }}>
         <thead>
           <tr style={{ borderBottom:"1px solid var(--border)" }}>
-            {["Subject","Type","Grade","Appreciation","Date"].map(h=>(
+            {[hdrs.subject, hdrs.type, hdrs.grade, hdrs.appreciation, hdrs.date].map(h=>(
               <th key={h} style={{ padding:"7px 10px", textAlign:"left", fontSize:10.5, fontWeight:700, textTransform:"uppercase", letterSpacing:".08em", color:"var(--text-faint)" }}>{h}</th>
             ))}
           </tr>
@@ -678,7 +679,7 @@ function NotesTabContent({ cd, trimestre }) {
           {rows.map((r,i)=>(
             <tr key={r.id??i} style={{ borderBottom:"1px solid var(--border)" }}>
               <td style={{ padding:"8px 10px", color:"var(--text)" }}>{r.matiereName}</td>
-              <td style={{ padding:"8px 10px" }}><span style={{ padding:"2px 8px", borderRadius:999, fontSize:11.5, fontWeight:600, background:"var(--violet-dim)", color:"var(--violet)" }}>{r.typeDevoir}</span></td>
+              <td style={{ padding:"8px 10px" }}><span style={{ padding:"2px 8px", borderRadius:999, fontSize:11.5, fontWeight:600, background:"var(--violet-dim)", color:"var(--violet)" }}>{t(`notes.types.${r.typeDevoir}`) ?? r.typeDevoir}</span></td>
               <td style={{ padding:"8px 10px" }}><span style={{ fontWeight:700, color:r.valeur>=10?"var(--green)":"var(--rose)", fontSize:14 }}>{r.valeur}</span><span style={{ fontSize:11, color:"var(--text-faint)" }}>/20</span></td>
               <td style={{ padding:"8px 10px", color:"var(--text-muted)", fontStyle:"italic" }}>{r.appreciation||"—"}</td>
               <td style={{ padding:"8px 10px", color:"var(--text-faint)" }}>{r.dateNote||"—"}</td>
@@ -690,15 +691,17 @@ function NotesTabContent({ cd, trimestre }) {
   );
 }
 
-function BulletinTabContent({ cd, trimestre }) {
+function BulletinTabContent({ cd, trimestre, t }) {
   const key=`bulletin_${trimestre}`; const data=cd?.[key]; const loading=cd?.[`loading_${key}`];
-  if (loading) return <LoadingRow />;
-  if (!data) return <EmptyRow label="Select a trimestre to load the bulletin." />;
+  const bl = t("parents.children.bulletinLabels");
+  const bh = t("notes.tableHeaders");
+  if (loading) return <LoadingRow t={t} />;
+  if (!data) return <EmptyRow label={t("parents.children.selectTrimestreBulletin")} />;
   const avg=data.moyenneGenerale;
   return (
     <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
       <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:10 }}>
-        {[{icon:"🎓",label:"Student",value:data.studentName},{icon:"📚",label:"Class",value:data.className},{icon:"📅",label:"Trimestre",value:data.trimestreNom}].map(({icon,label,value})=>(
+        {[{icon:"🎓",label:bl.student,value:data.studentName},{icon:"📚",label:bl.class,value:data.className},{icon:"📅",label:bl.trimestre,value:data.trimestreNom}].map(({icon,label,value})=>(
           <div key={label} style={{ background:"var(--surface)", border:"1px solid var(--border)", borderRadius:"var(--r-md)", padding:"10px 12px" }}>
             <div style={{ fontSize:10, fontWeight:700, textTransform:"uppercase", letterSpacing:".08em", color:"var(--text-faint)", marginBottom:4 }}>{icon} {label}</div>
             <div style={{ fontSize:13, color:"var(--text-dim)", fontWeight:500 }}>{value||"—"}</div>
@@ -708,7 +711,7 @@ function BulletinTabContent({ cd, trimestre }) {
       <div style={{ display:"flex", alignItems:"center", gap:12, padding:"12px 16px", borderRadius:"var(--r-md)", background:avg>=10?"var(--green-dim)":"var(--rose-dim)", border:`1px solid ${avg>=10?"rgba(42,117,64,.22)":"rgba(184,53,53,.22)"}` }}>
         <span style={{ fontSize:24, fontFamily:"'Instrument Serif',serif", fontWeight:400, color:avg>=10?"var(--green)":"var(--rose)" }}>{avg?.toFixed(2)??"—"}</span>
         <div>
-          <div style={{ fontSize:10.5, fontWeight:700, textTransform:"uppercase", letterSpacing:".08em", color:avg>=10?"var(--green)":"var(--rose)" }}>Moyenne Générale</div>
+          <div style={{ fontSize:10.5, fontWeight:700, textTransform:"uppercase", letterSpacing:".08em", color:avg>=10?"var(--green)":"var(--rose)" }}>{t("notes.bulletinAvg")}</div>
           {data.appreciation && <div style={{ fontSize:12.5, color:"var(--text-muted)", marginTop:2, fontStyle:"italic" }}>{data.appreciation}</div>}
         </div>
       </div>
@@ -717,7 +720,7 @@ function BulletinTabContent({ cd, trimestre }) {
           <table style={{ width:"100%", borderCollapse:"collapse", fontSize:12.5 }}>
             <thead>
               <tr style={{ borderBottom:"1px solid var(--border)" }}>
-                {["Matière","Coeff","D1","D2","D3","Examen","Moy. Devoirs","Moy. Matière"].map(h=>(
+                {[bh.subject, bh.coeff, bh.d1, bh.d2, bh.d3, bh.exam, bh.avgDevoirs, bh.avgSubject].map(h=>(
                   <th key={h} style={{ padding:"7px 8px", textAlign:"left", fontSize:10, fontWeight:700, textTransform:"uppercase", letterSpacing:".07em", color:"var(--text-faint)", whiteSpace:"nowrap" }}>{h}</th>
                 ))}
               </tr>
@@ -743,12 +746,12 @@ function BulletinTabContent({ cd, trimestre }) {
   );
 }
 
-function AbsencesTabContent({ cd, sid, onLoad }) {
+function AbsencesTabContent({ cd, sid, onLoad, t }) {
   useEffect(()=>{ if (!cd?.absences) onLoad(); }, []);
   const loading = cd?.loading_absences;
   const rows    = cd?.absences;
-  if (loading) return <LoadingRow />;
-  if (!rows?.length) return <EmptyRow label="No absences recorded. 🎉" />;
+  if (loading) return <LoadingRow t={t} />;
+  if (!rows?.length) return <EmptyRow label={t("parents.children.noAbsences")} />;
   return (
     <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(220px, 1fr))", gap:10 }}>
       {rows.map((a,i)=>{
@@ -757,7 +760,7 @@ function AbsencesTabContent({ cd, sid, onLoad }) {
           <div key={a.id??i} className="card" style={{ padding:"14px 16px" }}>
             <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:10 }}>
               <span style={{ padding:"3px 10px", borderRadius:999, background:ds.bg, color:ds.color, border:`1px solid ${ds.border}`, fontSize:11, fontWeight:700, fontFamily:"'JetBrains Mono',monospace" }}>
-                {a.timetableDayOfWeek}{a.timetableStartTime ? ` · ${a.timetableStartTime}` : ""}
+                {a.timetableDayOfWeek ? t(`timetable.days.${a.timetableDayOfWeek}`) : "—"}{a.timetableStartTime ? ` · ${a.timetableStartTime}` : ""}
               </span>
               <span style={{ fontSize:11, color:"var(--text-faint,#aaa)" }}>{a.date ?? "—"}</span>
             </div>
@@ -777,8 +780,8 @@ function AbsencesTabContent({ cd, sid, onLoad }) {
   );
 }
 
-function LoadingRow() {
-  return <div style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:10, padding:"24px 0", color:"var(--text-faint)", fontSize:13 }}><div className="spinner" style={{ width:16, height:16 }}/> Loading…</div>;
+function LoadingRow({ t }) {
+  return <div style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:10, padding:"24px 0", color:"var(--text-faint)", fontSize:13 }}><div className="spinner" style={{ width:16, height:16 }}/> {t("parents.children.loading")}</div>;
 }
 function EmptyRow({ label }) {
   return <div style={{ padding:"24px 0", textAlign:"center", fontSize:13, color:"var(--text-faint)" }}>{label}</div>;
@@ -786,8 +789,8 @@ function EmptyRow({ label }) {
 
 // ── Detail tabs nav ───────────────────────────────────────────────────────────
 
-function DetailTabs({ active, onChange }) {
-  const tabs=[{key:"info",label:"👤 Info"},{key:"children",label:"👨‍👩‍👧 Children"}];
+function DetailTabs({ active, onChange, t }) {
+  const tabs=[{key:"info",label:t("parents.tabs.info")},{key:"children",label:t("parents.tabs.children")}];
   return (
     <div style={{ display:"flex", gap:4, borderBottom:"1px solid var(--border)", marginBottom:24 }}>
       {tabs.map(tab=>(
@@ -949,8 +952,8 @@ export default function ParentsPage() {
       ) : filtered.length === 0 ? (
         <div className="empty-state">
           <span style={{ fontSize:36 }}>👨‍👩‍👧</span>
-          <p>{q||filterStatus ? "No parents match your filters." : t("parents.empty")}</p>
-          {(q||filterStatus) && <button onClick={resetFilters} className="btn-ghost" style={{ marginTop:8 }}>Clear filters</button>}
+          <p>{q||filterStatus ? t("parents.noMatch") : t("parents.empty")}</p>
+          {(q||filterStatus) && <button onClick={resetFilters} className="btn-ghost" style={{ marginTop:8 }}>{t("common.clearFilters")}</button>}
         </div>
       ) : (
         <div style={{ background:"var(--bg-card)", border:"1px solid var(--border)", borderRadius:"var(--r-xl)", boxShadow:"var(--shadow-sm)", overflow:"hidden" }}>
@@ -958,13 +961,13 @@ export default function ParentsPage() {
             <table style={{ width:"100%", borderCollapse:"collapse", tableLayout:"auto" }}>
               <thead>
                 <tr>
-                  <ThCell label="#"                       sortKey={null}         sortBy={sortBy} sortDir={sortDir} onSort={handleSort} style={{ width:44, textAlign:"center" }} />
-                  <ThCell label="Parent"                  sortKey="lastname"     sortBy={sortBy} sortDir={sortDir} onSort={handleSort} />
-                  <ThCell label={t("fields.phone")}       sortKey="phone"        sortBy={sortBy} sortDir={sortDir} onSort={handleSort} />
-                  <ThCell label="NNI"                     sortKey="nni"          sortBy={sortBy} sortDir={sortDir} onSort={handleSort} />
-                  <ThCell label={t("parents.address")}    sortKey="address"      sortBy={sortBy} sortDir={sortDir} onSort={handleSort} />
-                  <ThCell label="Status"                  sortKey="isApprove"    sortBy={sortBy} sortDir={sortDir} onSort={handleSort} />
-                  <ThCell label=""                        sortKey={null}         sortBy={sortBy} sortDir={sortDir} onSort={handleSort} style={{ width:160, textAlign:"right" }} />
+                  <ThCell label="#"                             sortKey={null}         sortBy={sortBy} sortDir={sortDir} onSort={handleSort} style={{ width:44, textAlign:"center" }} />
+                  <ThCell label={t("parents.tableHeaders.parent")} sortKey="lastname"     sortBy={sortBy} sortDir={sortDir} onSort={handleSort} />
+                  <ThCell label={t("fields.phone")}             sortKey="phone"        sortBy={sortBy} sortDir={sortDir} onSort={handleSort} />
+                  <ThCell label={t("parents.fields.nni")}       sortKey="nni"          sortBy={sortBy} sortDir={sortDir} onSort={handleSort} />
+                  <ThCell label={t("parents.address")}          sortKey="address"      sortBy={sortBy} sortDir={sortDir} onSort={handleSort} />
+                  <ThCell label={t("common.status")}            sortKey="isApprove"    sortBy={sortBy} sortDir={sortDir} onSort={handleSort} />
+                  <ThCell label=""                              sortKey={null}         sortBy={sortBy} sortDir={sortDir} onSort={handleSort} style={{ width:160, textAlign:"right" }} />
                 </tr>
               </thead>
               <tbody>
@@ -987,7 +990,7 @@ export default function ParentsPage() {
           <Pagination
             page={page} totalPages={totalPages}
             pageSize={pageSize} setPage={setPage} setPageSize={setPageSize}
-            totalFiltered={filtered.length}
+            totalFiltered={filtered.length} t={t}
           />
         </div>
       )}
@@ -1009,8 +1012,8 @@ export default function ParentsPage() {
       <TwoCol
         left={
           <FormPanel onSubmit={handleCreate}>
-            <Field label="Profile Photo">
-              <PhotoUploadField photo={pendingPhoto ? URL.createObjectURL(pendingPhoto) : null} initial={(form.firstname?.[0]??"?").toUpperCase()} onFileSelected={setPendingPhoto} onDelete={()=>setPendingPhoto(null)} loading={photoLoading} />
+            <Field label={t("common.profilePhoto")}>
+              <PhotoUploadField photo={pendingPhoto ? URL.createObjectURL(pendingPhoto) : null} initial={(form.firstname?.[0]??"?").toUpperCase()} onFileSelected={setPendingPhoto} onDelete={()=>setPendingPhoto(null)} loading={photoLoading} t={t} />
             </Field>
             <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:16 }}>
               <Field label={t("fields.firstName")}><Input placeholder={t("fields.firstNamePlaceholder")} value={form.firstname} onChange={set("firstname")} required /></Field>
@@ -1022,16 +1025,16 @@ export default function ParentsPage() {
               <Field label={t("fields.nni")}><Input placeholder={t("fields.nniPlaceholder")} value={form.nni} onChange={set("nni")} required minLength={8} /></Field>
             </div>
             <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:16 }}>
-              <Field label="Sex">
+              <Field label={t("parents.fields.sex")}>
                 <Select value={form.sex ?? ""} onChange={set("sex")}>
-                  <option value="">— Sex —</option>
-                  <option value="MALE">Male</option>
-                  <option value="FEMALE">Female</option>
+                  <option value="">{t("parents.sexPlaceholder")}</option>
+                  <option value="MALE">{t("parents.sexMale")}</option>
+                  <option value="FEMALE">{t("parents.sexFemale")}</option>
                 </Select>
               </Field>
-              <Field label="Date of Birth"><Input type="date" value={form.dateOfBirth ?? ""} onChange={set("dateOfBirth")} /></Field>
+              <Field label={t("parents.fields.dob")}><Input type="date" value={form.dateOfBirth ?? ""} onChange={set("dateOfBirth")} /></Field>
             </div>
-            <Field label="Place of Birth"><Input placeholder="e.g. Nouakchott" value={form.placeOfBirth ?? ""} onChange={set("placeOfBirth")} /></Field>
+            <Field label={t("parents.fields.placeOfBirth")}><Input placeholder={t("parents.placeOfBirthPlaceholder")} value={form.placeOfBirth ?? ""} onChange={set("placeOfBirth")} /></Field>
             <Field label={t("parents.address")}><Input placeholder={t("parents.addressPlaceholder")} value={address} onChange={e=>setAddress(e.target.value)} /></Field>
             <div style={{ display:"flex", gap:12, paddingTop:4 }}>
               <button type="button" onClick={goList} className="btn-ghost" style={{ flex:1, padding:"12px" }}>{t("common.cancel")}</button>
@@ -1060,8 +1063,8 @@ export default function ParentsPage() {
       <TwoCol
         left={
           <FormPanel onSubmit={handleEdit}>
-            <Field label="Profile Photo">
-              <PhotoUploadField photo={deletePhoto ? null : (pendingPhoto ? URL.createObjectURL(pendingPhoto) : selected.photo ?? null)} initial={(selected.firstname?.[0]??"?").toUpperCase()} onFileSelected={f=>{ setPendingPhoto(f); setDeletePhoto(false); }} onDelete={()=>{ setPendingPhoto(null); setDeletePhoto(true); }} loading={photoLoading} />
+            <Field label={t("common.profilePhoto")}>
+              <PhotoUploadField photo={deletePhoto ? null : (pendingPhoto ? URL.createObjectURL(pendingPhoto) : selected.photo ?? null)} initial={(selected.firstname?.[0]??"?").toUpperCase()} onFileSelected={f=>{ setPendingPhoto(f); setDeletePhoto(false); }} onDelete={()=>{ setPendingPhoto(null); setDeletePhoto(true); }} loading={photoLoading} t={t} />
             </Field>
             <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:16 }}>
               <Field label={t("fields.firstName")}><Input value={editForm.firstname} onChange={setEdit("firstname")} required /></Field>
@@ -1073,16 +1076,16 @@ export default function ParentsPage() {
               <Field label={t("fields.nni")}><Input value={editForm.nni} onChange={setEdit("nni")} /></Field>
             </div>
             <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:16 }}>
-              <Field label="Sex">
+              <Field label={t("parents.fields.sex")}>
                 <Select value={editForm.sex ?? ""} onChange={setEdit("sex")}>
-                  <option value="">— Sex —</option>
-                  <option value="MALE">Male</option>
-                  <option value="FEMALE">Female</option>
+                  <option value="">{t("parents.sexPlaceholder")}</option>
+                  <option value="MALE">{t("parents.sexMale")}</option>
+                  <option value="FEMALE">{t("parents.sexFemale")}</option>
                 </Select>
               </Field>
-              <Field label="Date of Birth"><Input type="date" value={editForm.dateOfBrith ?? ""} onChange={setEdit("dateOfBrith")} /></Field>
+              <Field label={t("parents.fields.dob")}><Input type="date" value={editForm.dateOfBrith ?? ""} onChange={setEdit("dateOfBrith")} /></Field>
             </div>
-            <Field label="Place of Birth"><Input placeholder="e.g. Nouakchott" value={editForm.placeOfBirth ?? ""} onChange={setEdit("placeOfBirth")} /></Field>
+            <Field label={t("parents.fields.placeOfBirth")}><Input placeholder={t("parents.placeOfBirthPlaceholder")} value={editForm.placeOfBirth ?? ""} onChange={setEdit("placeOfBirth")} /></Field>
             <Field label={t("parents.address")}><Input value={editForm.address} onChange={setEdit("address")} /></Field>
             <div style={{ display:"flex", gap:12, paddingTop:4 }}>
               <button type="button" onClick={goList} className="btn-ghost" style={{ flex:1, padding:"12px" }}>{t("common.cancel")}</button>
@@ -1134,21 +1137,21 @@ export default function ParentsPage() {
           </div>
         </div>
 
-        <DetailTabs active={detailTab} onChange={setDetailTab} />
+        <DetailTabs active={detailTab} onChange={setDetailTab} t={t} />
 
         {detailTab==="info" && (
           <div style={{ display:"grid", gridTemplateColumns:"repeat(3, 1fr)", gap:14 }}>
-            <StatBox icon="✉️" label={t("parents.fields.email")}   value={v.email} />
-            <StatBox icon="📞" label={t("parents.fields.phone")}   value={v.phone} />
-            <StatBox icon="🪪" label={t("parents.fields.nni")}     value={v.nni} />
-            <StatBox icon="🏠" label={t("parents.fields.address")} value={v.address} />
-            <StatBox icon="🎂" label={t("parents.fields.dob")}     value={v.dateOfBrith} />
-            <StatBox icon="⚧️" label="Sex"                         value={v.sex} />
-            <StatBox icon="📍" label="Place of Birth"              value={v.placeOfBirth} />
-            
+            <StatBox icon="✉️" label={t("parents.fields.email")}       value={v.email} />
+            <StatBox icon="📞" label={t("parents.fields.phone")}       value={v.phone} />
+            <StatBox icon="🪪" label={t("parents.fields.nni")}         value={v.nni} />
+            <StatBox icon="🏠" label={t("parents.fields.address")}     value={v.address} />
+            <StatBox icon="🎂" label={t("parents.fields.dob")}         value={v.dateOfBrith} />
+            <StatBox icon="⚧️" label={t("parents.fields.sex")}          value={v.sex} />
+            <StatBox icon="📍" label={t("parents.fields.placeOfBirth")} value={v.placeOfBirth} />
+
           </div>
         )}
-        {detailTab==="children" && <ChildrenTab parent={v} toast={toast} />}
+        {detailTab==="children" && <ChildrenTab parent={v} toast={toast} t={t} />}
 
         {deleteTarget && (
           <ConfirmDialog

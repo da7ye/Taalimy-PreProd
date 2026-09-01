@@ -9,11 +9,11 @@ const C_COLOR = "var(--amber)";
 const C_BG    = "var(--amber-dim)";
 
 // ─── Step indicator ───────────────────────────────────────────────────────────
-function StepIndicator({ step, classeId, matiereId }) {
+function StepIndicator({ step, classeId, matiereId, t }) {
   const steps = [
-    { num: 1, label: "Class",   icon: "🏫", done: !!classeId },
-    { num: 2, label: "Subject", icon: "📐", done: !!matiereId },
-    { num: 3, label: "Teacher", icon: "🎓", done: false },
+    { num: 1, label: t("assignments.stepClass"),   icon: "🏫", done: !!classeId },
+    { num: 2, label: t("assignments.stepSubject"), icon: "📐", done: !!matiereId },
+    { num: 3, label: t("assignments.stepTeacher"), icon: "🎓", done: false },
   ];
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 0, marginBottom: 28 }}>
@@ -368,7 +368,7 @@ export default function AssignmentsPage() {
         left={
           <FormPanel onSubmit={handleCreate}>
             {/* Step indicator */}
-            <StepIndicator step={step} classeId={classeId} matiereId={matiereId} />
+            <StepIndicator step={step} classeId={classeId} matiereId={matiereId} t={t} />
 
             {/* ── Step 1: Class ── */}
             <Field label={t("assignments.class")} hint={t("assignments.classHint")}>
@@ -394,7 +394,7 @@ export default function AssignmentsPage() {
               <LockedField
                 label={t("assignments.subject")}
                 hint={t("assignments.subjectHint")}
-                message="Select a class first"
+                message={t("notes.pickClassFirst")}
               />
             ) : (
               <Field label={t("assignments.subject")} hint={t("assignments.subjectHint")}>
@@ -414,7 +414,7 @@ export default function AssignmentsPage() {
                 </select>
                 {matieresForClass.length === 0 && (
                   <div style={{ marginTop: 6, fontSize: 12, color: "var(--text-faint)", display: "flex", alignItems: "center", gap: 5 }}>
-                    <span>⚠️</span> No subjects found for this class yet — showing all subjects.
+                    <span>⚠️</span> {t("assignments.noSubjectsWarning")}
                   </div>
                 )}
               </Field>
@@ -425,7 +425,7 @@ export default function AssignmentsPage() {
               <LockedField
                 label={t("assignments.teacher")}
                 hint={t("assignments.teacherHint")}
-                message={classeId ? "Select a subject first" : "Select a class first"}
+                message={classeId ? t("assignments.selectSubjectFirst") : t("notes.pickClassFirst")}
               />
             ) : (
               <Field label={t("assignments.teacher")} hint={t("assignments.teacherHint")}>
@@ -454,7 +454,7 @@ export default function AssignmentsPage() {
                 border: `1px solid ${C_COLOR}30`,
                 display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center",
               }}>
-                <span style={{ fontSize: 12, color: "var(--text-muted)", marginRight: 4 }}>Ready to assign:</span>
+                <span style={{ fontSize: 12, color: "var(--text-muted)", marginRight: 4 }}>{t("assignments.readyToAssign")}</span>
                 {[
                   { icon: "🏫", label: selectedClassName },
                   { icon: "📐", label: selectedMatiereName },
@@ -494,9 +494,9 @@ export default function AssignmentsPage() {
             accentBg={C_BG}
             sectionLabel={t("assignments.howItWorks")}
             items={[
-              { icon: "🏫", text: "Start by choosing the class you want to assign a subject to." },
-              { icon: "📐", text: "Then pick the subject from the list available for that class." },
-              { icon: "🎓", text: "Finally select the teacher who will teach that subject." },
+              { icon: "🏫", text: t("assignments.howItWorksStep1") },
+              { icon: "📐", text: t("assignments.howItWorksStep2") },
+              { icon: "🎓", text: t("assignments.howItWorksStep3") },
             ]}
           />
         }

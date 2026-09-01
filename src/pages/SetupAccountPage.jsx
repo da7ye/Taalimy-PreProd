@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { BASE_URL } from "../api";
+import { useStandaloneLanguage } from "../LanguageContext";
 
 /* ─── icons ──────────────────────────────────────────────── */
 function LockIcon({ color }) {
@@ -47,6 +48,16 @@ function BackIcon() {
   return (
     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
       <line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>
+    </svg>
+  );
+}
+
+function GlobeIcon() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="10"/>
+      <line x1="2" y1="12" x2="22" y2="12"/>
+      <path d="M12 2a15.3 15.3 0 010 20M12 2a15.3 15.3 0 000 20"/>
     </svg>
   );
 }
@@ -104,10 +115,10 @@ function strengthLevel(pw) {
   if (/[^A-Za-z0-9]/.test(pw)) s++;
   return s; // 0-4
 }
-const STRENGTH_LABELS = ["", "Weak", "Fair", "Good", "Strong"];
 const STRENGTH_COLORS = ["", "#E07070", "#D4944A", "#4EC9B0", "#56C785"];
 
 export default function SetupAccountPage({ phone, onGoLogin, isDark, onToggleTheme }) {
+  const { t, lang, setLang } = useStandaloneLanguage();
   const [digits,   setDigits]   = useState(["","","","","",""]);
   const [newPw,    setNewPw]    = useState("");
   const [confirmPw,setConfirmPw]= useState("");
@@ -119,12 +130,15 @@ export default function SetupAccountPage({ phone, onGoLogin, isDark, onToggleThe
   const [shake,    setShake]    = useState(false);
   const [focusNew, setFocusNew] = useState(false);
   const [focusCon, setFocusCon] = useState(false);
+  const isRTL = lang === "ar";
+  const toggleLang = () => setLang(lang === "fr" ? "ar" : "fr");
 
   const refs = [useRef(), useRef(), useRef(), useRef(), useRef(), useRef()];
   useEffect(() => { refs[0].current?.focus(); }, []);
 
   const D = isDark;
   const strength = strengthLevel(newPw);
+  const STRENGTH_LABELS = ["", t("setup.strengthWeak"), t("setup.strengthFair"), t("setup.strengthGood"), t("setup.strengthStrong")];
 
   /* ── tokens (mirrors LoginPage / AuthPage) ── */
   const PAGE_BG = D
@@ -199,10 +213,10 @@ export default function SetupAccountPage({ phone, onGoLogin, isDark, onToggleThe
     setError(""); setCodeErr(false);
 
     const code = digits.join("");
-    if (code.length < 6)  { setError("Please enter the full 6-digit code."); setCodeErr(true); triggerShake(); return; }
-    if (!newPw)            { setError("Please enter a new password."); triggerShake(); return; }
-    if (newPw.length < 8)  { setError("Password must be at least 8 characters."); triggerShake(); return; }
-    if (newPw !== confirmPw){ setError("Passwords do not match."); triggerShake(); return; }
+    if (code.length < 6)  { setError(t("setup.errEnterFullCode")); setCodeErr(true); triggerShake(); return; }
+    if (!newPw)            { setError(t("setup.errEnterNewPassword")); triggerShake(); return; }
+    if (newPw.length < 8)  { setError(t("setup.errPasswordTooShort")); triggerShake(); return; }
+    if (newPw !== confirmPw){ setError(t("setup.errPasswordsMismatch")); triggerShake(); return; }
 
     setLoading(true);
     try {
@@ -223,14 +237,14 @@ export default function SetupAccountPage({ phone, onGoLogin, isDark, onToggleThe
       }
 
       if (data.businessErrorCode === 306 || data.error?.toLowerCase().includes("invalid code")) {
-        setError("Invalid code. Please check the SMS and try again.");
+        setError(t("setup.errInvalidCode"));
         setCodeErr(true); triggerShake(); return;
       }
 
-      setError(data.businessErrorDescription || data.error || "Something went wrong. Please try again.");
+      setError(data.businessErrorDescription || data.error || t("setup.errGeneric"));
       triggerShake();
     } catch (err) {
-      setError(err.message || "Network error. Please try again.");
+      setError(err.message || t("setup.errNetwork"));
       triggerShake();
     } finally {
       setLoading(false);
@@ -239,10 +253,10 @@ export default function SetupAccountPage({ phone, onGoLogin, isDark, onToggleThe
 
   const codeComplete = digits.every(d => d !== "");
   const tips = [
-    { label:"8+ characters", check: newPw.length >= 8 },
-    { label:"Uppercase",     check: /[A-Z]/.test(newPw) },
-    { label:"Number",        check: /[0-9]/.test(newPw) },
-    { label:"Symbol",        check: /[^A-Za-z0-9]/.test(newPw) },
+    { label:t("setup.tip8chars"),   check: newPw.length >= 8 },
+    { label:t("setup.tipUppercase"),check: /[A-Z]/.test(newPw) },
+    { label:t("setup.tipNumber"),   check: /[0-9]/.test(newPw) },
+    { label:t("setup.tipSymbol"),   check: /[^A-Za-z0-9]/.test(newPw) },
   ];
 
   return (
@@ -272,10 +286,10 @@ export default function SetupAccountPage({ phone, onGoLogin, isDark, onToggleThe
         .sp-shake { animation: shakeX .5s ease-out; }
       `}</style>
 
-      <div style={{
+      <div dir={isRTL ? "rtl" : "ltr"} style={{
         position: "fixed", inset: 0, zIndex: 9999,
         display: "flex", alignItems: "center", justifyContent: "center",
-        fontFamily: "'Instrument Sans', sans-serif",
+        fontFamily: isRTL ? "'Cairo','Noto Naskh Arabic',sans-serif" : "'Instrument Sans', sans-serif",
         background: PAGE_BG, transition: "background .3s",
         overflow: "auto", padding: "40px 24px",
       }}>
@@ -283,9 +297,27 @@ export default function SetupAccountPage({ phone, onGoLogin, isDark, onToggleThe
         <div style={{ position:"fixed", top:"-10%", left:"-8%", width:420, height:420, borderRadius:"50%", background: D ? "radial-gradient(circle,rgba(78,201,176,0.16) 0%,transparent 68%)" : "radial-gradient(circle,rgba(78,201,176,0.08) 0%,transparent 68%)", animation:"floatA 12s ease-in-out infinite", pointerEvents:"none" }} />
         <div style={{ position:"fixed", bottom:"-14%", right:"-8%", width:460, height:460, borderRadius:"50%", background: D ? "radial-gradient(circle,rgba(107,95,232,0.16) 0%,transparent 68%)" : "radial-gradient(circle,rgba(107,95,232,0.09) 0%,transparent 68%)", animation:"floatB 15s ease-in-out infinite", pointerEvents:"none" }} />
 
+        {/* language toggle */}
+        <button onClick={toggleLang}
+          title={t("sidebar.changeLanguage")}
+          style={{
+            position: "fixed", top: 22, right: 70, zIndex: 100,
+            display: "flex", alignItems: "center", gap: 6,
+            height: 40, padding: "0 12px", borderRadius: 11,
+            background: TOG_BG, border: `1.5px solid ${TOG_BD}`,
+            color: TOG_COL, cursor: "pointer",
+            transition: "background .2s, border-color .2s, color .2s, transform .15s",
+          }}
+          onMouseEnter={e => { e.currentTarget.style.transform="scale(1.05)"; e.currentTarget.style.background=D?"rgba(255,255,255,0.14)":"rgba(15,21,32,0.10)"; e.currentTarget.style.color=D?"#fff":"#0F1520"; }}
+          onMouseLeave={e => { e.currentTarget.style.transform=""; e.currentTarget.style.background=TOG_BG; e.currentTarget.style.color=TOG_COL; }}
+        >
+          <GlobeIcon />
+          <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: ".04em", fontFamily: "'JetBrains Mono', monospace", textTransform: "uppercase" }}>{lang}</span>
+        </button>
+
         {/* theme toggle */}
         <button onClick={onToggleTheme}
-          title={D ? "Switch to light mode" : "Switch to dark mode"}
+          title={D ? t("common.switchToLight") : t("common.switchToDark")}
           style={{
             position: "fixed", top: 22, right: 24, zIndex: 100,
             width: 40, height: 40, borderRadius: 11,
@@ -322,7 +354,7 @@ export default function SetupAccountPage({ phone, onGoLogin, isDark, onToggleThe
             onMouseEnter={e => { e.currentTarget.style.background=D?"rgba(255,255,255,0.08)":"rgba(15,21,32,0.05)"; e.currentTarget.style.color=D?"#fff":"#0F1520"; }}
             onMouseLeave={e => { e.currentTarget.style.background="none"; e.currentTarget.style.color=BACK_COL; }}
           >
-            <BackIcon /> Back to sign in
+            <BackIcon /> {t("auth.backToSignIn")}
           </button>
 
           {/* brand mark */}
@@ -332,10 +364,10 @@ export default function SetupAccountPage({ phone, onGoLogin, isDark, onToggleThe
 
           {/* heading */}
           <div style={{ textAlign:"center", marginBottom:26 }}>
-            <div style={{ fontSize:10.5, fontWeight:800, letterSpacing:".16em", textTransform:"uppercase", color:TEXT_TINY, marginBottom:10, transition:"color .3s" }}>Set up your account</div>
-            <h2 style={{ margin:"0 0 8px", fontFamily:"'Instrument Serif',serif", fontSize:30, color:TEXT_HEA, letterSpacing:"-.03em", lineHeight:1.1, transition:"color .3s" }}>Create password</h2>
+            <div style={{ fontSize:10.5, fontWeight:800, letterSpacing:".16em", textTransform:"uppercase", color:TEXT_TINY, marginBottom:10, transition:"color .3s" }}>{t("setup.setupYourAccount")}</div>
+            <h2 style={{ margin:"0 0 8px", fontFamily:"'Instrument Serif',serif", fontSize:30, color:TEXT_HEA, letterSpacing:"-.03em", lineHeight:1.1, transition:"color .3s" }}>{t("setup.createPassword")}</h2>
             <p style={{ margin:0, fontSize:13.5, color:TEXT_SUB, lineHeight:1.55, transition:"color .3s" }}>
-              Enter the code sent to <strong style={{ color: D ? "rgba(155,143,255,0.9)" : "rgba(79,67,192,0.9)", fontWeight:600 }}>{phone}</strong>
+              {t("setup.enterCodeSentTo")} <strong style={{ color: D ? "rgba(155,143,255,0.9)" : "rgba(79,67,192,0.9)", fontWeight:600 }}>{phone}</strong>
             </p>
           </div>
 
@@ -362,7 +394,7 @@ export default function SetupAccountPage({ phone, onGoLogin, isDark, onToggleThe
                 </div>
                 {!codeErr && (
                   <div style={{ marginTop:9, fontSize:12.5, color:MUTED_TXT, textAlign:"center" }}>
-                    Didn't get it? <button type="button" onClick={() => {}} style={{ background:"none",border:"none",cursor:"pointer",fontFamily:"'Instrument Sans',sans-serif",fontSize:12.5,fontWeight:600,color:LINK_COL,padding:0 }}>Resend code</button>
+                    {t("setup.didntGetIt")} <button type="button" onClick={() => {}} style={{ background:"none",border:"none",cursor:"pointer",fontFamily:"'Instrument Sans',sans-serif",fontSize:12.5,fontWeight:600,color:LINK_COL,padding:0 }}>{t("setup.resendCode")}</button>
                   </div>
                 )}
               </div>
@@ -376,7 +408,7 @@ export default function SetupAccountPage({ phone, onGoLogin, isDark, onToggleThe
                     <LockIcon />
                   </div>
                   <input
-                    placeholder="New password"
+                    placeholder={t("setup.newPasswordPlaceholder")}
                     type={showNew ? "text" : "password"}
                     value={newPw}
                     onChange={e => { setNewPw(e.target.value); setError(""); }}
@@ -440,7 +472,7 @@ export default function SetupAccountPage({ phone, onGoLogin, isDark, onToggleThe
                   <LockIcon />
                 </div>
                 <input
-                  placeholder="Confirm new password"
+                  placeholder={t("setup.confirmPasswordPlaceholder")}
                   type={showConf ? "text" : "password"}
                   value={confirmPw}
                   onChange={e => { setConfirmPw(e.target.value); setError(""); }}
@@ -507,9 +539,9 @@ export default function SetupAccountPage({ phone, onGoLogin, isDark, onToggleThe
                 onMouseUp={e    => { if (!loading && codeComplete) e.currentTarget.style.transform="translateY(-2px)"; }}
               >
                 {loading ? (
-                  <><span style={{ width:15, height:15, borderRadius:"50%", border:"2.5px solid rgba(255,255,255,0.3)", borderTopColor:"#fff", animation:"spin .7s linear infinite", flexShrink:0 }} /> Setting up…</>
+                  <><span style={{ width:15, height:15, borderRadius:"50%", border:"2.5px solid rgba(255,255,255,0.3)", borderTopColor:"#fff", animation:"spin .7s linear infinite", flexShrink:0 }} /> {t("setup.settingUp")}</>
                 ) : (
-                  <>Activate account <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg></>
+                  <>{t("setup.activateAccount")} <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg></>
                 )}
               </button>
             </div>
@@ -517,14 +549,14 @@ export default function SetupAccountPage({ phone, onGoLogin, isDark, onToggleThe
 
           {/* footer */}
           <div style={{ marginTop:24, paddingTop:20, borderTop:`1px solid ${DIV_LINE}`, textAlign:"center" }}>
-            <span style={{ fontSize:13, color:FOOT_TXT }}>Remember your password? </span>
+            <span style={{ fontSize:13, color:FOOT_TXT }}>{t("setup.rememberPassword")}</span>
             <button
               onClick={() => onGoLogin({})}
               style={{ background:"none", border:"none", cursor:"pointer", fontFamily:"'Instrument Sans',sans-serif", fontSize:13, fontWeight:600, color:LINK_COL, padding:0, transition:"opacity .15s" }}
               onMouseEnter={e => e.currentTarget.style.opacity=".7"}
               onMouseLeave={e => e.currentTarget.style.opacity="1"}
             >
-              Sign in →
+              {t("auth.signIn")}
             </button>
           </div>
         </div>

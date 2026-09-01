@@ -178,7 +178,7 @@ export default function TimetablePage() {
                     {t(`timetable.days.${day}`)}
                   </span>
                   <div style={{ flex:1, height:1, background:"var(--border)" }} />
-                  <span style={{ fontSize:11.5, color:"var(--text-faint)" }}>{byDay[day].length} session{byDay[day].length!==1?"s":""}</span>
+                  <span style={{ fontSize:11.5, color:"var(--text-faint)" }}>{t("timetable.sessionsShort", { n: byDay[day].length })}</span>
                 </div>
                 <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(220px, 1fr))", gap:12 }}>
                   {byDay[day].map((r, i) => {
@@ -246,7 +246,7 @@ export default function TimetablePage() {
                 onChange={v => setForm(f => ({ ...f, teacherAssignmentId: v }))}
                 getValue={a => a.id}
                 getLabel={a => `${a.teacherName} · ${a.matiereName} · ${a.classeName}`}
-                placeholder="Search by teacher, subject or class…"
+                placeholder={t("timetable.assignmentSearchPlaceholder")}
                 emptyLabel={`— ${t("timetable.fields.assignment")} —`}
               />
             </Field>
@@ -286,7 +286,7 @@ export default function TimetablePage() {
                 onChange={v => setEditForm(f => ({ ...f, teacherAssignmentId: v }))}
                 getValue={a => a.id}
                 getLabel={a => `${a.teacherName} · ${a.matiereName} · ${a.classeName}`}
-                placeholder="Search by teacher, subject or class…"
+                placeholder={t("timetable.assignmentSearchPlaceholder")}
                 emptyLabel={`— ${t("timetable.fields.assignment")} —`}
               />
             </Field>
@@ -304,7 +304,7 @@ export default function TimetablePage() {
       )}
 
       {v && (
-        <DetailPanel title={v.matiereName??"Entry"} subtitle={v.classeName} avatar="🗓️" color={COLOR} onClose={() => setViewTarget(null)}>
+        <DetailPanel title={v.matiereName ?? t("timetable.entryFallback")} subtitle={v.classeName} avatar="🗓️" color={COLOR} onClose={() => setViewTarget(null)}>
           <DetailSection label={t("timetable.sections.schedule")}>
             <DetailRow icon="📅" label={t("timetable.fields.day")}  value={t(`timetable.days.${v.dayOfWeek}`)} />
             <DetailRow icon="⏰" label={t("timetable.fields.time")} value={`${v.startTime} – ${v.endTime}`} />

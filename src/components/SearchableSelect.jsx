@@ -5,6 +5,7 @@
 // where a plain <select> becomes unusable.
 
 import { useState, useRef, useEffect } from "react";
+import { useLanguage } from "../LanguageContext";
 
 export default function SearchableSelect({
   options,                // array of items
@@ -13,11 +14,16 @@ export default function SearchableSelect({
   getLabel,                // item => string shown in the list & once selected
   getValue,                // item => value used for selection/matching
   getSearchText,           // optional: item => string used for filtering (defaults to getLabel)
-  placeholder = "Search…",
-  emptyLabel = "— Select —",
-  noMatchLabel = "No matches",
+  placeholder,
+  emptyLabel,
+  noMatchLabel,
   disabled = false,
 }) {
+  const { t } = useLanguage();
+  const resolvedPlaceholder = placeholder ?? t("common.search");
+  const resolvedEmptyLabel  = emptyLabel  ?? t("common.selectPlaceholder");
+  const resolvedNoMatchLabel = noMatchLabel ?? t("common.noResults");
+
   const [open, setOpen]   = useState(false);
   const [query, setQuery] = useState("");
   const wrapRef  = useRef(null);
@@ -69,7 +75,7 @@ export default function SearchableSelect({
           overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
           color: selected ? "var(--text)" : "var(--text-faint)",
         }}>
-          {selected ? getLabel(selected) : emptyLabel}
+          {selected ? getLabel(selected) : resolvedEmptyLabel}
         </span>
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
           style={{ flexShrink: 0, opacity: .5, transform: open ? "rotate(180deg)" : "none", transition: "transform .13s" }}>
@@ -93,7 +99,7 @@ export default function SearchableSelect({
                 ref={inputRef}
                 className="search-input"
                 style={{ width: "100%" }}
-                placeholder={placeholder}
+                placeholder={resolvedPlaceholder}
                 value={query}
                 onChange={e => setQuery(e.target.value)}
                 onKeyDown={e => { if (e.key === "Escape") { setOpen(false); setQuery(""); } }}
@@ -103,7 +109,7 @@ export default function SearchableSelect({
           <div style={{ maxHeight: 260, overflowY: "auto" }}>
             {filtered.length === 0 ? (
               <div style={{ padding: "14px", fontSize: 12.5, color: "var(--text-faint)", textAlign: "center" }}>
-                {noMatchLabel}
+                {resolvedNoMatchLabel}
               </div>
             ) : filtered.map((o, i) => {
               const v = getValue(o);

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { BASE_URL } from "../api";
+import { useStandaloneLanguage } from "../LanguageContext";
 
 /* ─── tiny icons ─────────────────────────────────────────── */
 function PhoneIcon({ color }) {
@@ -46,7 +47,18 @@ function MoonIcon() {
   );
 }
 
+function GlobeIcon() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="10"/>
+      <line x1="2" y1="12" x2="22" y2="12"/>
+      <path d="M12 2a15.3 15.3 0 010 20M12 2a15.3 15.3 0 000 20"/>
+    </svg>
+  );
+}
+
 export default function AuthPage({ onGoLogin, onGoSetup, isDark, onToggleTheme }) {
+  const { t, lang, setLang } = useStandaloneLanguage();
   const [phone,   setPhone]   = useState("");
   const [loading, setLoading] = useState(false);
   const [error,   setError]   = useState("");
@@ -54,6 +66,8 @@ export default function AuthPage({ onGoLogin, onGoSetup, isDark, onToggleTheme }
   const [shake,   setShake]   = useState(false);
 
   const D = isDark;
+  const isRTL = lang === "ar";
+  const toggleLang = () => setLang(lang === "fr" ? "ar" : "fr");
 
   /* ── tokens (mirrors LoginPage) ── */
   const PAGE_BG = D
@@ -92,7 +106,7 @@ export default function AuthPage({ onGoLogin, onGoSetup, isDark, onToggleTheme }
     setError("");
     const trimmed = phone.trim();
     if (!trimmed) {
-      setError("Please enter your phone number.");
+      setError(t("auth.errEnterPhone"));
       triggerShake(); return;
     }
     setLoading(true);
@@ -105,7 +119,7 @@ export default function AuthPage({ onGoLogin, onGoSetup, isDark, onToggleTheme }
       try { data = JSON.parse(text); } catch (_) { /* non-JSON 200 */ }
 
       if (data.businessErrorCode === 1500 || (data.error && data.error.toLowerCase().includes("not found"))) {
-        setError("Phone number not found. Please check and try again.");
+        setError(t("auth.errPhoneNotFound"));
         triggerShake(); return;
       }
 
@@ -122,10 +136,10 @@ export default function AuthPage({ onGoLogin, onGoSetup, isDark, onToggleTheme }
       }
 
       /* fallback */
-      setError("Unexpected response. Please try again.");
+      setError(t("auth.errUnexpected"));
       triggerShake();
     } catch (err) {
-      setError(err.message || "Network error. Please try again.");
+      setError(err.message || t("auth.errNetwork"));
       triggerShake();
     } finally {
       setLoading(false);
@@ -159,10 +173,10 @@ export default function AuthPage({ onGoLogin, onGoSetup, isDark, onToggleTheme }
         .ap-shake { animation: shakeX .5s ease-out; }
       `}</style>
 
-      <div style={{
+      <div dir={isRTL ? "rtl" : "ltr"} style={{
         position: "fixed", inset: 0, zIndex: 9999,
         display: "flex", alignItems: "center", justifyContent: "center",
-        fontFamily: "'Instrument Sans', sans-serif",
+        fontFamily: isRTL ? "'Cairo','Noto Naskh Arabic',sans-serif" : "'Instrument Sans', sans-serif",
         background: PAGE_BG, transition: "background .3s",
         overflow: "hidden", padding: 24,
       }}>
@@ -170,9 +184,27 @@ export default function AuthPage({ onGoLogin, onGoSetup, isDark, onToggleTheme }
         <div style={{ position:"absolute", top:"-10%", left:"-8%", width:420, height:420, borderRadius:"50%", background: D ? "radial-gradient(circle,rgba(107,95,232,0.20) 0%,transparent 68%)" : "radial-gradient(circle,rgba(107,95,232,0.10) 0%,transparent 68%)", animation:"floatA 12s ease-in-out infinite", pointerEvents:"none" }} />
         <div style={{ position:"absolute", bottom:"-14%", right:"-8%", width:460, height:460, borderRadius:"50%", background: D ? "radial-gradient(circle,rgba(78,201,176,0.14) 0%,transparent 68%)" : "radial-gradient(circle,rgba(78,201,176,0.09) 0%,transparent 68%)", animation:"floatB 15s ease-in-out infinite", pointerEvents:"none" }} />
 
+        {/* language toggle */}
+        <button onClick={toggleLang}
+          title={t("sidebar.changeLanguage")}
+          style={{
+            position: "absolute", top: 22, right: 70, zIndex: 100,
+            display: "flex", alignItems: "center", gap: 6,
+            height: 40, padding: "0 12px", borderRadius: 11,
+            background: TOG_BG, border: `1.5px solid ${TOG_BD}`,
+            color: TOG_COL, cursor: "pointer",
+            transition: "background .2s, border-color .2s, color .2s, transform .15s",
+          }}
+          onMouseEnter={e => { e.currentTarget.style.transform="scale(1.05)"; e.currentTarget.style.background=D?"rgba(255,255,255,0.14)":"rgba(15,21,32,0.10)"; e.currentTarget.style.color=D?"#fff":"#0F1520"; }}
+          onMouseLeave={e => { e.currentTarget.style.transform=""; e.currentTarget.style.background=TOG_BG; e.currentTarget.style.color=TOG_COL; }}
+        >
+          <GlobeIcon />
+          <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: ".04em", fontFamily: "'JetBrains Mono', monospace", textTransform: "uppercase" }}>{lang}</span>
+        </button>
+
         {/* theme toggle */}
         <button onClick={onToggleTheme}
-          title={D ? "Switch to light mode" : "Switch to dark mode"}
+          title={D ? t("common.switchToLight") : t("common.switchToDark")}
           style={{
             position: "absolute", top: 22, right: 24, zIndex: 100,
             width: 40, height: 40, borderRadius: 11,
@@ -209,7 +241,7 @@ export default function AuthPage({ onGoLogin, onGoSetup, isDark, onToggleTheme }
             onMouseEnter={e => { e.currentTarget.style.background=D?"rgba(255,255,255,0.08)":"rgba(15,21,32,0.05)"; e.currentTarget.style.color=D?"#fff":"#0F1520"; }}
             onMouseLeave={e => { e.currentTarget.style.background="none"; e.currentTarget.style.color=BACK_COL; }}
           >
-            <BackIcon /> Back to sign in
+            <BackIcon /> {t("auth.backToSignIn")}
           </button>
 
           {/* brand mark */}
@@ -221,9 +253,9 @@ export default function AuthPage({ onGoLogin, onGoSetup, isDark, onToggleTheme }
 
           {/* heading */}
           <div style={{ textAlign:"center", marginBottom:28 }}>
-            <div style={{ fontSize:10.5, fontWeight:800, letterSpacing:".16em", textTransform:"uppercase", color:TEXT_TINY, marginBottom:10, transition:"color .3s" }}>First-time access</div>
-            <h2 style={{ margin:"0 0 8px", fontFamily:"'Instrument Serif',serif", fontSize:32, color:TEXT_HEA, letterSpacing:"-.03em", lineHeight:1.05, transition:"color .3s" }}>Verify phone</h2>
-            <p style={{ margin:0, fontSize:13.5, color:TEXT_SUB, lineHeight:1.55, transition:"color .3s" }}>Enter the phone number your admin registered for your account</p>
+            <div style={{ fontSize:10.5, fontWeight:800, letterSpacing:".16em", textTransform:"uppercase", color:TEXT_TINY, marginBottom:10, transition:"color .3s" }}>{t("auth.firstTimeAccess")}</div>
+            <h2 style={{ margin:"0 0 8px", fontFamily:"'Instrument Serif',serif", fontSize:32, color:TEXT_HEA, letterSpacing:"-.03em", lineHeight:1.05, transition:"color .3s" }}>{t("auth.verifyPhone")}</h2>
+            <p style={{ margin:0, fontSize:13.5, color:TEXT_SUB, lineHeight:1.55, transition:"color .3s" }}>{t("auth.verifyPhoneSub")}</p>
           </div>
 
           <form onSubmit={handleSubmit}>
@@ -234,7 +266,7 @@ export default function AuthPage({ onGoLogin, onGoSetup, isDark, onToggleTheme }
                   <PhoneIcon />
                 </div>
                 <input
-                  placeholder="e.g. +222 XX XX XX XX"
+                  placeholder={t("auth.phonePlaceholder")}
                   value={phone}
                   onChange={e => { setPhone(e.target.value); setError(""); }}
                   onFocus={() => setFocus(true)}
@@ -287,9 +319,9 @@ export default function AuthPage({ onGoLogin, onGoSetup, isDark, onToggleTheme }
                 onMouseUp={e    => { if (!loading) e.currentTarget.style.transform="translateY(-2px)"; }}
               >
                 {loading ? (
-                  <><span style={{ width:15, height:15, borderRadius:"50%", border:"2.5px solid rgba(255,255,255,0.3)", borderTopColor:"#fff", animation:"spin .7s linear infinite", flexShrink:0 }} /> Checking…</>
+                  <><span style={{ width:15, height:15, borderRadius:"50%", border:"2.5px solid rgba(255,255,255,0.3)", borderTopColor:"#fff", animation:"spin .7s linear infinite", flexShrink:0 }} /> {t("auth.checking")}</>
                 ) : (
-                  <>Continue <ArrowIcon /></>
+                  <>{t("auth.continueBtn")} <ArrowIcon /></>
                 )}
               </button>
             </div>
@@ -297,14 +329,14 @@ export default function AuthPage({ onGoLogin, onGoSetup, isDark, onToggleTheme }
 
           {/* footer */}
           <div style={{ marginTop:24, paddingTop:20, borderTop:`1px solid ${DIV_LINE}`, textAlign:"center" }}>
-            <span style={{ fontSize:13, color:FOOT_TXT }}>Already have an account? </span>
+            <span style={{ fontSize:13, color:FOOT_TXT }}>{t("auth.alreadyHaveAccount")}</span>
             <button
               onClick={() => onGoLogin({})}
               style={{ background:"none", border:"none", cursor:"pointer", fontFamily:"'Instrument Sans',sans-serif", fontSize:13, fontWeight:600, color:LINK_COL, padding:0, transition:"opacity .15s" }}
               onMouseEnter={e => e.currentTarget.style.opacity=".7"}
               onMouseLeave={e => e.currentTarget.style.opacity="1"}
             >
-              Sign in →
+              {t("auth.signIn")}
             </button>
           </div>
         </div>

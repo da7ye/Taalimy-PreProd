@@ -11,9 +11,9 @@ const COLOR      = "var(--violet)";
 const C_BG       = "var(--violet-dim)";
 const PAGE_SIZE_OPTIONS = [10, 25, 50];
 
-const STATUS_STYLE = {
-  PENDING: { color: "var(--amber)", bg: "var(--amber-dim)", border: "rgba(168,100,30,.2)",  label: "Pending" },
-  SENT:    { color: "var(--green)", bg: "var(--green-dim)", border: "rgba(42,117,64,.2)",   label: "Sent" },
+const STATUS_COLORS = {
+  PENDING: { color: "var(--amber)", bg: "var(--amber-dim)", border: "rgba(168,100,30,.2)" },
+  SENT:    { color: "var(--green)", bg: "var(--green-dim)", border: "rgba(42,117,64,.2)" },
 };
 
 // ─── Small pieces ─────────────────────────────────────────────────────────────
@@ -32,8 +32,9 @@ function InitialsAvatar({ text, color, bg, size = 32 }) {
   );
 }
 
-function StatusBadge({ status }) {
-  const s = STATUS_STYLE[status] ?? STATUS_STYLE.PENDING;
+function StatusBadge({ status, t }) {
+  const s = STATUS_COLORS[status] ?? STATUS_COLORS.PENDING;
+  const label = status === "SENT" ? t("remarks.statusSent") : t("common.pending");
   return (
     <span style={{
       display: "inline-flex", alignItems: "center", gap: 5,
@@ -41,7 +42,7 @@ function StatusBadge({ status }) {
       background: s.bg, color: s.color, border: `1px solid ${s.border}`, whiteSpace: "nowrap",
     }}>
       <span style={{ width: 5, height: 5, borderRadius: "50%", background: s.color, flexShrink: 0 }} />
-      {s.label}
+      {label}
     </span>
   );
 }
@@ -62,24 +63,24 @@ function Textarea({ value, onChange, rows = 4, placeholder }) {
 
 // ─── Filter Bar ───────────────────────────────────────────────────────────────
 
-function FilterBar({ q, setQ, status, setStatus, counts, onReset, totalFiltered, total }) {
+function FilterBar({ q, setQ, status, setStatus, counts, onReset, totalFiltered, total, t }) {
   const hasFilters = q.trim() || status !== "ALL";
   const tabs = [
-    { id: "ALL",     label: "All",     n: counts.all },
-    { id: "PENDING", label: "Pending", n: counts.pending },
-    { id: "SENT",    label: "Sent",    n: counts.sent },
+    { id: "ALL",     label: t("remarks.statusAll"), n: counts.all },
+    { id: "PENDING", label: t("common.pending"),    n: counts.pending },
+    { id: "SENT",    label: t("remarks.statusSent"), n: counts.sent },
   ];
   return (
     <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "var(--r-lg)", padding: "14px 20px", marginBottom: 16, display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center", boxShadow: "var(--shadow-sm)" }}>
       <div className="search-wrap" style={{ flex: "1 1 220px", minWidth: 180 }}>
         <svg className="search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-faint)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-        <input className="search-input" placeholder="Search by student, teacher or title…" value={q} onChange={e => setQ(e.target.value)} style={{ width: "100%" }} />
+        <input className="search-input" placeholder={t("remarks.searchPlaceholder")} value={q} onChange={e => setQ(e.target.value)} style={{ width: "100%" }} />
       </div>
 
       <div style={{ display: "flex", gap: 3, padding: 4, borderRadius: 10, background: "var(--surface)", border: "1px solid var(--border)" }}>
         {tabs.map(tab => {
           const isActive = status === tab.id;
-          const s = tab.id !== "ALL" ? STATUS_STYLE[tab.id] : null;
+          const s = tab.id !== "ALL" ? STATUS_COLORS[tab.id] : null;
           return (
             <button key={tab.id} onClick={() => setStatus(tab.id)} style={{
               padding: "6px 12px", borderRadius: 7, border: "none", cursor: "pointer",
@@ -101,13 +102,13 @@ function FilterBar({ q, setQ, status, setStatus, counts, onReset, totalFiltered,
       </div>
 
       {hasFilters && (
-        <button onClick={onReset} className="btn-ghost" style={{ padding: "8px 14px", fontSize: 12.5, flexShrink: 0, color: "var(--rose)", borderColor: "rgba(184,53,53,.25)" }}>✕ Clear</button>
+        <button onClick={onReset} className="btn-ghost" style={{ padding: "8px 14px", fontSize: 12.5, flexShrink: 0, color: "var(--rose)", borderColor: "rgba(184,53,53,.25)" }}>✕ {t("common.clearFilters")}</button>
       )}
 
       <div style={{ marginLeft: "auto", fontSize: 12, color: "var(--text-faint)", flexShrink: 0, whiteSpace: "nowrap" }}>
         {hasFilters
-          ? <><span style={{ color: "var(--text-dim)", fontWeight: 600 }}>{totalFiltered}</span> of {total}</>
-          : <><span style={{ color: "var(--text-dim)", fontWeight: 600 }}>{total}</span> total</>}
+          ? <><span style={{ color: "var(--text-dim)", fontWeight: 600 }}>{totalFiltered}</span> {t("common.of")} {total}</>
+          : <><span style={{ color: "var(--text-dim)", fontWeight: 600 }}>{total}</span> {t("common.total")}</>}
       </div>
     </div>
   );
@@ -115,7 +116,7 @@ function FilterBar({ q, setQ, status, setStatus, counts, onReset, totalFiltered,
 
 // ─── Bulk action bar ────────────────────────────────────────────────────────
 
-function BulkBar({ count, onSend, onClear, sending }) {
+function BulkBar({ count, onSend, onClear, sending, t }) {
   if (count === 0) return null;
   return (
     <div style={{
@@ -124,12 +125,12 @@ function BulkBar({ count, onSend, onClear, sending }) {
       background: "var(--violet-dim)", border: "1px solid rgba(79,67,192,.22)",
     }}>
       <span style={{ fontSize: 13, fontWeight: 600, color: "var(--violet)" }}>
-        {count} remark{count !== 1 ? "s" : ""} selected
+        {t("remarks.selectedCount", { n: count })}
       </span>
       <div style={{ flex: 1 }} />
-      <button onClick={onClear} className="btn-ghost" style={{ padding: "6px 12px", fontSize: 12.5 }}>Clear</button>
+      <button onClick={onClear} className="btn-ghost" style={{ padding: "6px 12px", fontSize: 12.5 }}>{t("common.clear")}</button>
       <button onClick={onSend} disabled={sending} className="btn-primary" style={{ padding: "7px 16px", fontSize: 12.5, display: "flex", alignItems: "center", gap: 6 }}>
-        {sending ? <span className="spinner" style={{ width: 12, height: 12 }} /> : "📨"} Send selected
+        {sending ? <span className="spinner" style={{ width: 12, height: 12 }} /> : "📨"} {t("remarks.sendSelected")}
       </button>
     </div>
   );
@@ -137,7 +138,7 @@ function BulkBar({ count, onSend, onClear, sending }) {
 
 // ─── Pagination ───────────────────────────────────────────────────────────────
 
-function Pagination({ page, totalPages, pageSize, setPage, setPageSize, totalFiltered }) {
+function Pagination({ page, totalPages, pageSize, setPage, setPageSize, totalFiltered, t }) {
   if (totalFiltered === 0) return null;
   const pages = [];
   const delta = 2;
@@ -170,7 +171,7 @@ function Pagination({ page, totalPages, pageSize, setPage, setPageSize, totalFil
     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12, padding: "14px 20px", borderTop: "1px solid var(--border)", background: "var(--surface, rgba(0,0,0,.02))" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <span style={{ fontSize: 12, color: "var(--text-faint)" }}>Rows per page:</span>
+          <span style={{ fontSize: 12, color: "var(--text-faint)" }}>{t("pagination.rowsPerPage")}</span>
           <div style={{ display: "flex", gap: 4 }}>
             {PAGE_SIZE_OPTIONS.map(s => (
               <button key={s} onClick={() => { setPageSize(s); setPage(0); }} style={{ ...btnStyle(pageSize === s), minWidth: 34, padding: "0 8px", fontSize: 12 }}>{s}</button>
@@ -178,19 +179,19 @@ function Pagination({ page, totalPages, pageSize, setPage, setPageSize, totalFil
           </div>
         </div>
         <span style={{ fontSize: 12, color: "var(--text-faint)" }}>
-          <span style={{ color: "var(--text-dim)", fontWeight: 600 }}>{start}–{end}</span> of <span style={{ color: "var(--text-dim)", fontWeight: 600 }}>{totalFiltered}</span>
+          <span style={{ color: "var(--text-dim)", fontWeight: 600 }}>{start}–{end}</span> {t("common.of")} <span style={{ color: "var(--text-dim)", fontWeight: 600 }}>{totalFiltered}</span>
         </span>
       </div>
       {totalPages > 1 && (
         <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-          <button onClick={() => setPage(0)} disabled={page === 0} style={{ ...btnStyle(false, page === 0), padding: "0 8px" }}>«</button>
-          <button onClick={() => setPage(p => Math.max(0, p - 1))} disabled={page === 0} style={{ ...btnStyle(false, page === 0), padding: "0 8px" }}>‹</button>
+          <button onClick={() => setPage(0)} disabled={page === 0} title={t("pagination.firstPage")} style={{ ...btnStyle(false, page === 0), padding: "0 8px" }}>«</button>
+          <button onClick={() => setPage(p => Math.max(0, p - 1))} disabled={page === 0} title={t("pagination.prevPage")} style={{ ...btnStyle(false, page === 0), padding: "0 8px" }}>‹</button>
           {withEllipsis.map((p, i) => p === "..."
             ? <span key={`e${i}`} style={{ color: "var(--text-faint)", fontSize: 13, padding: "0 4px" }}>…</span>
             : <button key={p} onClick={() => setPage(p)} style={{ ...btnStyle(page === p), padding: "0 6px" }}>{p + 1}</button>
           )}
-          <button onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))} disabled={page >= totalPages - 1} style={{ ...btnStyle(false, page >= totalPages - 1), padding: "0 8px" }}>›</button>
-          <button onClick={() => setPage(totalPages - 1)} disabled={page >= totalPages - 1} style={{ ...btnStyle(false, page >= totalPages - 1), padding: "0 8px" }}>»</button>
+          <button onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))} disabled={page >= totalPages - 1} title={t("pagination.nextPage")} style={{ ...btnStyle(false, page >= totalPages - 1), padding: "0 8px" }}>›</button>
+          <button onClick={() => setPage(totalPages - 1)} disabled={page >= totalPages - 1} title={t("pagination.lastPage")} style={{ ...btnStyle(false, page >= totalPages - 1), padding: "0 8px" }}>»</button>
         </div>
       )}
     </div>
@@ -199,7 +200,7 @@ function Pagination({ page, totalPages, pageSize, setPage, setPageSize, totalFil
 
 // ─── Table Row ────────────────────────────────────────────────────────────────
 
-function RemarkRow({ r, index, checked, onCheck, onClick, onEdit, onDelete }) {
+function RemarkRow({ r, index, checked, onCheck, onClick, onEdit, onDelete, t }) {
   const [hovered, setHovered] = useState(false);
   const studentName = `${r.studentFirstname ?? ""} ${r.studentLastname ?? ""}`.trim() || "—";
   const teacherName = `${r.teacherFirstname ?? ""} ${r.teacherLastname ?? ""}`.trim() || "—";
@@ -224,7 +225,7 @@ function RemarkRow({ r, index, checked, onCheck, onClick, onEdit, onDelete }) {
 
       <td style={{ padding: "10px 16px", maxWidth: 260 }}>
         <div style={{ fontWeight: 600, fontSize: 13.5, color: "var(--text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-          {r.title || "Untitled"}
+          {r.title || t("remarks.untitled")}
         </div>
         {r.description && (
           <div style={{
@@ -256,12 +257,12 @@ function RemarkRow({ r, index, checked, onCheck, onClick, onEdit, onDelete }) {
         </div>
       </td>
 
-      <td style={{ padding: "10px 16px" }}><StatusBadge status={r.status} /></td>
+      <td style={{ padding: "10px 16px" }}><StatusBadge status={r.status} t={t} /></td>
 
       <td style={{ padding: "10px 16px", textAlign: "right" }} onClick={e => e.stopPropagation()}>
         <div style={{ display: "flex", gap: 6, justifyContent: "flex-end" }}>
-          <button onClick={() => onEdit(r)} className="btn-ghost" style={{ padding: "5px 12px", fontSize: 12 }}>Edit</button>
-          <button onClick={() => onDelete(r)} className="btn-danger" style={{ padding: "5px 12px", fontSize: 12 }}>Delete</button>
+          <button onClick={() => onEdit(r)} className="btn-ghost" style={{ padding: "5px 12px", fontSize: 12 }}>{t("common.edit")}</button>
+          <button onClick={() => onDelete(r)} className="btn-danger" style={{ padding: "5px 12px", fontSize: 12 }}>{t("common.delete")}</button>
         </div>
       </td>
     </tr>
@@ -273,6 +274,7 @@ function RemarkRow({ r, index, checked, onCheck, onClick, onEdit, onDelete }) {
 // ═══════════════════════════════════════════════════════
 
 export default function RemarquesPage() {
+  const { t } = useLanguage();
   const toast = useToast();
   const [data, setData]         = useState([]);
   const [loading, setLoading]   = useState(true);
@@ -351,7 +353,7 @@ export default function RemarquesPage() {
     setSending(true);
     try {
       await sendRemarks([...selected]);
-      toast(`${selected.size} remark${selected.size !== 1 ? "s" : ""} sent`);
+      toast(t("remarks.bulkSentToast", { n: selected.size }));
       clearSelection();
       load();
     } catch (e) { toast(e.message, "error"); }
@@ -360,7 +362,7 @@ export default function RemarquesPage() {
 
   const handleSendOne = async (r) => {
     setSending(true);
-    try { await sendRemarks([r.id]); toast("Remark sent"); setViewTarget(null); load(); }
+    try { await sendRemarks([r.id]); toast(t("remarks.sentToast")); setViewTarget(null); load(); }
     catch (e) { toast(e.message, "error"); }
     finally { setSending(false); }
   };
@@ -376,7 +378,7 @@ export default function RemarquesPage() {
     e.preventDefault(); setSaving(true);
     try {
       await updateRemark(editTarget.id, editForm);
-      toast("Remark updated");
+      toast(t("remarks.updatedToast"));
       setEditTarget(null);
       load();
     } catch (err) { toast(err.message, "error"); }
@@ -388,7 +390,7 @@ export default function RemarquesPage() {
     setDeleting(true);
     try {
       await deleteRemark(deleteTarget.id);
-      toast("Remark deleted");
+      toast(t("remarks.deletedToast"));
       setDeleteTarget(null);
       setViewTarget(null);
       load();
@@ -405,10 +407,10 @@ export default function RemarquesPage() {
       <div className="page-enter" style={{ padding: "36px 44px" }}>
         <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: 28 }}>
           <div>
-            <div className="section-label" style={{ marginBottom: 6 }}>Academics</div>
-            <h1 style={{ margin: 0, fontSize: 26, fontFamily: "'Instrument Serif',serif", color: "var(--text)", letterSpacing: "-.03em" }}>Remarks</h1>
+            <div className="section-label" style={{ marginBottom: 6 }}>{t("remarks.crumb")}</div>
+            <h1 style={{ margin: 0, fontSize: 26, fontFamily: "'Instrument Serif',serif", color: "var(--text)", letterSpacing: "-.03em" }}>{t("remarks.title")}</h1>
             <p style={{ margin: "6px 0 0", fontSize: 14, color: "var(--text-muted)" }}>
-              {loading ? "Loading…" : `${filtered.length} remark${filtered.length !== 1 ? "s" : ""}`}
+              {loading ? t("common.loading") : t("remarks.subtitleCount", { n: filtered.length })}
             </p>
           </div>
         </div>
@@ -416,22 +418,22 @@ export default function RemarquesPage() {
         <FilterBar
           q={q} setQ={setQ} status={status} setStatus={setStatus}
           counts={counts} onReset={resetFilters}
-          totalFiltered={filtered.length} total={data.length}
+          totalFiltered={filtered.length} total={data.length} t={t}
         />
 
-        <BulkBar count={selected.size} onSend={handleSendSelected} onClear={clearSelection} sending={sending} />
+        <BulkBar count={selected.size} onSend={handleSendSelected} onClear={clearSelection} sending={sending} t={t} />
 
         {loading ? (
           <div className="empty-state">
             <div className="spinner" style={{ width: 22, height: 22 }} />
-            <p>Loading…</p>
+            <p>{t("common.loading")}</p>
           </div>
         ) : filtered.length === 0 ? (
           <div className="empty-state">
             <span style={{ fontSize: 36 }}>📝</span>
-            <p>{q || status !== "ALL" ? "No remarks match your filters." : "No remarks yet."}</p>
+            <p>{q || status !== "ALL" ? t("remarks.noMatch") : t("remarks.empty")}</p>
             {(q || status !== "ALL") && (
-              <button onClick={resetFilters} className="btn-ghost" style={{ marginTop: 8 }}>Clear filters</button>
+              <button onClick={resetFilters} className="btn-ghost" style={{ marginTop: 8 }}>{t("common.clearFilters")}</button>
             )}
           </div>
         ) : (
@@ -441,10 +443,10 @@ export default function RemarquesPage() {
                 <thead>
                   <tr>
                     <th style={{ padding: "11px 16px", background: "var(--surface, rgba(0,0,0,.03))", borderBottom: "2px solid var(--border)", width: 36 }} />
-                    <th style={{ padding: "11px 16px", textAlign: "left", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".07em", color: "var(--text-faint)", background: "var(--surface, rgba(0,0,0,.03))", borderBottom: "2px solid var(--border)" }}>Remark</th>
-                    <th style={{ padding: "11px 16px", textAlign: "left", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".07em", color: "var(--text-faint)", background: "var(--surface, rgba(0,0,0,.03))", borderBottom: "2px solid var(--border)" }}>Student</th>
-                    <th style={{ padding: "11px 16px", textAlign: "left", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".07em", color: "var(--text-faint)", background: "var(--surface, rgba(0,0,0,.03))", borderBottom: "2px solid var(--border)" }}>Teacher</th>
-                    <th style={{ padding: "11px 16px", textAlign: "left", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".07em", color: "var(--text-faint)", background: "var(--surface, rgba(0,0,0,.03))", borderBottom: "2px solid var(--border)" }}>Status</th>
+                    <th style={{ padding: "11px 16px", textAlign: "left", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".07em", color: "var(--text-faint)", background: "var(--surface, rgba(0,0,0,.03))", borderBottom: "2px solid var(--border)" }}>{t("remarks.tableHeaders.remark")}</th>
+                    <th style={{ padding: "11px 16px", textAlign: "left", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".07em", color: "var(--text-faint)", background: "var(--surface, rgba(0,0,0,.03))", borderBottom: "2px solid var(--border)" }}>{t("remarks.tableHeaders.student")}</th>
+                    <th style={{ padding: "11px 16px", textAlign: "left", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".07em", color: "var(--text-faint)", background: "var(--surface, rgba(0,0,0,.03))", borderBottom: "2px solid var(--border)" }}>{t("remarks.tableHeaders.teacher")}</th>
+                    <th style={{ padding: "11px 16px", textAlign: "left", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".07em", color: "var(--text-faint)", background: "var(--surface, rgba(0,0,0,.03))", borderBottom: "2px solid var(--border)" }}>{t("common.status")}</th>
                     <th style={{ padding: "11px 16px", width: 140, background: "var(--surface, rgba(0,0,0,.03))", borderBottom: "2px solid var(--border)" }} />
                   </tr>
                 </thead>
@@ -459,31 +461,32 @@ export default function RemarquesPage() {
                       onClick={setViewTarget}
                       onEdit={openEdit}
                       onDelete={setDeleteTarget}
+                      t={t}
                     />
                   ))}
                 </tbody>
               </table>
             </div>
-            <Pagination page={page} totalPages={totalPages} pageSize={pageSize} setPage={setPage} setPageSize={setPageSize} totalFiltered={filtered.length} />
+            <Pagination page={page} totalPages={totalPages} pageSize={pageSize} setPage={setPage} setPageSize={setPageSize} totalFiltered={filtered.length} t={t} />
           </div>
         )}
       </div>
 
       {/* ── Edit modal ── */}
       {editTarget && (
-        <Modal title="Edit Remark" subtitle={`${editTarget.studentFirstname ?? ""} ${editTarget.studentLastname ?? ""}`} icon="✏️" accentColor={COLOR} onClose={() => setEditTarget(null)}>
+        <Modal title={t("remarks.editModalTitle")} subtitle={`${editTarget.studentFirstname ?? ""} ${editTarget.studentLastname ?? ""}`} icon="✏️" accentColor={COLOR} onClose={() => setEditTarget(null)}>
           <form onSubmit={handleEdit} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-            <Field label="Title"><Input value={editForm.title} onChange={e => setEditField("title", e.target.value)} required /></Field>
-            <Field label="Description">
+            <Field label={t("remarks.fields.title")}><Input value={editForm.title} onChange={e => setEditField("title", e.target.value)} required /></Field>
+            <Field label={t("remarks.fields.description")}>
               <Textarea value={editForm.description} onChange={e => setEditField("description", e.target.value)} />
             </Field>
-            <Field label="Status">
+            <Field label={t("common.status")}>
               <Select value={editForm.status} onChange={e => setEditField("status", e.target.value)}>
-                <option value="PENDING">Pending</option>
-                <option value="SENT">Sent</option>
+                <option value="PENDING">{t("common.pending")}</option>
+                <option value="SENT">{t("remarks.statusSent")}</option>
               </Select>
             </Field>
-            <SubmitBtn loading={saving} label="Save changes" />
+            <SubmitBtn loading={saving} label={t("remarks.saveChanges")} />
           </form>
         </Modal>
       )}
@@ -491,22 +494,22 @@ export default function RemarquesPage() {
       {/* ── Delete confirm ── */}
       {deleteTarget && (
         <ConfirmDialog
-          title="Delete this remark?"
-          message={`This will permanently delete "${deleteTarget.title ?? "this remark"}". This cannot be undone.`}
+          title={t("remarks.deleteTitle")}
+          message={t("remarks.deleteMsg", { title: deleteTarget.title || t("remarks.thisRemark") })}
           onConfirm={handleDelete} onCancel={() => setDeleteTarget(null)} loading={deleting}
         />
       )}
 
       {/* ── Detail panel ── */}
       {v && (
-        <DetailPanel title={v.title || "Remark"} subtitle={vStudentName} avatar="📝" color={COLOR} onClose={() => setViewTarget(null)}>
-          <DetailSection label="Remark">
-            <DetailRow icon="🏷️" label="Title" value={v.title} />
-            <DetailRow icon="📌" label="Status" value={STATUS_STYLE[v.status]?.label ?? v.status} />
+        <DetailPanel title={v.title || t("remarks.detailDefaultTitle")} subtitle={vStudentName} avatar="📝" color={COLOR} onClose={() => setViewTarget(null)}>
+          <DetailSection label={t("remarks.detailSections.remark")}>
+            <DetailRow icon="🏷️" label={t("remarks.fields.title")} value={v.title} />
+            <DetailRow icon="📌" label={t("common.status")} value={v.status === "SENT" ? t("remarks.statusSent") : t("common.pending")} />
             <div style={{ display: "flex", gap: 10, alignItems: "flex-start", marginTop: 4 }}>
               <span style={{ fontSize: 14, flexShrink: 0, marginTop: 1 }}>📄</span>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 11, color: "var(--text-faint)", marginBottom: 4 }}>Description</div>
+                <div style={{ fontSize: 11, color: "var(--text-faint)", marginBottom: 4 }}>{t("remarks.fields.description")}</div>
                 <div style={{
                   fontSize: 13.5, color: "var(--text-dim)", lineHeight: 1.6,
                   whiteSpace: "pre-wrap", wordBreak: "break-word",
@@ -518,22 +521,22 @@ export default function RemarquesPage() {
               </div>
             </div>
           </DetailSection>
-          <DetailSection label="Student">
-            <DetailRow icon="🎓" label="Name" value={vStudentName} />
-            <DetailRow icon="🔢" label="Reg. Number" value={v.studentRegistrationNumber} />
+          <DetailSection label={t("remarks.detailSections.student")}>
+            <DetailRow icon="🎓" label={t("remarks.fields.name")} value={vStudentName} />
+            <DetailRow icon="🔢" label={t("remarks.fields.regNumber")} value={v.studentRegistrationNumber} />
           </DetailSection>
-          <DetailSection label="Teacher">
-            <DetailRow icon="👤" label="Name" value={vTeacherName} />
+          <DetailSection label={t("remarks.detailSections.teacher")}>
+            <DetailRow icon="👤" label={t("remarks.fields.name")} value={vTeacherName} />
           </DetailSection>
-          <DetailSection label="Actions">
+          <DetailSection label={t("common.actions")}>
             <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
               {v.status === "PENDING" && (
                 <button onClick={() => handleSendOne(v)} disabled={sending} className="btn-primary" style={{ flex: 1, minWidth: 120, padding: "11px", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
-                  {sending ? <span className="spinner" style={{ width: 12, height: 12 }} /> : "📨"} Send
+                  {sending ? <span className="spinner" style={{ width: 12, height: 12 }} /> : "📨"} {t("remarks.send")}
                 </button>
               )}
-              <button onClick={() => openEdit(v)} className="btn-ghost" style={{ flex: 1, minWidth: 100, padding: "11px" }}>✏️ Edit</button>
-              <button onClick={() => { setViewTarget(null); setDeleteTarget(v); }} className="btn-danger" style={{ flex: 1, minWidth: 100, padding: "11px" }}>🗑 Delete</button>
+              <button onClick={() => openEdit(v)} className="btn-ghost" style={{ flex: 1, minWidth: 100, padding: "11px" }}>✏️ {t("common.edit")}</button>
+              <button onClick={() => { setViewTarget(null); setDeleteTarget(v); }} className="btn-danger" style={{ flex: 1, minWidth: 100, padding: "11px" }}>🗑 {t("common.delete")}</button>
             </div>
           </DetailSection>
         </DetailPanel>

@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { BASE_URL } from "../api";
+import { useStandaloneLanguage } from "../LanguageContext";
 
 function EyeIcon({ open }) {
   return open ? (
@@ -54,7 +55,18 @@ function UserIcon() {
   );
 }
 
+function GlobeIcon() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="10"/>
+      <line x1="2" y1="12" x2="22" y2="12"/>
+      <path d="M12 2a15.3 15.3 0 010 20M12 2a15.3 15.3 0 000 20"/>
+    </svg>
+  );
+}
+
 export default function LoginPage({ onLogin, isDark, onToggleTheme, banner, onClearBanner, onGoAuth }) {
+  const { t, lang, setLang } = useStandaloneLanguage();
   const [identifier, setIdentifier] = useState("");
   const [password,   setPassword]   = useState("");
   const [showPass,   setShowPass]   = useState(false);
@@ -63,6 +75,8 @@ export default function LoginPage({ onLogin, isDark, onToggleTheme, banner, onCl
   const [shake,      setShake]      = useState(false);
   const [focusId,    setFocusId]    = useState(false);
   const [focusPw,    setFocusPw]    = useState(false);
+  const isRTL = lang === "ar";
+  const toggleLang = () => setLang(lang === "fr" ? "ar" : "fr");
 
   /* auto-dismiss banner after 6s */
   useEffect(() => {
@@ -108,7 +122,7 @@ export default function LoginPage({ onLogin, isDark, onToggleTheme, banner, onCl
     e.preventDefault();
     setError("");
     if (!identifier.trim() || !password) {
-      setError("Please fill in all fields.");
+      setError(t("login.errFillFields"));
       setShake(true); setTimeout(() => setShake(false), 600);
       return;
     }
@@ -127,8 +141,8 @@ export default function LoginPage({ onLogin, isDark, onToggleTheme, banner, onCl
     } catch (err) {
       setError(
         err.message.includes("401") || err.message.toLowerCase().includes("unauthorized")
-          ? "Invalid credentials. Please try again."
-          : err.message || "Login failed."
+          ? t("login.errInvalidCredentials")
+          : err.message || t("login.errFailed")
       );
       setShake(true); setTimeout(() => setShake(false), 600);
     } finally { setLoading(false); }
@@ -166,10 +180,10 @@ export default function LoginPage({ onLogin, isDark, onToggleTheme, banner, onCl
         .lp-banner { animation: bannerIn .3s ease-out both; }
       `}</style>
 
-      <div style={{
+      <div dir={isRTL ? "rtl" : "ltr"} style={{
         position: "fixed", inset: 0, zIndex: 9999,
         display: "flex", alignItems: "center", justifyContent: "center",
-        fontFamily: "'Instrument Sans', sans-serif",
+        fontFamily: isRTL ? "'Cairo','Noto Naskh Arabic',sans-serif" : "'Instrument Sans', sans-serif",
         background: PAGE_BG, transition: "background .3s",
         overflow: "hidden", padding: 24,
       }}>
@@ -177,9 +191,27 @@ export default function LoginPage({ onLogin, isDark, onToggleTheme, banner, onCl
         <div style={{ position:"absolute", top:"-10%", left:"-8%", width:420, height:420, borderRadius:"50%", background: D ? "radial-gradient(circle,rgba(107,95,232,0.20) 0%,transparent 68%)" : "radial-gradient(circle,rgba(107,95,232,0.10) 0%,transparent 68%)", animation:"floatA 12s ease-in-out infinite", pointerEvents:"none" }} />
         <div style={{ position:"absolute", bottom:"-14%", right:"-8%", width:460, height:460, borderRadius:"50%", background: D ? "radial-gradient(circle,rgba(78,201,176,0.14) 0%,transparent 68%)" : "radial-gradient(circle,rgba(78,201,176,0.09) 0%,transparent 68%)", animation:"floatB 15s ease-in-out infinite", pointerEvents:"none" }} />
 
+        {/* language toggle */}
+        <button onClick={toggleLang}
+          title={t("sidebar.changeLanguage")}
+          style={{
+            position: "absolute", top: 22, right: 70, zIndex: 100,
+            display: "flex", alignItems: "center", gap: 6,
+            height: 40, padding: "0 12px", borderRadius: 11,
+            background: TOG_BG, border: `1.5px solid ${TOG_BD}`,
+            color: TOG_COL, cursor: "pointer",
+            transition: "background .2s, border-color .2s, color .2s, transform .15s",
+          }}
+          onMouseEnter={e => { e.currentTarget.style.transform="scale(1.05)"; e.currentTarget.style.background=D?"rgba(255,255,255,0.14)":"rgba(15,21,32,0.10)"; e.currentTarget.style.color=D?"#fff":"#0F1520"; }}
+          onMouseLeave={e => { e.currentTarget.style.transform=""; e.currentTarget.style.background=TOG_BG; e.currentTarget.style.color=TOG_COL; }}
+        >
+          <GlobeIcon />
+          <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: ".04em", fontFamily: "'JetBrains Mono', monospace", textTransform: "uppercase" }}>{lang}</span>
+        </button>
+
         {/* theme toggle */}
         <button onClick={onToggleTheme}
-          title={D ? "Switch to light mode" : "Switch to dark mode"}
+          title={D ? t("common.switchToLight") : t("common.switchToDark")}
           style={{
             position: "absolute", top: 22, right: 24, zIndex: 100,
             width: 40, height: 40, borderRadius: 11,
@@ -208,7 +240,7 @@ export default function LoginPage({ onLogin, isDark, onToggleTheme, banner, onCl
             <div style={{ width:46, height:46, borderRadius:13, background:"linear-gradient(135deg,#4F43C0,#9B8FFF)", display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"'Instrument Serif',serif", fontSize:21, color:"#fff", boxShadow:"0 4px 22px rgba(79,67,192,0.5)" }}>T</div>
             <div style={{ textAlign:"center" }}>
               <div style={{ fontFamily:"'Instrument Serif',serif", fontSize:19, color:TEXT_HEA, letterSpacing:"-.02em", lineHeight:1, transition:"color .3s" }}>Taalimy</div>
-              <div style={{ fontSize:9, fontWeight:800, letterSpacing:".18em", textTransform:"uppercase", color: D ? "rgba(255,255,255,0.28)" : "rgba(15,21,32,0.34)", marginTop:5 }}>Staff Portal</div>
+              <div style={{ fontSize:9, fontWeight:800, letterSpacing:".18em", textTransform:"uppercase", color: D ? "rgba(255,255,255,0.28)" : "rgba(15,21,32,0.34)", marginTop:5 }}>{t("login.staffPortal")}</div>
             </div>
           </div>
 
@@ -227,9 +259,9 @@ export default function LoginPage({ onLogin, isDark, onToggleTheme, banner, onCl
 
           {/* heading */}
           <div style={{ textAlign:"center", marginBottom:28 }}>
-            <div style={{ fontSize:10.5, fontWeight:800, letterSpacing:".16em", textTransform:"uppercase", color:TEXT_TINY, marginBottom:10, transition:"color .3s" }}>Welcome back</div>
-            <h2 style={{ margin:"0 0 8px", fontFamily:"'Instrument Serif',serif", fontSize:32, color:TEXT_HEA, letterSpacing:"-.03em", lineHeight:1.05, transition:"color .3s" }}>Sign in</h2>
-            <p style={{ margin:0, fontSize:13.5, color:TEXT_SUB, lineHeight:1.5, transition:"color .3s" }}>Enter your staff credentials to continue</p>
+            <div style={{ fontSize:10.5, fontWeight:800, letterSpacing:".16em", textTransform:"uppercase", color:TEXT_TINY, marginBottom:10, transition:"color .3s" }}>{t("login.welcomeBack")}</div>
+            <h2 style={{ margin:"0 0 8px", fontFamily:"'Instrument Serif',serif", fontSize:32, color:TEXT_HEA, letterSpacing:"-.03em", lineHeight:1.05, transition:"color .3s" }}>{t("login.signIn")}</h2>
+            <p style={{ margin:0, fontSize:13.5, color:TEXT_SUB, lineHeight:1.5, transition:"color .3s" }}>{t("login.signInSub")}</p>
           </div>
 
           <form onSubmit={handleSubmit}>
@@ -240,7 +272,7 @@ export default function LoginPage({ onLogin, isDark, onToggleTheme, banner, onCl
                   <UserIcon />
                 </div>
                 <input
-                  placeholder="Identifier / Phone"
+                  placeholder={t("login.identifierPlaceholder")}
                   value={identifier}
                   onChange={e => { setIdentifier(e.target.value); setError(""); }}
                   onFocus={() => setFocusId(true)}
@@ -266,7 +298,7 @@ export default function LoginPage({ onLogin, isDark, onToggleTheme, banner, onCl
                   <LockIcon />
                 </div>
                 <input
-                  placeholder="Password"
+                  placeholder={t("login.passwordPlaceholder")}
                   type={showPass ? "text" : "password"}
                   value={password}
                   onChange={e => { setPassword(e.target.value); setError(""); }}
@@ -324,9 +356,9 @@ export default function LoginPage({ onLogin, isDark, onToggleTheme, banner, onCl
                 onMouseUp={e    => { if (!loading) e.currentTarget.style.transform="translateY(-2px)"; }}
               >
                 {loading ? (
-                  <><span style={{ width:15, height:15, borderRadius:"50%", border:"2.5px solid rgba(255,255,255,0.3)", borderTopColor:"#fff", animation:"spin .7s linear infinite", flexShrink:0 }} /> Signing in…</>
+                  <><span style={{ width:15, height:15, borderRadius:"50%", border:"2.5px solid rgba(255,255,255,0.3)", borderTopColor:"#fff", animation:"spin .7s linear infinite", flexShrink:0 }} /> {t("login.signingIn")}</>
                 ) : (
-                  <>Sign in <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></>
+                  <>{t("login.signIn")} <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></>
                 )}
               </button>
             </div>
@@ -335,14 +367,14 @@ export default function LoginPage({ onLogin, isDark, onToggleTheme, banner, onCl
           {/* footer */}
           {onGoAuth && (
             <div style={{ marginTop:24, paddingTop:20, borderTop:`1px solid ${DIV_LINE}`, textAlign:"center" }}>
-              <span style={{ fontSize:13, color:FOOT_TXT }}>First time here? </span>
+              <span style={{ fontSize:13, color:FOOT_TXT }}>{t("login.firstTimeHere")}</span>
               <button
                 onClick={onGoAuth}
                 style={{ background:"none", border:"none", cursor:"pointer", fontFamily:"'Instrument Sans',sans-serif", fontSize:13, fontWeight:600, color:LINK_COL, padding:0, transition:"opacity .15s" }}
                 onMouseEnter={e => e.currentTarget.style.opacity=".7"}
                 onMouseLeave={e => e.currentTarget.style.opacity="1"}
               >
-                Set up your account →
+                {t("login.setupAccount")}
               </button>
             </div>
           )}

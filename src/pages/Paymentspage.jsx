@@ -121,7 +121,7 @@ function PaymentRow({ p, onReceipt, loadingReceipt, t }) {
           <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: "var(--text-faint)", padding: "1px 7px", borderRadius: 5, background: "var(--surface)", border: "1px solid var(--border)" }}>#{p.id}</span>
         </div>
         <div style={{ fontSize: 13, color: "var(--text-muted)" }}>
-          Amount: <strong style={{ color: "var(--text-dim)" }}>{p.amount?.toLocaleString()} MRU</strong>
+          {t("payments.amountLabel")}: <strong style={{ color: "var(--text-dim)" }}>{p.amount?.toLocaleString()} MRU</strong>
           {p.classeId && <span style={{ marginLeft: 10, color: "var(--text-faint)" }}>{t("payments.class", { id: p.classeId })}</span>}
         </div>
       </div>

@@ -1,3 +1,5 @@
+import { useLanguage } from "../LanguageContext";
+
 export function Field({ label, error, hint, children }) {
   return (
     <div style={{ display: "flex", flexDirection: "column" }}>
@@ -25,7 +27,8 @@ export function Select({ children, ...props }) {
   );
 }
 
-export function SubmitBtn({ loading, label = "Save" }) {
+export function SubmitBtn({ loading, label }) {
+  const { t } = useLanguage();
   return (
     <button
       type="submit" disabled={loading}
@@ -35,9 +38,9 @@ export function SubmitBtn({ loading, label = "Save" }) {
       {loading ? (
         <>
           <span className="spinner" style={{ width: 14, height: 14 }} />
-          Saving…
+          {t("common.saving")}
         </>
-      ) : label}
+      ) : (label ?? t("common.save"))}
     </button>
   );
 }

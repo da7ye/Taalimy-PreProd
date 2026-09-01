@@ -15,14 +15,13 @@ const DAY_STYLE = {
 };
 
 const DAY_ORDER = ["MONDAY","TUESDAY","WEDNESDAY","THURSDAY","FRIDAY","SATURDAY","SUNDAY"];
-const DAY_OPTIONS = DAY_ORDER.map(d => ({ value: d, label: d.charAt(0) + d.slice(1).toLowerCase() }));
 
 function TabBar({ active, onChange, t }) {
   const TABS = [
     { id:"mark",       label: t("absences.tabMark")      },
     { id:"by-session", label: t("absences.tabBySession") },
     { id:"by-student", label: t("absences.tabByStudent") },
-    { id:"by-parent",  label: "👪 By Parent" },
+    { id:"by-parent",  label: t("absences.tabByParent")  },
   ];
   return (
     <div style={{ display:"flex", gap:4, padding:5, borderRadius:"var(--r-lg)", background:"var(--bg-card)", border:"1px solid var(--border)", boxShadow:"var(--shadow-sm)", width:"fit-content", marginBottom:28 }}>
@@ -50,7 +49,7 @@ function AbsenceCard({ a, t }) {
     <div className="card" style={{ padding:"16px 18px" }}>
       <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:12 }}>
         <span style={{ padding:"3px 10px", borderRadius:999, background:ds.bg, color:ds.color, fontSize:11.5, fontWeight:700, fontFamily:"'JetBrains Mono', monospace", border:`1px solid ${ds.color}22` }}>
-          {a.timetableDayOfWeek}{a.timetableStartTime ? ` · ${a.timetableStartTime}` : ""}
+          {a.timetableDayOfWeek ? t(`timetable.days.${a.timetableDayOfWeek}`) : "—"}{a.timetableStartTime ? ` · ${a.timetableStartTime}` : ""}
         </span>
         <span style={{ fontSize:11.5, color:"var(--text-faint)" }}>{a.date ?? "—"}</span>
       </div>
@@ -79,8 +78,9 @@ function AbsenceCard({ a, t }) {
 //    field values (class, day, status…) instead of a free-text search box. ──
 function FilterPicker({
   items, value, onChange, getKey, getLabel, getSubLabel,
-  filters = [], loading, emptyLabel = "No results found",
+  filters = [], loading, emptyLabel,
   avatarColor = "var(--violet)", avatarBg = "var(--violet-dim)",
+  t,
 }) {
   const [filterValues, setFilterValues] = useState({});
   const [search, setSearch] = useState("");
@@ -145,7 +145,7 @@ function FilterPicker({
         <svg className="search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-faint)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
         </svg>
-        <input className="search-input" placeholder="Search…" value={search} onChange={e => setSearch(e.target.value)} style={{ width:"100%" }} />
+        <input className="search-input" placeholder={t("common.search")} value={search} onChange={e => setSearch(e.target.value)} style={{ width:"100%" }} />
       </div>
       {filters.length > 0 && (
         <div style={{ display:"flex", flexWrap:"wrap", gap:8, marginBottom:10 }}>
@@ -157,12 +157,12 @@ function FilterPicker({
               onChange={e => setFilterValues(prev => ({ ...prev, [f.key]: e.target.value }))}
               style={{ flex:"1 1 140px", minWidth:120 }}
             >
-              <option value="">{f.label}: All</option>
+              <option value="">{f.label}: {t("absences.filterAllSuffix")}</option>
               {(filterOptions[f.key] || []).map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
             </select>
           ))}
           {hasActiveFilters && (
-            <button type="button" onClick={resetFilters} className="btn-ghost" style={{ padding:"6px 12px", fontSize:12, flexShrink:0, color:"var(--rose)", borderColor:"rgba(184,53,53,.25)" }}>✕ Clear</button>
+            <button type="button" onClick={resetFilters} className="btn-ghost" style={{ padding:"6px 12px", fontSize:12, flexShrink:0, color:"var(--rose)", borderColor:"rgba(184,53,53,.25)" }}>✕ {t("common.clearFilters")}</button>
           )}
         </div>
       )}
@@ -170,11 +170,11 @@ function FilterPicker({
       <div style={{ border:"1px solid var(--border-md)", borderRadius:"var(--r-md)", background:"var(--bg-card)", maxHeight:260, overflowY:"auto" }}>
         {loading ? (
           <div style={{ padding:"18px 16px", fontSize:13, color:"var(--text-faint)", textAlign:"center", display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
-            <span className="spinner" style={{ width:14, height:14 }} /> Loading…
+            <span className="spinner" style={{ width:14, height:14 }} /> {t("common.loading")}
           </div>
         ) : filtered.length === 0 ? (
           <div style={{ padding:"18px 16px", fontSize:13, color:"var(--text-faint)", textAlign:"center" }}>
-            {items.length === 0 ? "Loading…" : (hasActiveFilters ? "No matches for these filters" : emptyLabel)}
+            {items.length === 0 ? t("common.loading") : (hasActiveFilters ? t("absences.noFilterMatches") : (emptyLabel ?? t("absences.noResultsFound")))}
           </div>
         ) : filtered.map(it => (
           <div
@@ -196,7 +196,7 @@ function FilterPicker({
       </div>
       {!loading && items.length > 0 && (
         <div style={{ marginTop:6, fontSize:11, color:"var(--text-faint)" }}>
-          {filtered.length} of {items.length} shown
+          {t("absences.shownCount", { shown: filtered.length, total: items.length })}
         </div>
       )}
     </div>
@@ -379,7 +379,7 @@ export default function AbsencePage() {
   };
 
   const fetchByParent = async () => {
-    if (!parentId) return toast("Select a parent", "error");
+    if (!parentId) return toast(t("absences.selectParentErr"), "error");
     setLoadingParent(true); setParentFetched(false);
     try {
       const res = await getParentAbsences(parentId);
@@ -390,15 +390,16 @@ export default function AbsencePage() {
   };
 
   // Filter defs, built from real fields the API returns
+  const dayOptions = DAY_ORDER.map(d => ({ value: d, label: t(`timetable.days.${d}`) }));
   const sessionFilters = [
-    { key:"classeName", label:"Class", getValue: tt => tt.classeName },
-    { key:"dayOfWeek",   label:"Day",   getValue: tt => tt.dayOfWeek, options: DAY_OPTIONS },
+    { key:"classeName", label:t("timetable.fields.class"), getValue: tt => tt.classeName },
+    { key:"dayOfWeek",   label:t("timetable.fields.day"),   getValue: tt => tt.dayOfWeek, options: dayOptions },
   ];
   const studentFilters = [
-    { key:"classeName", label:"Class", getValue: s => s.classeName },
+    { key:"classeName", label:t("timetable.fields.class"), getValue: s => s.classeName },
   ];
   const parentFilters = [
-    { key:"isApprove", label:"Status", getValue: p => String(!!p.isApprove), options:[{ value:"true", label:"Approved" }, { value:"false", label:"Pending" }] },
+    { key:"isApprove", label:t("common.status"), getValue: p => String(!!p.isApprove), options:[{ value:"true", label:t("common.approved") }, { value:"false", label:t("common.pending") }] },
   ];
 
   return (
@@ -432,10 +433,11 @@ export default function AbsencePage() {
                     onChange={setSelectedTimetable}
                     filters={sessionFilters}
                     getKey={tt => tt.id}
-                    getLabel={tt => `${tt.dayOfWeek} ${tt.startTime}–${tt.endTime}`}
+                    getLabel={tt => `${t(`timetable.days.${tt.dayOfWeek}`)} ${tt.startTime}–${tt.endTime}`}
                     getSubLabel={tt => `${tt.matiereName} · ${tt.classeName}`}
                     avatarColor="var(--accent)"
                     avatarBg="var(--accent-dim, var(--surface))"
+                    t={t}
                   />
                 </Field>
               </div>
@@ -464,7 +466,7 @@ export default function AbsencePage() {
                 {!selectedTimetableObj ? (
                   <div className="empty-state" style={{ padding:"28px 10px" }}>
                     <span style={{ fontSize:28 }}>🗓️</span>
-                    <p style={{ margin:0, fontSize:13, color:"var(--text-faint)" }}>Select a session above to see its students.</p>
+                    <p style={{ margin:0, fontSize:13, color:"var(--text-faint)" }}>{t("absences.selectSessionHint")}</p>
                   </div>
                 ) : (
                   <>
@@ -472,7 +474,7 @@ export default function AbsencePage() {
                       <span style={{ padding:"3px 10px", borderRadius:999, background:"var(--accent-dim, var(--surface))", color:"var(--accent)", fontSize:11.5, fontWeight:600, border:"1px solid var(--border-md)" }}>
                         {selectedTimetableObj.classeName}
                       </span>
-                      <span style={{ fontSize:11.5, color:"var(--text-faint)" }}>{classStudents.length} student{classStudents.length !== 1 ? "s" : ""} in this class</span>
+                      <span style={{ fontSize:11.5, color:"var(--text-faint)" }}>{t("absences.studentsInClassCount", { n: classStudents.length })}</span>
                     </div>
 
                     <div className="search-wrap" style={{ marginBottom:14 }}>
@@ -485,7 +487,7 @@ export default function AbsencePage() {
                     {filteredStudents.length === 0 ? (
                       <div className="empty-state" style={{ padding:"24px 10px" }}>
                         <span style={{ fontSize:26 }}>🔍</span>
-                        <p style={{ margin:0, fontSize:13, color:"var(--text-faint)" }}>No students match.</p>
+                        <p style={{ margin:0, fontSize:13, color:"var(--text-faint)" }}>{t("absences.noStudentsMatch")}</p>
                       </div>
                     ) : (
                       <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(190px, 1fr))", gap:8, maxHeight:320, overflowY:"auto" }}>
@@ -550,10 +552,11 @@ export default function AbsencePage() {
                   filters={sessionFilters}
                   loading={loadingTimetables}
                   getKey={tt => tt.id}
-                  getLabel={tt => `${tt.dayOfWeek} ${tt.startTime}–${tt.endTime}`}
+                  getLabel={tt => `${t(`timetable.days.${tt.dayOfWeek}`)} ${tt.startTime}–${tt.endTime}`}
                   getSubLabel={tt => `${tt.matiereName} · ${tt.classeName}`}
                   avatarColor="var(--accent)"
                   avatarBg="var(--accent-dim, var(--surface))"
+                  t={t}
                 />
               </Field>
               <button onClick={fetchBySession} disabled={loadingSession || !sessionId} className="btn-primary" style={{ height:44 }}>
@@ -597,6 +600,7 @@ export default function AbsencePage() {
                   getSubLabel={s => s.registrationNumber}
                   avatarColor="var(--teal)"
                   avatarBg="var(--teal-dim)"
+                  t={t}
                 />
               </Field>
               <button onClick={fetchByStudent} disabled={loadingStudent || !studentId} className="btn-primary" style={{ height:44 }}>
@@ -628,7 +632,7 @@ export default function AbsencePage() {
         <div style={{ display:"flex", flexDirection:"column", gap:18, maxWidth:700 }}>
           <div className="card" style={{ padding:"22px 24px" }}>
             <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
-              <Field label="Parent">
+              <Field label={t("absences.parentLabel")}>
                 <FilterPicker
                   items={allParents}
                   value={parentId}
@@ -640,6 +644,7 @@ export default function AbsencePage() {
                   getSubLabel={p => p.phone || p.email}
                   avatarColor="var(--amber)"
                   avatarBg="var(--amber-dim)"
+                  t={t}
                 />
               </Field>
               <button onClick={fetchByParent} disabled={loadingParent || !parentId} className="btn-primary" style={{ height:44 }}>
@@ -650,11 +655,11 @@ export default function AbsencePage() {
 
           {parentFetched && (
             parentAbsences.length === 0 ? (
-              <div className="empty-state"><span style={{ fontSize:32 }}>✅</span><p>No absences found for this parent's children.</p></div>
+              <div className="empty-state"><span style={{ fontSize:32 }}>✅</span><p>{t("absences.noAbsencesParent")}</p></div>
             ) : (
               <>
                 <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-                  <span className="section-label">Absences</span>
+                  <span className="section-label">{t("absences.absencesLabel")}</span>
                   <span style={{ padding:"2px 10px", borderRadius:999, background:"var(--rose-dim)", color:"var(--rose)", fontSize:12, fontWeight:700, border:"1px solid rgba(184,53,53,.2)" }}>{parentAbsences.length}</span>
                 </div>
                 <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(240px, 1fr))", gap:12 }}>

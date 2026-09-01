@@ -49,21 +49,21 @@ function TeachingSchedule({ teacherId, t }) {
       <div style={{ padding:"20px 28px", borderBottom:"1px solid var(--border)", display:"flex", alignItems:"center", gap:12 }}>
         <div style={{ width:36, height:36, borderRadius:10, background:"var(--teal-dim)", color:"var(--teal)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:18, flexShrink:0 }}>🗂️</div>
         <div>
-          <div style={{ fontWeight:700, fontSize:14, color:"var(--text)" }}>Teaching Schedule</div>
-          <div style={{ fontSize:12, color:"var(--text-muted)", marginTop:2 }}>Classes and subjects assigned to this teacher</div>
+          <div style={{ fontWeight:700, fontSize:14, color:"var(--text)" }}>{t("teachers.scheduleTitle")}</div>
+          <div style={{ fontSize:12, color:"var(--text-muted)", marginTop:2 }}>{t("teachers.scheduleSub")}</div>
         </div>
         {!loadingClasses && classes && (
           <span style={{ marginLeft:"auto", padding:"3px 10px", borderRadius:999, background:"var(--teal-dim)", color:"var(--teal)", fontSize:12, fontWeight:700, border:"1px solid rgba(14,126,104,.2)" }}>
-            {classes.length} {classes.length === 1 ? "class" : "classes"}
+            {t("classes.count", { n: classes.length })}
           </span>
         )}
       </div>
       <div style={{ padding:"12px 16px" }}>
-        {loadingClasses && <div style={{ display:"flex", alignItems:"center", gap:10, padding:"20px 12px", color:"var(--text-muted)", fontSize:13 }}><span className="spinner" style={{ width:16, height:16 }} />Loading classes…</div>}
+        {loadingClasses && <div style={{ display:"flex", alignItems:"center", gap:10, padding:"20px 12px", color:"var(--text-muted)", fontSize:13 }}><span className="spinner" style={{ width:16, height:16 }} />{t("teachers.loadingClasses")}</div>}
         {error && <div style={{ padding:"16px 12px", color:"var(--rose)", fontSize:13, display:"flex", alignItems:"center", gap:8 }}><span>⚠️</span> {error}</div>}
         {!loadingClasses && !error && classes?.length === 0 && (
           <div style={{ padding:"28px 12px", textAlign:"center", color:"var(--text-faint)", fontSize:13 }}>
-            <div style={{ fontSize:28, marginBottom:8 }}>📭</div>No classes assigned yet
+            <div style={{ fontSize:28, marginBottom:8 }}>📭</div>{t("teachers.noClassesAssigned")}
           </div>
         )}
         {!loadingClasses && !error && classes?.map(cls => {
@@ -82,16 +82,16 @@ function TeachingSchedule({ teacherId, t }) {
                 </div>
                 {Array.isArray(clsMatieres) && (
                   <span style={{ padding:"2px 9px", borderRadius:999, background:"var(--violet-dim)", color:"var(--violet)", fontSize:11.5, fontWeight:600, border:"1px solid rgba(79,67,192,.18)", flexShrink:0 }}>
-                    {clsMatieres.length} {clsMatieres.length === 1 ? "subject" : "subjects"}
+                    {t("teachers.subjectCount", { n: clsMatieres.length })}
                   </span>
                 )}
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-faint)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink:0, marginLeft:4, transform:isOpen?"rotate(180deg)":"rotate(0deg)", transition:"transform .2s ease" }}><polyline points="6 9 12 15 18 9"/></svg>
               </button>
               {isOpen && (
                 <div style={{ borderTop:"1px solid var(--border)", padding:"12px 16px", background:"var(--surface)" }}>
-                  {clsMatieres === "loading" && <div style={{ display:"flex", alignItems:"center", gap:8, color:"var(--text-muted)", fontSize:13, padding:"8px 0" }}><span className="spinner" style={{ width:14, height:14 }}/>Loading subjects…</div>}
-                  {clsMatieres === "error" && <div style={{ color:"var(--rose)", fontSize:13, padding:"8px 0", display:"flex", alignItems:"center", gap:6 }}><span>⚠️</span> Failed to load subjects</div>}
-                  {Array.isArray(clsMatieres) && clsMatieres.length === 0 && <div style={{ color:"var(--text-faint)", fontSize:13, padding:"8px 0", textAlign:"center" }}>No subjects found for this class</div>}
+                  {clsMatieres === "loading" && <div style={{ display:"flex", alignItems:"center", gap:8, color:"var(--text-muted)", fontSize:13, padding:"8px 0" }}><span className="spinner" style={{ width:14, height:14 }}/>{t("teachers.loadingSubjects")}</div>}
+                  {clsMatieres === "error" && <div style={{ color:"var(--rose)", fontSize:13, padding:"8px 0", display:"flex", alignItems:"center", gap:6 }}><span>⚠️</span> {t("teachers.failedLoadSubjects")}</div>}
+                  {Array.isArray(clsMatieres) && clsMatieres.length === 0 && <div style={{ color:"var(--text-faint)", fontSize:13, padding:"8px 0", textAlign:"center" }}>{t("teachers.noSubjectsForClass")}</div>}
                   {Array.isArray(clsMatieres) && clsMatieres.length > 0 && (
                     <div style={{ display:"flex", flexWrap:"wrap", gap:8 }}>
                       {clsMatieres.map(m => (
@@ -129,7 +129,7 @@ function PhotoAvatar({ photo, initial = "?", size = 48, radius = 14, color = C_C
   );
 }
 
-function PhotoUploadField({ photo, initial, color = C_COLOR, bg = C_BG, onFileSelected, onDelete, loading = false }) {
+function PhotoUploadField({ photo, initial, color = C_COLOR, bg = C_BG, onFileSelected, onDelete, loading = false, t }) {
   const inputRef = useRef(null);
   const [preview, setPreview] = useState(photo || null);
   useEffect(() => { setPreview(photo || null); }, [photo]);
@@ -154,16 +154,16 @@ function PhotoUploadField({ photo, initial, color = C_COLOR, bg = C_BG, onFileSe
           onMouseLeave={e=>!loading&&(e.currentTarget.style.background="var(--surface)")}
         >
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-          {preview ? "Change photo" : "Upload photo"}
+          {preview ? t("common.changePhoto") : t("common.uploadPhoto")}
           <input ref={inputRef} type="file" accept="image/*" style={{ display:"none" }} onChange={handleFile} disabled={loading} />
         </label>
         {preview && (
           <button type="button" onClick={()=>{ setPreview(null); onDelete?.(); }} disabled={loading} style={{ display:"inline-flex", alignItems:"center", gap:6, padding:"6px 14px", borderRadius:"var(--r-md)", background:"var(--rose-dim)", border:"1px solid rgba(184,53,53,.18)", color:"var(--rose)", fontSize:12, fontWeight:500, cursor:loading?"not-allowed":"pointer", fontFamily:"'Instrument Sans',sans-serif" }}>
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
-            Remove photo
+            {t("common.removePhoto")}
           </button>
         )}
-        <span style={{ fontSize:11, color:"var(--text-faint)" }}>JPG, PNG or WebP · max 5 MB</span>
+        <span style={{ fontSize:11, color:"var(--text-faint)" }}>{t("common.photoHint")}</span>
       </div>
     </div>
   );
@@ -356,17 +356,17 @@ function FilterBar({ q, setQ, filterSpeciality, setFilterSpeciality, filterStatu
         <input className="search-input" placeholder={t("teachers.searchPlaceholder")} value={q} onChange={e=>setQ(e.target.value)} style={{ width:"100%" }} />
       </div>
       <select value={filterSpeciality} onChange={e=>setFilterSpeciality(e.target.value)} className="t-select" style={{ flex:"1 1 180px", minWidth:160, maxWidth:220 }}>
-        <option value="">All Specialities</option>
+        <option value="">{t("teachers.allSpecialities")}</option>
         {specialities.map(s=><option key={s} value={s}>{s}</option>)}
       </select>
       <select value={filterStatus} onChange={e=>setFilterStatus(e.target.value)} className="t-select" style={{ flex:"0 0 150px" }}>
-        <option value="">All Statuses</option>
-        <option value="approved">Approved</option>
-        <option value="pending">Pending</option>
+        <option value="">{t("common.allStatuses")}</option>
+        <option value="approved">{t("common.statusApproved")}</option>
+        <option value="pending">{t("common.statusPending")}</option>
       </select>
-      {hasFilters && <button onClick={onReset} className="btn-ghost" style={{ padding:"8px 14px", fontSize:12.5, flexShrink:0, color:"var(--rose)", borderColor:"rgba(184,53,53,.25)" }}>✕ Clear</button>}
+      {hasFilters && <button onClick={onReset} className="btn-ghost" style={{ padding:"8px 14px", fontSize:12.5, flexShrink:0, color:"var(--rose)", borderColor:"rgba(184,53,53,.25)" }}>✕ {t("common.clearFilters")}</button>}
       <div style={{ marginLeft:"auto", fontSize:12, color:"var(--text-faint)", flexShrink:0, whiteSpace:"nowrap" }}>
-        {hasFilters ? <><span style={{ color:"var(--text-dim)", fontWeight:600 }}>{totalFiltered}</span> of {total}</> : <><span style={{ color:"var(--text-dim)", fontWeight:600 }}>{total}</span> total</>}
+        {hasFilters ? <><span style={{ color:"var(--text-dim)", fontWeight:600 }}>{totalFiltered}</span> {t("common.of")} {total}</> : <><span style={{ color:"var(--text-dim)", fontWeight:600 }}>{total}</span> {t("common.total")}</>}
       </div>
     </div>
   );
@@ -374,7 +374,7 @@ function FilterBar({ q, setQ, filterSpeciality, setFilterSpeciality, filterStatu
 
 // ─── Pagination ───────────────────────────────────────────────────────────────
 
-function Pagination({ page, totalPages, pageSize, setPage, setPageSize, totalFiltered }) {
+function Pagination({ page, totalPages, pageSize, setPage, setPageSize, totalFiltered, t }) {
   // Always render so users can change page size even on a single page
   if (totalFiltered === 0) return null;
 
@@ -417,7 +417,7 @@ function Pagination({ page, totalPages, pageSize, setPage, setPageSize, totalFil
       {/* Left: rows-per-page + range info */}
       <div style={{ display:"flex", alignItems:"center", gap:12 }}>
         <div style={{ display:"flex", alignItems:"center", gap:6 }}>
-          <span style={{ fontSize:12, color:"var(--text-faint)", whiteSpace:"nowrap" }}>Rows per page:</span>
+          <span style={{ fontSize:12, color:"var(--text-faint)", whiteSpace:"nowrap" }}>{t("pagination.rowsPerPage")}</span>
           <div style={{ display:"flex", gap:4 }}>
             {PAGE_SIZE_OPTIONS.map(s => (
               <button key={s} onClick={()=>{ setPageSize(s); setPage(0); }} style={{ ...btnStyle(pageSize===s), minWidth:38, padding:"0 10px", fontSize:12 }}>{s}</button>
@@ -426,7 +426,7 @@ function Pagination({ page, totalPages, pageSize, setPage, setPageSize, totalFil
         </div>
         <span style={{ fontSize:12, color:"var(--text-faint)", whiteSpace:"nowrap" }}>
           <span style={{ color:"var(--text-dim)", fontWeight:600 }}>{start}–{end}</span>
-          {" "}of{" "}
+          {" "}{t("common.of")}{" "}
           <span style={{ color:"var(--text-dim)", fontWeight:600 }}>{totalFiltered}</span>
         </span>
       </div>
@@ -435,10 +435,10 @@ function Pagination({ page, totalPages, pageSize, setPage, setPageSize, totalFil
       {totalPages > 1 && (
         <div style={{ display:"flex", alignItems:"center", gap:4 }}>
           {/* First */}
-          <button onClick={()=>setPage(0)} disabled={page===0} title="First page"
+          <button onClick={()=>setPage(0)} disabled={page===0} title={t("pagination.firstPage")}
             style={{ ...btnStyle(false, page===0), minWidth:34, padding:"0 8px", fontSize:15 }}>«</button>
           {/* Prev */}
-          <button onClick={()=>setPage(p=>Math.max(0,p-1))} disabled={page===0} title="Previous page"
+          <button onClick={()=>setPage(p=>Math.max(0,p-1))} disabled={page===0} title={t("pagination.prevPage")}
             style={{ ...btnStyle(false, page===0), minWidth:34, padding:"0 8px", fontSize:15 }}>‹</button>
 
           {withEllipsis.map((p,i) =>
@@ -448,10 +448,10 @@ function Pagination({ page, totalPages, pageSize, setPage, setPageSize, totalFil
           )}
 
           {/* Next */}
-          <button onClick={()=>setPage(p=>Math.min(totalPages-1,p+1))} disabled={page>=totalPages-1} title="Next page"
+          <button onClick={()=>setPage(p=>Math.min(totalPages-1,p+1))} disabled={page>=totalPages-1} title={t("pagination.nextPage")}
             style={{ ...btnStyle(false, page>=totalPages-1), minWidth:34, padding:"0 8px", fontSize:15 }}>›</button>
           {/* Last */}
-          <button onClick={()=>setPage(totalPages-1)} disabled={page>=totalPages-1} title="Last page"
+          <button onClick={()=>setPage(totalPages-1)} disabled={page>=totalPages-1} title={t("pagination.lastPage")}
             style={{ ...btnStyle(false, page>=totalPages-1), minWidth:34, padding:"0 8px", fontSize:15 }}>»</button>
         </div>
       )}
@@ -606,8 +606,8 @@ export default function TeachersPage() {
       ) : filtered.length === 0 ? (
         <div className="empty-state">
           <span style={{ fontSize:36 }}>🎓</span>
-          <p>{q||filterSpeciality||filterStatus ? "No teachers match your filters." : t("teachers.empty")}</p>
-          {(q||filterSpeciality||filterStatus) && <button onClick={resetFilters} className="btn-ghost" style={{ marginTop:8 }}>Clear filters</button>}
+          <p>{q||filterSpeciality||filterStatus ? t("teachers.noMatch") : t("teachers.empty")}</p>
+          {(q||filterSpeciality||filterStatus) && <button onClick={resetFilters} className="btn-ghost" style={{ marginTop:8 }}>{t("common.clearFilters")}</button>}
         </div>
       ) : (
         <div style={{ background:"var(--bg-card)", border:"1px solid var(--border)", borderRadius:"var(--r-xl)", boxShadow:"var(--shadow-sm)", overflow:"hidden" }}>
@@ -615,13 +615,13 @@ export default function TeachersPage() {
             <table style={{ width:"100%", borderCollapse:"collapse", tableLayout:"auto" }}>
               <thead>
                 <tr>
-                  <ThCell label="#"                         sortKey={null}          sortBy={sortBy} sortDir={sortDir} onSort={handleSort} style={{ width:44, textAlign:"center" }} />
-                  <ThCell label="Teacher"                   sortKey="lastname"      sortBy={sortBy} sortDir={sortDir} onSort={handleSort} />
-                  <ThCell label={t("teachers.speciality")}  sortKey="speciality"    sortBy={sortBy} sortDir={sortDir} onSort={handleSort} />
-                  <ThCell label={t("fields.phone")}         sortKey="phone"         sortBy={sortBy} sortDir={sortDir} onSort={handleSort} />
-                  <ThCell label="NNI"                       sortKey="nni"           sortBy={sortBy} sortDir={sortDir} onSort={handleSort} />
-                  <ThCell label="Status"                    sortKey="isApprove"     sortBy={sortBy} sortDir={sortDir} onSort={handleSort} />
-                  <ThCell label=""                          sortKey={null}          sortBy={sortBy} sortDir={sortDir} onSort={handleSort} style={{ width:140, textAlign:"right" }} />
+                  <ThCell label="#"                                sortKey={null}          sortBy={sortBy} sortDir={sortDir} onSort={handleSort} style={{ width:44, textAlign:"center" }} />
+                  <ThCell label={t("teachers.tableHeaders.teacher")} sortKey="lastname"      sortBy={sortBy} sortDir={sortDir} onSort={handleSort} />
+                  <ThCell label={t("teachers.speciality")}         sortKey="speciality"    sortBy={sortBy} sortDir={sortDir} onSort={handleSort} />
+                  <ThCell label={t("fields.phone")}                sortKey="phone"         sortBy={sortBy} sortDir={sortDir} onSort={handleSort} />
+                  <ThCell label={t("teachers.fields.nni")}         sortKey="nni"           sortBy={sortBy} sortDir={sortDir} onSort={handleSort} />
+                  <ThCell label={t("common.status")}               sortKey="isApprove"     sortBy={sortBy} sortDir={sortDir} onSort={handleSort} />
+                  <ThCell label=""                                 sortKey={null}          sortBy={sortBy} sortDir={sortDir} onSort={handleSort} style={{ width:140, textAlign:"right" }} />
                 </tr>
               </thead>
               <tbody>
@@ -644,7 +644,7 @@ export default function TeachersPage() {
           <Pagination
             page={page} totalPages={totalPages}
             pageSize={pageSize} setPage={setPage} setPageSize={setPageSize}
-            totalFiltered={filtered.length}
+            totalFiltered={filtered.length} t={t}
           />
         </div>
       )}
@@ -665,8 +665,8 @@ export default function TeachersPage() {
       <PageTitle crumb={`${t("teachers.crumb")} · ${t("teachers.title")}`} title={t("teachers.registerTitle")} sub={t("teachers.registerSub")} />
       <TwoCol
         left={<FormPanel onSubmit={handleCreate}>
-          <Field label="Profile Photo">
-            <PhotoUploadField photo={pendingPhoto ? URL.createObjectURL(pendingPhoto) : null} initial={(form.firstname?.[0]??"?").toUpperCase()} onFileSelected={setPendingPhoto} onDelete={()=>setPendingPhoto(null)} loading={photoLoading} />
+          <Field label={t("common.profilePhoto")}>
+            <PhotoUploadField photo={pendingPhoto ? URL.createObjectURL(pendingPhoto) : null} initial={(form.firstname?.[0]??"?").toUpperCase()} onFileSelected={setPendingPhoto} onDelete={()=>setPendingPhoto(null)} loading={photoLoading} t={t} />
           </Field>
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:16 }}>
             <Field label={t("fields.firstName")}><Input placeholder={t("fields.firstNamePlaceholder")} value={form.firstname} onChange={set("firstname")} required /></Field>
@@ -678,16 +678,16 @@ export default function TeachersPage() {
             <Field label={t("fields.nni")}><Input placeholder={t("fields.nniPlaceholder")} value={form.nni} onChange={set("nni")} required minLength={8} /></Field>
           </div>
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:16 }}>
-            <Field label="Sex">
+            <Field label={t("teachers.fields.sex")}>
               <Select value={form.sex ?? ""} onChange={set("sex")}>
-                <option value="">— Sex —</option>
-                <option value="MALE">Male</option>
-                <option value="FEMALE">Female</option>
+                <option value="">{t("teachers.sexPlaceholder")}</option>
+                <option value="MALE">{t("teachers.sexMale")}</option>
+                <option value="FEMALE">{t("teachers.sexFemale")}</option>
               </Select>
             </Field>
-            <Field label="Date of Birth"><Input type="date" value={form.dateOfBirth ?? ""} onChange={set("dateOfBirth")} /></Field>
+            <Field label={t("teachers.fields.dob")}><Input type="date" value={form.dateOfBirth ?? ""} onChange={set("dateOfBirth")} /></Field>
           </div>
-          <Field label="Place of Birth"><Input placeholder="e.g. Nouakchott" value={form.placeOfBirth ?? ""} onChange={set("placeOfBirth")} /></Field>
+          <Field label={t("teachers.fields.placeOfBirth")}><Input placeholder={t("teachers.placeOfBirthPlaceholder")} value={form.placeOfBirth ?? ""} onChange={set("placeOfBirth")} /></Field>
           <Field label={t("teachers.speciality")}><Input placeholder={t("teachers.specialityPlaceholder")} value={speciality} onChange={e=>setSpeciality(e.target.value)} /></Field>
           <div style={{ display:"flex", gap:12, paddingTop:4 }}>
             <button type="button" onClick={goList} className="btn-ghost" style={{ flex:1, padding:"12px" }}>{t("common.cancel")}</button>
@@ -711,8 +711,8 @@ export default function TeachersPage() {
       <PageTitle crumb={`${t("teachers.crumb")} · ${t("teachers.title")}`} title={t("teachers.editTitle")} sub={t("teachers.editSub", { name:`${selected.firstname} ${selected.lastname}` })} />
       <TwoCol
         left={<FormPanel onSubmit={handleEdit}>
-          <Field label="Profile Photo">
-            <PhotoUploadField photo={deletePhoto ? null : (pendingPhoto ? URL.createObjectURL(pendingPhoto) : selected.photo ?? null)} initial={(selected.firstname?.[0]??"?").toUpperCase()} onFileSelected={f=>{ setPendingPhoto(f); setDeletePhoto(false); }} onDelete={()=>{ setPendingPhoto(null); setDeletePhoto(true); }} loading={photoLoading} />
+          <Field label={t("common.profilePhoto")}>
+            <PhotoUploadField photo={deletePhoto ? null : (pendingPhoto ? URL.createObjectURL(pendingPhoto) : selected.photo ?? null)} initial={(selected.firstname?.[0]??"?").toUpperCase()} onFileSelected={f=>{ setPendingPhoto(f); setDeletePhoto(false); }} onDelete={()=>{ setPendingPhoto(null); setDeletePhoto(true); }} loading={photoLoading} t={t} />
           </Field>
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:16 }}>
             <Field label={t("fields.firstName")}><Input value={editForm.firstname} onChange={setEdit("firstname")} required /></Field>
@@ -724,16 +724,16 @@ export default function TeachersPage() {
             <Field label={t("fields.nni")}><Input value={editForm.nni} onChange={setEdit("nni")} /></Field>
           </div>
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:16 }}>
-            <Field label="Sex">
+            <Field label={t("teachers.fields.sex")}>
               <Select value={editForm.sex ?? ""} onChange={setEdit("sex")}>
-                <option value="">— Sex —</option>
-                <option value="MALE">Male</option>
-                <option value="FEMALE">Female</option>
+                <option value="">{t("teachers.sexPlaceholder")}</option>
+                <option value="MALE">{t("teachers.sexMale")}</option>
+                <option value="FEMALE">{t("teachers.sexFemale")}</option>
               </Select>
             </Field>
-            <Field label="Date of Birth"><Input type="date" value={editForm.dateOfBrith ?? ""} onChange={setEdit("dateOfBrith")} /></Field>
+            <Field label={t("teachers.fields.dob")}><Input type="date" value={editForm.dateOfBrith ?? ""} onChange={setEdit("dateOfBrith")} /></Field>
           </div>
-          <Field label="Place of Birth"><Input placeholder="e.g. Nouakchott" value={editForm.placeOfBirth ?? ""} onChange={setEdit("placeOfBirth")} /></Field>
+          <Field label={t("teachers.fields.placeOfBirth")}><Input placeholder={t("teachers.placeOfBirthPlaceholder")} value={editForm.placeOfBirth ?? ""} onChange={setEdit("placeOfBirth")} /></Field>
           <Field label={t("teachers.speciality")}><Input value={editForm.speciality} onChange={setEdit("speciality")} /></Field>
           <div style={{ display:"flex", gap:12, paddingTop:4 }}>
             <button type="button" onClick={goList} className="btn-ghost" style={{ flex:1, padding:"12px" }}>{t("common.cancel")}</button>
@@ -783,13 +783,13 @@ export default function TeachersPage() {
         </div>
 
         <div style={{ display:"grid", gridTemplateColumns:"repeat(3, 1fr)", gap:14 }}>
-          <StatBox icon="✉️" label={t("teachers.fields.email")}  value={v.email}       color={C_COLOR} bg={C_BG} />
-          <StatBox icon="📞" label={t("teachers.fields.phone")}  value={v.phone}       color={C_COLOR} bg={C_BG} />
-          <StatBox icon="🪪" label={t("teachers.fields.nni")}    value={v.nni}         color={C_COLOR} bg={C_BG} />
-          <StatBox icon="🎓" label={t("teachers.speciality")}    value={v.speciality}  color={C_COLOR} bg={C_BG} />
-          <StatBox icon="🎂" label={t("teachers.fields.dob")}    value={v.dateOfBrith} color={C_COLOR} bg={C_BG} />
-          <StatBox icon="⚧️" label="Sex"                         value={v.sex}         color={C_COLOR} bg={C_BG} />
-          <StatBox icon="📍" label="Place of Birth"              value={v.placeOfBirth} color={C_COLOR} bg={C_BG} />
+          <StatBox icon="✉️" label={t("teachers.fields.email")}       value={v.email}       color={C_COLOR} bg={C_BG} />
+          <StatBox icon="📞" label={t("teachers.fields.phone")}       value={v.phone}       color={C_COLOR} bg={C_BG} />
+          <StatBox icon="🪪" label={t("teachers.fields.nni")}         value={v.nni}         color={C_COLOR} bg={C_BG} />
+          <StatBox icon="🎓" label={t("teachers.speciality")}         value={v.speciality}  color={C_COLOR} bg={C_BG} />
+          <StatBox icon="🎂" label={t("teachers.fields.dob")}         value={v.dateOfBrith} color={C_COLOR} bg={C_BG} />
+          <StatBox icon="⚧️" label={t("teachers.fields.sex")}          value={v.sex}         color={C_COLOR} bg={C_BG} />
+          <StatBox icon="📍" label={t("teachers.fields.placeOfBirth")} value={v.placeOfBirth} color={C_COLOR} bg={C_BG} />
         </div>
 
         <TeachingSchedule teacherId={v.id} t={t} />

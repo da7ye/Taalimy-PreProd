@@ -100,13 +100,13 @@ function GradeBadge({ value }) {
   );
 }
 
-function ApprovalBadge({ approuve }) {
+function ApprovalBadge({ approuve, t }) {
   return approuve
     ? <span style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "3px 9px", borderRadius: 999, background: "var(--green-dim)", color: "var(--green)", fontSize: 11, fontWeight: 600, border: "1px solid rgba(42,117,64,.2)" }}>
-        <span style={{ width: 5, height: 5, borderRadius: "50%", background: "var(--green)" }} /> Approved
+        <span style={{ width: 5, height: 5, borderRadius: "50%", background: "var(--green)" }} /> {t("common.approved")}
       </span>
     : <span style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "3px 9px", borderRadius: 999, background: "var(--amber-dim)", color: "var(--amber)", fontSize: 11, fontWeight: 600, border: "1px solid rgba(168,100,30,.2)" }}>
-        <span style={{ width: 5, height: 5, borderRadius: "50%", background: "var(--amber)" }} /> Pending
+        <span style={{ width: 5, height: 5, borderRadius: "50%", background: "var(--amber)" }} /> {t("common.pending")}
       </span>;
 }
 
@@ -136,7 +136,7 @@ function NoteCard({ r, onClick, onEdit, onDelete, onToggleApprove, approving, t 
       <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 12 }}>
         {r.matiereName && <span style={{ padding: "2px 9px", borderRadius: 999, background: C_BG, color: C_COLOR, fontSize: 11.5, fontWeight: 600, border: `1px solid ${C_COLOR}22` }}>{r.matiereName}</span>}
         {r.typeDevoir && <span style={{ padding: "2px 9px", borderRadius: 999, background: "var(--purple-dim)", color: "var(--purple)", fontSize: 11.5, fontWeight: 600, border: "1px solid var(--purple-dim)" }}>{typeLabel}</span>}
-        <ApprovalBadge approuve={r.approuve} />
+        <ApprovalBadge approuve={r.approuve} t={t} />
       </div>
       <div style={{ paddingTop: 12, borderTop: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
         <div style={{ fontSize: 12.5, color: "var(--text-muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
@@ -150,7 +150,7 @@ function NoteCard({ r, onClick, onEdit, onDelete, onToggleApprove, approving, t 
             className={r.approuve ? "btn-ghost" : "btn-primary"}
             style={{ padding: "5px 10px", fontSize: 12 }}
           >
-            {approving ? "…" : r.approuve ? (t("notes.unapprove") || "Unapprove") : (t("notes.approve") || "Approve")}
+            {approving ? "…" : r.approuve ? t("notes.unapprove") : t("notes.approve")}
           </button>
           <button onClick={() => onEdit(r)} className="btn-ghost" style={{ padding: "5px 10px", fontSize: 12 }}>{t("common.edit")}</button>
           <button onClick={() => onDelete(r)} className="btn-danger" style={{ padding: "5px 10px", fontSize: 12 }}>{t("common.delete")}</button>
@@ -280,7 +280,7 @@ function BulkSheetTable({ sheet, rows, setRows, onSubmit, submitting, onApproveA
               <th style={{ padding: "12px 16px", textAlign: "center", fontSize: 10.5, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".07em", color: "var(--text-faint)", borderBottom: "2px solid var(--border)", width: 130 }}>{t("notes.grade")} /20</th>
               <th style={{ padding: "12px 16px", textAlign: "left",   fontSize: 10.5, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".07em", color: "var(--text-faint)", borderBottom: "2px solid var(--border)" }}>{t("notes.appreciation")}</th>
               <th style={{ padding: "12px 16px", textAlign: "center", fontSize: 10.5, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".07em", color: "var(--text-faint)", borderBottom: "2px solid var(--border)", width: 90 }}>{t("notes.statusCol")}</th>
-              <th style={{ padding: "12px 16px", textAlign: "center", fontSize: 10.5, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".07em", color: "var(--text-faint)", borderBottom: "2px solid var(--border)", width: 110 }}>{t("notes.approvalCol") || "Approval"}</th>
+              <th style={{ padding: "12px 16px", textAlign: "center", fontSize: 10.5, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".07em", color: "var(--text-faint)", borderBottom: "2px solid var(--border)", width: 110 }}>{t("notes.approvalCol")}</th>
             </tr>
           </thead>
           <tbody>
@@ -336,7 +336,7 @@ function BulkSheetTable({ sheet, rows, setRows, onSubmit, submitting, onApproveA
                     }
                   </td>
                   <td style={{ padding: "10px 12px", textAlign: "center" }}>
-                    {r.dejaNote ? <ApprovalBadge approuve={!!r.approuve} /> : <span style={{ color: "var(--text-faint)", fontSize: 12 }}>—</span>}
+                    {r.dejaNote ? <ApprovalBadge approuve={!!r.approuve} t={t} /> : <span style={{ color: "var(--text-faint)", fontSize: 12 }}>—</span>}
                   </td>
                 </tr>
               );
@@ -360,7 +360,7 @@ function BulkSheetTable({ sheet, rows, setRows, onSubmit, submitting, onApproveA
             className="btn-ghost"
             style={{ padding: "10px 18px" }}
           >
-            {bulkApproving ? <><span className="spinner" style={{ width: 13, height: 13 }} /> …</> : <>↩ {t("notes.unapproveAll") || "Unapprove all"}</>}
+            {bulkApproving ? <><span className="spinner" style={{ width: 13, height: 13 }} /> …</> : <>↩ {t("notes.unapproveAll")}</>}
           </button>
           <button
             onClick={onApproveAll}
@@ -368,7 +368,7 @@ function BulkSheetTable({ sheet, rows, setRows, onSubmit, submitting, onApproveA
             className="btn-primary"
             style={{ padding: "10px 18px" }}
           >
-            {bulkApproving ? <><span className="spinner" style={{ width: 13, height: 13 }} /> …</> : <>✅ {t("notes.approveAll") || "Approve all"}</>}
+            {bulkApproving ? <><span className="spinner" style={{ width: 13, height: 13 }} /> …</> : <>✅ {t("notes.approveAll")}</>}
           </button>
           <button onClick={onSubmit} disabled={submitting || hasInvalid || filled === 0} className="btn-primary" style={{ padding: "10px 24px" }}>
             {submitting
@@ -531,7 +531,7 @@ export default function NotesPage() {
     try {
       const updated = await approveNote(note.id, nextApprouve);
       patchNoteEverywhere(note.id, { approuve: updated?.approuve ?? nextApprouve });
-      toast(nextApprouve ? (t("notes.approved") || "Note approved") : (t("notes.unapproved") || "Note unapproved"));
+      toast(nextApprouve ? t("notes.approved") : t("notes.unapproved"));
     } catch (err) {
       toast(err.message, "error");
     } finally {
@@ -560,7 +560,7 @@ export default function NotesPage() {
     try {
       await approveNote(note.id, true);
       setPendingNotes(prev => Array.isArray(prev) ? prev.filter(n => n.id !== note.id) : prev);
-      toast(t("notes.approved") || "Note approved");
+      toast(t("notes.approved"));
     } catch (e) {
       toast(e.message, "error");
     } finally {
@@ -613,7 +613,7 @@ export default function NotesPage() {
     setPendingNotes(prev => Array.isArray(prev) ? prev.filter(n => failedIds.has(n.id)) : prev);
     setApprovingAllPending(false);
     const okCount = pendingNotes.length - failedIds.size;
-    if (failedIds.size === 0) toast(t("notes.bulkApproved", { n: okCount }) || `${okCount} notes approved`);
+    if (failedIds.size === 0) toast(t("notes.bulkApproved", { n: okCount }));
     else toast(`${okCount} approved, ${failedIds.size} failed`, "error");
   };
 
@@ -744,8 +744,8 @@ export default function NotesPage() {
         return match ? { ...r, approuve: match.approuve, dejaNote: true } : r;
       }));
       toast(approuve
-        ? (t("notes.bulkApproved", { n: updatedList?.length ?? 0 }) || `${updatedList?.length ?? 0} notes approved`)
-        : (t("notes.bulkUnapproved", { n: updatedList?.length ?? 0 }) || `${updatedList?.length ?? 0} notes unapproved`));
+        ? t("notes.bulkApproved", { n: updatedList?.length ?? 0 })
+        : t("notes.bulkUnapproved", { n: updatedList?.length ?? 0 }));
     } catch (e) {
       toast(e.message, "error");
     } finally {
@@ -876,7 +876,7 @@ export default function NotesPage() {
                   <div style={{ display: "flex", gap: 8, marginTop: 7, flexWrap: "wrap" }}>
                     {v.typeDevoir && <span style={{ padding: "3px 11px", borderRadius: 999, background: "var(--purple-dim)", color: "var(--purple)", fontSize: 12, fontWeight: 600, border: "1px solid var(--purple-dim)" }}>{t(`notes.types.${v.typeDevoir}`) ?? v.typeDevoir}</span>}
                     <GradeBadge value={v.valeur} />
-                    <ApprovalBadge approuve={v.approuve} />
+                    <ApprovalBadge approuve={v.approuve} t={t} />
                   </div>
                 </div>
               </div>
@@ -887,7 +887,7 @@ export default function NotesPage() {
                   className={v.approuve ? "btn-ghost" : "btn-primary"}
                   style={{ padding: "10px 20px" }}
                 >
-                  {approvingIds.has(v.id) ? "…" : v.approuve ? `↩ ${t("notes.unapprove") || "Unapprove"}` : `✅ ${t("notes.approve") || "Approve"}`}
+                  {approvingIds.has(v.id) ? "…" : v.approuve ? `↩ ${t("notes.unapprove")}` : `✅ ${t("notes.approve")}`}
                 </button>
                 <button onClick={() => openEdit(v)} className="btn-ghost" style={{ padding: "10px 20px" }}>✏️ {t("common.edit")}</button>
                 <button onClick={() => setDeleteTarget(v)} className="btn-danger" style={{ padding: "10px 20px" }}>🗑 {t("common.delete")}</button>
@@ -904,7 +904,7 @@ export default function NotesPage() {
           <StatBox icon="📝" label={t("notes.fields.appreciation")} value={v.appreciation} />
           {v.dateNote && <StatBox icon="🗓" label={t("notes.fields.date")} value={v.dateNote} />}
           <StatBox icon="🪪" label={t("notes.fields.regNumber")}    value={v.registrationNumber} />
-          <StatBox icon={v.approuve ? "✅" : "⏳"} label={t("notes.statusCol") || "Status"} value={v.approuve ? (t("notes.approved") || "Approved") : (t("notes.pendingApproval") || "Pending approval")} />
+          <StatBox icon={v.approuve ? "✅" : "⏳"} label={t("notes.statusCol")} value={v.approuve ? t("common.approved") : t("notes.pendingApproval")} />
         </div>
         {deleteTarget && <ConfirmDialog title={t("notes.deleteTitle")} message={t("notes.deleteDetailMsg", { name: deleteTarget.studentName })} onConfirm={handleDelete} onCancel={() => setDeleteTarget(null)} loading={deleting} />}
       </div>
@@ -921,7 +921,7 @@ export default function NotesPage() {
 
       <div style={{ display: "flex", gap: 8, marginBottom: 28, flexWrap: "wrap" }}>
         <Tab label={t("notes.tabNotes")}    active={tab === "notes"}    onClick={() => setTab("notes")} />
-        <Tab label={t("notes.tabPending") || "Pending Approvals"} active={tab === "pending"} onClick={() => setTab("pending")} />
+        <Tab label={t("notes.tabPending")} active={tab === "pending"} onClick={() => setTab("pending")} />
         <Tab label={t("notes.tabBulk")}     active={tab === "bulk"}     onClick={() => setTab("bulk")} />
         <Tab label={t("notes.tabBulletin")} active={tab === "bulletin"} onClick={() => setTab("bulletin")} />
         <Tab label={t("notes.tabStats")}    active={tab === "stats"}    onClick={() => setTab("stats")} />
@@ -995,38 +995,38 @@ export default function NotesPage() {
         <>
           <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "var(--r-lg)", padding: "20px 24px", marginBottom: 24, display: "flex", gap: 16, flexWrap: "wrap", alignItems: "flex-end" }}>
             <div style={{ flex: "1 1 200px" }}>
-              <label className="field-label">{t("notes.class")} <span style={{ color: "var(--text-faint)", fontWeight: 400 }}>({t("common.optional") || "optional"})</span></label>
+              <label className="field-label">{t("notes.class")} <span style={{ color: "var(--text-faint)", fontWeight: 400 }}>({t("common.optional")})</span></label>
               <select className="t-select" value={pendingClasseId} onChange={e => setPendingClasseId(e.target.value)}>
-                <option value="">{t("notes.allClasses") || "All classes"}</option>
+                <option value="">{t("notes.allClasses")}</option>
                 {classes.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
             </div>
             <div style={{ flex: "1 1 180px" }}>
               <label className="field-label">{t("notes.trimestreOptional")}</label>
               <select className="t-select" value={pendingTrimestreId} onChange={e => setPendingTrimestreId(e.target.value)} disabled={!pendingClasseId}>
-                <option value="">{!pendingClasseId ? (t("notes.pickClassFirst") || "Pick a class first") : t("notes.allTrimestres")}</option>
+                <option value="">{!pendingClasseId ? t("notes.pickClassFirst") : t("notes.allTrimestres")}</option>
                 {trimestres.map(tr => <option key={tr.id} value={tr.id}>{tr.nom}</option>)}
               </select>
             </div>
             <button onClick={fetchPendingNotes} disabled={pendingLoading} className="btn-primary" style={{ padding: "10px 22px", alignSelf: "flex-end" }}>
-              {pendingLoading ? <><span className="spinner" style={{ width: 13, height: 13 }} /> {t("common.loading")}</> : <>🔍 {t("notes.loadPending") || "Load pending notes"}</>}
+              {pendingLoading ? <><span className="spinner" style={{ width: 13, height: 13 }} /> {t("common.loading")}</> : <>🔍 {t("notes.loadPending")}</>}
             </button>
           </div>
 
           {pendingNotes === null ? (
-            !pendingLoading && <div className="empty-state"><span style={{ fontSize: 40 }}>⏳</span><p>{t("notes.pendingEmpty") || "Choose a scope and load pending notes."}</p></div>
+            !pendingLoading && <div className="empty-state"><span style={{ fontSize: 40 }}>⏳</span><p>{t("notes.pendingEmpty")}</p></div>
           ) : pendingLoading ? null : pendingNotes.length === 0 ? (
-            <div className="empty-state"><span style={{ fontSize: 36 }}>🎉</span><p>{t("notes.pendingNone") || "No pending notes here — everything is approved."}</p></div>
+            <div className="empty-state"><span style={{ fontSize: 36 }}>🎉</span><p>{t("notes.pendingNone")}</p></div>
           ) : (
             <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "var(--r-xl)", boxShadow: "var(--shadow-sm)", overflow: "hidden" }}>
               <div style={{ padding: "16px 24px", borderBottom: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
                 <div style={{ fontSize: 13.5, color: "var(--text-muted)" }}>
-                  <strong style={{ color: "var(--text)" }}>{pendingNotes.length}</strong> {t("notes.pendingCount") || "notes awaiting approval"}
+                  <strong style={{ color: "var(--text)" }}>{pendingNotes.length}</strong> {t("notes.pendingCount")}
                 </div>
                 <button onClick={() => setApproveAllConfirm(true)} disabled={approvingAllPending} className="btn-primary" style={{ padding: "9px 18px" }}>
                   {approvingAllPending
                     ? <><span className="spinner" style={{ width: 13, height: 13 }} /> {t("notes.submitting")}</>
-                    : <>✅ {t("notes.approveAllPending", { n: pendingNotes.length }) || `Approve all (${pendingNotes.length})`}</>
+                    : <>✅ {t("notes.approveAllPending", { n: pendingNotes.length })}</>
                   }
                 </button>
               </div>
@@ -1034,7 +1034,7 @@ export default function NotesPage() {
                 <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
                   <thead>
                     <tr style={{ background: "var(--surface)" }}>
-                      {[t("notes.tableHeaders.student") || "Student", t("notes.fields.regNumber"), t("notes.subject"), t("notes.class"), t("notes.trimestre"), t("notes.type"), t("notes.grade"), ""].map((h, i) => (
+                      {[t("notes.tableHeaders.student"), t("notes.fields.regNumber"), t("notes.subject"), t("notes.class"), t("notes.trimestre"), t("notes.type"), t("notes.grade"), ""].map((h, i) => (
                         <th key={i} style={{ padding: "10px 14px", textAlign: i === 0 ? "left" : "center", fontSize: 10.5, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".07em", color: "var(--text-faint)", borderBottom: "1px solid var(--border)", whiteSpace: "nowrap" }}>{h}</th>
                       ))}
                     </tr>
@@ -1056,7 +1056,7 @@ export default function NotesPage() {
                             className="btn-primary"
                             style={{ padding: "6px 14px", fontSize: 12 }}
                           >
-                            {pendingApprovingIds.has(n.id) ? "…" : `✅ ${t("notes.approve") || "Approve"}`}
+                            {pendingApprovingIds.has(n.id) ? "…" : `✅ ${t("notes.approve")}`}
                           </button>
                         </td>
                       </tr>
@@ -1070,9 +1070,9 @@ export default function NotesPage() {
           {approveAllConfirm && (
             <ConfirmDialog
               variant="primary"
-              title={t("notes.approveAllPendingTitle") || "Approve all pending notes?"}
-              message={t("notes.approveAllPendingMsg", { n: pendingNotes?.length ?? 0 }) || `This will approve all ${pendingNotes?.length ?? 0} notes currently shown.`}
-              confirmLabel={t("notes.approveAll") || "Approve all"}
+              title={t("notes.approveAllPendingTitle")}
+              message={t("notes.approveAllPendingMsg", { n: pendingNotes?.length ?? 0 })}
+              confirmLabel={t("notes.approveAll")}
               loadingLabel={t("notes.submitting")}
               cancelLabel={t("common.cancel")}
               onConfirm={approveAllPending}
@@ -1190,11 +1190,11 @@ export default function NotesPage() {
           {bulkApproveConfirm && (
             <ConfirmDialog
               variant="primary"
-              title={bulkApproveConfirm === "approve" ? (t("notes.bulkApproveTitle") || "Approve all notes?") : (t("notes.bulkUnapproveTitle") || "Unapprove all notes?")}
+              title={bulkApproveConfirm === "approve" ? t("notes.bulkApproveTitle") : t("notes.bulkUnapproveTitle")}
               message={bulkApproveConfirm === "approve"
-                ? (t("notes.bulkApproveMsg") || `This will approve every note for ${bulkSheet?.matiereName ?? ""} · ${bulkSheet?.className ?? ""} in this trimestre and type.`)
-                : (t("notes.bulkUnapproveMsg") || `This will unapprove every note for ${bulkSheet?.matiereName ?? ""} · ${bulkSheet?.className ?? ""} in this trimestre and type.`)}
-              confirmLabel={bulkApproveConfirm === "approve" ? (t("notes.approveAll") || "Approve all") : (t("notes.unapproveAll") || "Unapprove all")}
+                ? t("notes.bulkApproveMsg", { subject: bulkSheet?.matiereName ?? "", classe: bulkSheet?.className ?? "" })
+                : t("notes.bulkUnapproveMsg", { subject: bulkSheet?.matiereName ?? "", classe: bulkSheet?.className ?? "" })}
+              confirmLabel={bulkApproveConfirm === "approve" ? t("notes.approveAll") : t("notes.unapproveAll")}
               loadingLabel={t("notes.submitting")}
               cancelLabel={t("common.cancel")}
               onConfirm={() => runBulkApprove(bulkApproveConfirm === "approve")}

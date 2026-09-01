@@ -1,4 +1,5 @@
 import { createPortal } from "react-dom";
+import { useLanguage } from "../LanguageContext";
 
 /**
  * variant: "danger" (default) | "primary"
@@ -16,15 +17,17 @@ export default function ConfirmDialog({
   title,
   variant = "danger",
   confirmLabel,
-  cancelLabel = "Cancel",
+  cancelLabel,
   loadingLabel,
   icon,
 }) {
+  const { t } = useLanguage();
   const isDanger = variant === "danger";
 
-  const defaultTitle        = isDanger ? "Confirm Delete"  : "Confirm";
-  const defaultConfirmLabel = isDanger ? "Delete"          : "Confirm";
-  const defaultLoadingLabel = isDanger ? "Deleting…"       : "Saving…";
+  const defaultTitle        = isDanger ? t("confirm.title")        : t("common.confirm");
+  const defaultConfirmLabel = isDanger ? t("confirm.deleteAction") : t("common.confirm");
+  const defaultLoadingLabel = isDanger ? t("common.deleting")      : t("common.saving");
+  const resolvedCancelLabel = cancelLabel ?? t("confirm.cancel");
 
   const iconBg     = isDanger ? "var(--rose-dim)"           : "var(--accent-dim)";
   const iconBorder = isDanger ? "rgba(184,53,53,.2)"        : "var(--accent-glow)";
@@ -77,11 +80,11 @@ export default function ConfirmDialog({
         }}>{title ?? defaultTitle}</h3>
         <p style={{
           margin: "0 0 24px", fontSize: 14, color: "var(--text-muted)", lineHeight: 1.6,
-        }}>{message || "Are you sure? This action cannot be undone."}</p>
+        }}>{message || t("confirm.defaultMsg")}</p>
 
         <div style={{ display: "flex", gap: 10 }}>
           <button onClick={onCancel} className="btn-ghost" style={{ flex: 1, padding: "10px" }}>
-            {cancelLabel}
+            {resolvedCancelLabel}
           </button>
           <button onClick={onConfirm} disabled={loading} className={confirmBtnClass} style={{ flex: 1, padding: "10px" }}>
             {loading

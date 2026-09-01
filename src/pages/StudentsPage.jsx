@@ -44,7 +44,7 @@ function PhotoAvatar({ photo, initial = "?", size = 48, radius = 14, color = C_C
   );
 }
 
-function PhotoUploadField({ photo, initial, color = C_COLOR, bg = C_BG, onFileSelected, onDelete, loading = false }) {
+function PhotoUploadField({ photo, initial, color = C_COLOR, bg = C_BG, onFileSelected, onDelete, loading = false, t }) {
   const inputRef = useRef(null);
   const [preview, setPreview] = useState(photo || null);
 
@@ -85,7 +85,7 @@ function PhotoUploadField({ photo, initial, color = C_COLOR, bg = C_BG, onFileSe
           onMouseLeave={e => !loading && (e.currentTarget.style.background = "var(--surface)")}
         >
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-          {preview ? "Change photo" : "Upload photo"}
+          {preview ? t("common.changePhoto") : t("common.uploadPhoto")}
           <input ref={inputRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handleFile} disabled={loading} />
         </label>
         {preview && (
@@ -98,10 +98,10 @@ function PhotoUploadField({ photo, initial, color = C_COLOR, bg = C_BG, onFileSe
             fontFamily: "'Instrument Sans',sans-serif",
           }}>
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
-            Remove photo
+            {t("common.removePhoto")}
           </button>
         )}
-        <span style={{ fontSize: 11, color: "var(--text-faint)" }}>JPG, PNG or WebP · max 5 MB</span>
+        <span style={{ fontSize: 11, color: "var(--text-faint)" }}>{t("common.photoHint")}</span>
       </div>
     </div>
   );
@@ -295,7 +295,7 @@ function StudentRow({ r, index, onClick, onEdit, onDelete, onReceipt, loadingRec
             onClick={() => onReceipt(r.id)}
             disabled={loadingReceipt === r.id || !r.isApprove}
             className="btn-ghost"
-            title={r.isApprove ? "Download inscription receipt" : "Receipt available once approved"}
+            title={r.isApprove ? t("students.receiptReady") : t("students.receiptPending")}
             style={{
               padding: "5px 10px", fontSize: 12, display: "flex", alignItems: "center", justifyContent: "center",
               opacity: r.isApprove ? 1 : 0.4,
@@ -355,21 +355,21 @@ function FilterBar({ q, setQ, filterClass, setFilterClass, filterStatus, setFilt
         <input className="search-input" placeholder={t("students.searchPlaceholder")} value={q} onChange={e => setQ(e.target.value)} style={{ width: "100%" }} />
       </div>
       <select value={filterClass} onChange={e => setFilterClass(e.target.value)} className="t-select" style={{ flex: "1 1 160px", minWidth: 140, maxWidth: 200 }}>
-        <option value="">All Classes</option>
+        <option value="">{t("students.allClasses")}</option>
         {classes.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
       </select>
       <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} className="t-select" style={{ flex: "0 0 150px" }}>
-        <option value="">All Statuses</option>
-        <option value="approved">Approved</option>
-        <option value="pending">Pending</option>
+        <option value="">{t("common.allStatuses")}</option>
+        <option value="approved">{t("common.statusApproved")}</option>
+        <option value="pending">{t("common.statusPending")}</option>
       </select>
       {hasFilters && (
-        <button onClick={onReset} className="btn-ghost" style={{ padding: "8px 14px", fontSize: 12.5, flexShrink: 0, color: "var(--rose)", borderColor: "rgba(184,53,53,.25)" }}>✕ Clear</button>
+        <button onClick={onReset} className="btn-ghost" style={{ padding: "8px 14px", fontSize: 12.5, flexShrink: 0, color: "var(--rose)", borderColor: "rgba(184,53,53,.25)" }}>✕ {t("common.clearFilters")}</button>
       )}
       <div style={{ marginLeft: "auto", fontSize: 12, color: "var(--text-faint)", flexShrink: 0, whiteSpace: "nowrap" }}>
         {hasFilters
-          ? <><span style={{ color: "var(--text-dim)", fontWeight: 600 }}>{totalFiltered}</span> of {total}</>
-          : <><span style={{ color: "var(--text-dim)", fontWeight: 600 }}>{total}</span> total</>}
+          ? <><span style={{ color: "var(--text-dim)", fontWeight: 600 }}>{totalFiltered}</span> {t("common.of")} {total}</>
+          : <><span style={{ color: "var(--text-dim)", fontWeight: 600 }}>{total}</span> {t("common.total")}</>}
       </div>
     </div>
   );
@@ -377,7 +377,7 @@ function FilterBar({ q, setQ, filterClass, setFilterClass, filterStatus, setFilt
 
 // ─── Pagination ───────────────────────────────────────────────────────────────
 
-function Pagination({ page, totalPages, pageSize, setPage, setPageSize, totalFiltered }) {
+function Pagination({ page, totalPages, pageSize, setPage, setPageSize, totalFiltered, t }) {
   // Always render so users can change page size even on a single page
   if (totalFiltered === 0) return null;
 
@@ -421,7 +421,7 @@ function Pagination({ page, totalPages, pageSize, setPage, setPageSize, totalFil
       {/* Left: rows-per-page + range info */}
       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <span style={{ fontSize: 12, color: "var(--text-faint)", whiteSpace: "nowrap" }}>Rows per page:</span>
+          <span style={{ fontSize: 12, color: "var(--text-faint)", whiteSpace: "nowrap" }}>{t("pagination.rowsPerPage")}</span>
           <div style={{ display: "flex", gap: 4 }}>
             {PAGE_SIZE_OPTIONS.map(s => (
               <button
@@ -436,7 +436,7 @@ function Pagination({ page, totalPages, pageSize, setPage, setPageSize, totalFil
         </div>
         <span style={{ fontSize: 12, color: "var(--text-faint)", whiteSpace: "nowrap" }}>
           <span style={{ color: "var(--text-dim)", fontWeight: 600 }}>{start}–{end}</span>
-          {" "}of{" "}
+          {" "}{t("common.of")}{" "}
           <span style={{ color: "var(--text-dim)", fontWeight: 600 }}>{totalFiltered}</span>
         </span>
       </div>
@@ -448,7 +448,7 @@ function Pagination({ page, totalPages, pageSize, setPage, setPageSize, totalFil
           <button
             onClick={() => setPage(0)}
             disabled={page === 0}
-            title="First page"
+            title={t("pagination.firstPage")}
             style={{ ...btnStyle(false, page === 0), minWidth: 34, padding: "0 8px", fontSize: 15 }}
           >
             «
@@ -457,7 +457,7 @@ function Pagination({ page, totalPages, pageSize, setPage, setPageSize, totalFil
           <button
             onClick={() => setPage(p => Math.max(0, p - 1))}
             disabled={page === 0}
-            title="Previous page"
+            title={t("pagination.prevPage")}
             style={{ ...btnStyle(false, page === 0), minWidth: 34, padding: "0 8px", fontSize: 15 }}
           >
             ‹
@@ -481,7 +481,7 @@ function Pagination({ page, totalPages, pageSize, setPage, setPageSize, totalFil
           <button
             onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
             disabled={page >= totalPages - 1}
-            title="Next page"
+            title={t("pagination.nextPage")}
             style={{ ...btnStyle(false, page >= totalPages - 1), minWidth: 34, padding: "0 8px", fontSize: 15 }}
           >
             ›
@@ -490,7 +490,7 @@ function Pagination({ page, totalPages, pageSize, setPage, setPageSize, totalFil
           <button
             onClick={() => setPage(totalPages - 1)}
             disabled={page >= totalPages - 1}
-            title="Last page"
+            title={t("pagination.lastPage")}
             style={{ ...btnStyle(false, page >= totalPages - 1), minWidth: 34, padding: "0 8px", fontSize: 15 }}
           >
             »
@@ -709,9 +709,9 @@ export default function StudentsPage() {
       ) : filtered.length === 0 ? (
         <div className="empty-state">
           <span style={{ fontSize: 36 }}>📚</span>
-          <p>{q || filterClass || filterStatus ? "No students match your filters." : t("students.empty")}</p>
+          <p>{q || filterClass || filterStatus ? t("students.noMatch") : t("students.empty")}</p>
           {(q || filterClass || filterStatus) && (
-            <button onClick={resetFilters} className="btn-ghost" style={{ marginTop: 8 }}>Clear filters</button>
+            <button onClick={resetFilters} className="btn-ghost" style={{ marginTop: 8 }}>{t("common.clearFilters")}</button>
           )}
         </div>
       ) : (
@@ -720,13 +720,13 @@ export default function StudentsPage() {
             <table style={{ width: "100%", borderCollapse: "collapse", tableLayout: "auto" }}>
               <thead>
                 <tr>
-                  <ThCell label="#"                   sortKey={null}                 sortBy={sortBy} sortDir={sortDir} onSort={handleSort} style={{ width: 44, textAlign: "center" }} />
-                  <ThCell label="Student"             sortKey="firstname"            sortBy={sortBy} sortDir={sortDir} onSort={handleSort} />
-                  <ThCell label="Reg. Number"         sortKey="registrationNumber"   sortBy={sortBy} sortDir={sortDir} onSort={handleSort} />
-                  <ThCell label="NNI"                 sortKey="nni"                  sortBy={sortBy} sortDir={sortDir} onSort={handleSort} />
-                  <ThCell label={t("students.class")} sortKey="classeName"           sortBy={sortBy} sortDir={sortDir} onSort={handleSort} />
-                  <ThCell label="Status"              sortKey="isApprove"            sortBy={sortBy} sortDir={sortDir} onSort={handleSort} />
-                  <ThCell label=""                    sortKey={null}                 sortBy={sortBy} sortDir={sortDir} onSort={handleSort} style={{ width: 140, textAlign: "right" }} />
+                  <ThCell label="#"                                sortKey={null}                 sortBy={sortBy} sortDir={sortDir} onSort={handleSort} style={{ width: 44, textAlign: "center" }} />
+                  <ThCell label={t("students.tableHeaders.student")}    sortKey="firstname"            sortBy={sortBy} sortDir={sortDir} onSort={handleSort} />
+                  <ThCell label={t("students.tableHeaders.regNumber")} sortKey="registrationNumber"   sortBy={sortBy} sortDir={sortDir} onSort={handleSort} />
+                  <ThCell label={t("students.fields.nni")}        sortKey="nni"                  sortBy={sortBy} sortDir={sortDir} onSort={handleSort} />
+                  <ThCell label={t("students.class")}              sortKey="classeName"           sortBy={sortBy} sortDir={sortDir} onSort={handleSort} />
+                  <ThCell label={t("common.status")}               sortKey="isApprove"            sortBy={sortBy} sortDir={sortDir} onSort={handleSort} />
+                  <ThCell label=""                                 sortKey={null}                 sortBy={sortBy} sortDir={sortDir} onSort={handleSort} style={{ width: 140, textAlign: "right" }} />
                 </tr>
               </thead>
               <tbody>
@@ -751,7 +751,7 @@ export default function StudentsPage() {
           <Pagination
             page={page} totalPages={totalPages}
             pageSize={pageSize} setPage={setPage} setPageSize={setPageSize}
-            totalFiltered={filtered.length}
+            totalFiltered={filtered.length} t={t}
           />
         </div>
       )}
@@ -773,13 +773,14 @@ export default function StudentsPage() {
       <PageTitle crumb={`${t("students.crumb")} · ${t("students.title")}`} title={t("students.enrollTitle")} sub={t("students.enrollSub")} />
       <TwoCol
         left={<FormPanel onSubmit={handleCreate}>
-          <Field label="Profile Photo">
+          <Field label={t("common.profilePhoto")}>
             <PhotoUploadField
               photo={pendingPhoto ? URL.createObjectURL(pendingPhoto) : null}
               initial={(form.firstname?.[0] ?? "?").toUpperCase()}
               onFileSelected={setPendingPhoto}
               onDelete={() => setPendingPhoto(null)}
               loading={photoLoading}
+              t={t}
             />
           </Field>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
@@ -789,16 +790,16 @@ export default function StudentsPage() {
           <Field label={t("fields.email")}><Input type="email" placeholder={t("fields.emailPlaceholder")} value={form.email} onChange={set("email")} /></Field>
           <Field label={t("fields.nni")}><Input placeholder={t("fields.nniPlaceholder")} value={form.nni} onChange={set("nni")} required minLength={8} /></Field>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-            <Field label="Sex">
+            <Field label={t("students.fields.sex")}>
               <Select value={form.sex ?? ""} onChange={set("sex")}>
-                <option value="">— Sex —</option>
-                <option value="MALE">Male</option>
-                <option value="FEMALE">Female</option>
+                <option value="">{t("students.sexPlaceholder")}</option>
+                <option value="MALE">{t("students.sexMale")}</option>
+                <option value="FEMALE">{t("students.sexFemale")}</option>
               </Select>
             </Field>
-            <Field label="Date of Birth"><Input type="date" value={form.dateOfBirth ?? ""} onChange={set("dateOfBirth")} /></Field>
+            <Field label={t("students.fields.dob")}><Input type="date" value={form.dateOfBirth ?? ""} onChange={set("dateOfBirth")} /></Field>
           </div>
-          <Field label="Place of Birth"><Input placeholder="e.g. Nouakchott" value={form.placeOfBirth ?? ""} onChange={set("placeOfBirth")} /></Field>
+          <Field label={t("students.fields.placeOfBirth")}><Input placeholder={t("students.placeOfBirthPlaceholder")} value={form.placeOfBirth ?? ""} onChange={set("placeOfBirth")} /></Field>
           <Field label={t("students.class")}>
             <Select value={idClasse} onChange={e => setIdClasse(e.target.value)}>
               <option value="">— {t("students.class")} —</option>
@@ -832,13 +833,14 @@ export default function StudentsPage() {
       <PageTitle crumb={`${t("students.crumb")} · ${t("students.title")}`} title={t("students.editTitle")} sub={t("students.editSub", { name: `${selected.firstname} ${selected.lastname}` })} />
       <TwoCol
         left={<FormPanel onSubmit={handleEdit}>
-          <Field label="Profile Photo">
+          <Field label={t("common.profilePhoto")}>
             <PhotoUploadField
               photo={deletePhoto ? null : (pendingPhoto ? URL.createObjectURL(pendingPhoto) : selected.photo ?? null)}
               initial={(selected.firstname?.[0] ?? "?").toUpperCase()}
               onFileSelected={f => { setPendingPhoto(f); setDeletePhoto(false); }}
               onDelete={() => { setPendingPhoto(null); setDeletePhoto(true); }}
               loading={photoLoading}
+              t={t}
             />
           </Field>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
@@ -848,18 +850,18 @@ export default function StudentsPage() {
           <Field label={t("fields.email")}><Input type="email" value={editForm.email} onChange={setEdit("email")} /></Field>
           <Field label={t("fields.nni")}><Input value={editForm.nni} onChange={setEdit("nni")} /></Field>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-            <Field label="Sex">
+            <Field label={t("students.fields.sex")}>
               <Select value={editForm.sex ?? ""} onChange={setEdit("sex")}>
-                <option value="">— Sex —</option>
-                <option value="MALE">Male</option>
-                <option value="FEMALE">Female</option>
+                <option value="">{t("students.sexPlaceholder")}</option>
+                <option value="MALE">{t("students.sexMale")}</option>
+                <option value="FEMALE">{t("students.sexFemale")}</option>
               </Select>
             </Field>
-            <Field label="Date of Birth"><Input type="date" value={editForm.dateOfBrith ?? ""} onChange={setEdit("dateOfBrith")} /></Field>
+            <Field label={t("students.fields.dob")}><Input type="date" value={editForm.dateOfBrith ?? ""} onChange={setEdit("dateOfBrith")} /></Field>
           </div>
-          <Field label="Place of Birth"><Input placeholder="e.g. Nouakchott" value={editForm.placeOfBirth ?? ""} onChange={setEdit("placeOfBirth")} /></Field>
+          <Field label={t("students.fields.placeOfBirth")}><Input placeholder={t("students.placeOfBirthPlaceholder")} value={editForm.placeOfBirth ?? ""} onChange={setEdit("placeOfBirth")} /></Field>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-            <Field label={t("students.fields.regNumber")} hint="Registration number cannot be changed">
+            <Field label={t("students.fields.regNumber")} hint={t("students.regNumberLocked")}>
               <Input value={editForm.registrationNumber} disabled readOnly style={{ opacity: 0.6, cursor: "not-allowed" }} />
             </Field>
             <Field label={t("students.class")}>
@@ -921,7 +923,7 @@ export default function StudentsPage() {
               </div>
               <div style={{ display: "flex", gap: 10 }}>
                 <button onClick={() => handleReceipt(v.id)} disabled={loadingReceipt === v.id} className="btn-ghost" style={{ padding: "10px 20px" }}>
-                  {loadingReceipt === v.id ? <><span className="spinner" style={{ width: 13, height: 13 }} /> {t("common.loading")}</> : "🧾 Receipt"}
+                  {loadingReceipt === v.id ? <><span className="spinner" style={{ width: 13, height: 13 }} /> {t("common.loading")}</> : t("payments.receipt")}
                 </button>
                 <button onClick={() => openEdit(v)} className="btn-ghost" style={{ padding: "10px 20px" }}>✏️ {t("common.edit")}</button>
                 <button onClick={() => setDeleteTarget(v)} className="btn-danger" style={{ padding: "10px 20px" }}>🗑 {t("common.delete")}</button>
@@ -935,9 +937,9 @@ export default function StudentsPage() {
           <StatBox icon="🔢" label={t("students.fields.regNumber")} value={v.registrationNumber} />
           <StatBox icon="🏫" label={t("students.fields.class")}     value={cn} />
           <StatBox icon="🎂" label={t("students.fields.dob")}       value={v.dateOfBrith} />
-          <StatBox icon="⚧️" label="Sex"                            value={v.sex} />
-          <StatBox icon="📍" label="Place of Birth"                 value={v.placeOfBirth} />
-          <StatBox icon="🏠" label="Address"                        value={v.address} />
+          <StatBox icon="⚧️" label={t("students.fields.sex")}          value={v.sex} />
+          <StatBox icon="📍" label={t("students.fields.placeOfBirth")} value={v.placeOfBirth} />
+          <StatBox icon="🏠" label={t("students.fields.address")}      value={v.address} />
         </div>
         {deleteTarget && (
           <ConfirmDialog

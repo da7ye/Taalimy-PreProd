@@ -55,7 +55,7 @@ export const getClasses = (page = 0, size = 100) => request(`/classes?page=${pag
 export const createClasse = (data) => request("/classes", { method: "POST", body: JSON.stringify(data) });
 
 // Auth
-export const approveUser = (phone) => request("/auth/approve-user", { method: "POST", body: JSON.stringify({ phone }) });
+export const approveUser = (userId) => request("/auth/approve-user", { method: "POST", body: JSON.stringify({ userId }) });
 
 export const deleteTeacher    = (id)     => request(`/teachers/${id}`,            { method: "DELETE" });
 export const updateTeacher    = (id, d)  => request(`/teachers/${id}`,            { method: "PUT",    body: JSON.stringify(d) });
